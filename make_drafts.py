@@ -91,15 +91,17 @@ def find_header_row(df, must_have, max_rows=40, any_of=(), prefix_any=()):
     return None
 
 
-def load_sheet(path, must_have, label="", any_of=(), prefix_any=()):
-    """파일의 모든 시트를 돌며 조건에 맞는 헤더가 있는 시트를 찾는다 (선박/에어가 한 파일에 있어도 됨)."""
+def load_sheet(path, must_have, label="", any_of=(), prefix_any=(), prefer=(), sheet_name=None):
+    """파일의 모든 시트를 돌며 조건에 맞는 헤더가 있는 시트를 찾는다 (선박/에어가 한 파일에 있어도 됨).
+    여러 시트가 맞으면 prefer 열(예: Remain)이 있는 시트를 먼저, sheet_name을 주면 그 시트만."""
     xl = pd.ExcelFile(path)
-    tried = []
+    found = []
     for sheet in xl.sheet_names:
+        if sheet_name and norm(sheet) != norm(sheet_name):
+            continue
         raw = pd.read_excel(xl, sheet, header=None, dtype=object)
         h = find_header_row(raw, must_have, any_of=any_of, prefix_any=prefix_any)
         if h is None:
-            tried.append(sheet)
             continue
         headers = [clean(c) for c in raw.iloc[h].tolist()]
         df = raw.iloc[h + 1:].copy()
@@ -107,10 +109,18 @@ def load_sheet(path, must_have, label="", any_of=(), prefix_any=()):
         df = df.loc[:, [c for c in df.columns if c != ""]]
         df = df.dropna(how="all").reset_index(drop=True)
         df.attrs["sheet"] = sheet
-        return df
-    raise SystemExit(f"[오류] {label} 파일에서 {label} 표(헤더 {must_have}{' + ' + '/'.join(any_of) if any_of else ''}{' + ETD열' if prefix_any else ''})가 있는 시트를 못 찾았습니다.\n"
-                     f"       파일: {os.path.basename(path)} / 시트: {xl.sheet_names}\n"
-                     f"       선박리스트와 에어리스트에 같은 파일을 고른 것은 아닌지 확인하세요.")
+        score = sum(1 for p in prefer if norm(p) in [norm(c) for c in df.columns])
+        found.append((score, len(found), df))
+    if not found:
+        raise SystemExit(f"[오류] {label} 파일에서 {label} 표(헤더 {must_have}{' + ' + '/'.join(any_of) if any_of else ''}{' + ETD열' if prefix_any else ''})가 있는 시트를 못 찾았습니다.\n"
+                         f"       파일: {os.path.basename(path)} / 시트: {xl.sheet_names}" + (f" / 지정한 시트: {sheet_name}" if sheet_name else "") + "\n"
+                         f"       선박리스트와 에어리스트에 같은 파일을 고른 것은 아닌지 확인하세요.")
+    found.sort(key=lambda x: (-x[0], x[1]))
+    df = found[0][2]
+    if len(found) > 1:
+        print(f"[참고] {label} 표가 있는 시트가 {len(found)}개: {[f[2].attrs['sheet'] for f in found]} → '{df.attrs['sheet']}' 사용"
+              + (f" (Remain 열이 있는 시트 우선)" if prefer else "") + ". 다른 시트를 쓰려면 --ship-sheet/--air-sheet 로 지정")
+    return df
 
 
 def col(df, *candidates, required=True, prefix=False):
@@ -167,15 +177,37 @@ def load_config(path):
     alias_map = {}
     for name, v in vend.items():
         for a in v["aliases"]:
-            alias_map.setdefault(norm(a), name)
+            if norm_name(a):
+                alias_map.setdefault(norm_name(a), name)
     return vend, maker_map, item_map, settings, alias_map
+
+
+def norm_name(s):
+    """업체명 비교용: (주), 주식회사, [코드], 공백, 괄호 제거, 소문자."""
+    s = clean(s)
+    s = re.sub(r"\(주\)|주식회사|㈜|\(\s*\d+\s*\)|\[[^\]]*\]", "", s)
+    return re.sub(r"[\s()\-_.]", "", s).lower()
+
+
+def match_alias(name, alias_map):
+    """리스트의 업체 칸 값 → config 업체명. 1) 정확히 일치 2) 별칭이 포함(긴 별칭 우선)."""
+    key = norm_name(name)
+    if not key:
+        return name
+    if key in alias_map:
+        return alias_map[key]
+    best = None
+    for a, v in alias_map.items():
+        if len(a) >= 2 and (a in key or key in a) and (best is None or len(a) > len(best[0])):
+            best = (a, v)
+    return best[1] if best else name
 
 
 def resolve_vendor(row_vendor_col, item_cd, maker, maker_map, item_map, alias_map=None):
     """우선순위: 선박리스트 '업체' 열 > 품목지정 시트 > MAKER 매핑."""
     if row_vendor_col:
         if alias_map:
-            return alias_map.get(norm(row_vendor_col), row_vendor_col)
+            return match_alias(row_vendor_col, alias_map)
         return row_vendor_col
     if norm(item_cd) in item_map:
         return item_map[norm(item_cd)]
@@ -183,8 +215,8 @@ def resolve_vendor(row_vendor_col, item_cd, maker, maker_map, item_map, alias_ma
 
 
 # ---------------------------------------------------------------- 입력 파싱
-def parse_ship(path, etd_count, etd_names, maker_map, item_map, alias_map=None):
-    df = load_sheet(path, ["ITEM CD", "MAKER"], "선박리스트", prefix_any=("ETD",))
+def parse_ship(path, etd_count, etd_names, maker_map, item_map, alias_map=None, sheet_name=None):
+    df = load_sheet(path, ["ITEM CD", "MAKER"], "선박리스트", prefix_any=("ETD",), sheet_name=sheet_name)
     c_fac = col(df, "Fac", "FAC")
     c_cd = col(df, "ITEM CD")
     c_mk = col(df, "MAKER")
@@ -220,8 +252,8 @@ def parse_ship(path, etd_count, etd_names, maker_map, item_map, alias_map=None):
     return pd.DataFrame(rows), etd_sel, etd_all
 
 
-def parse_air(path, maker_map, item_map, alias_map=None):
-    df = load_sheet(path, ["Item cd", "Maker"], "에어리스트", any_of=("Remain", "Purchase request"))
+def parse_air(path, maker_map, item_map, alias_map=None, sheet_name=None):
+    df = load_sheet(path, ["Item cd", "Maker"], "에어리스트", any_of=("Remain", "Purchase request"), prefer=("Remain",), sheet_name=sheet_name)
     c_fac = col(df, "FAC", "Fac")
     c_cd = col(df, "Item cd", "ITEM CD")
     c_mk = col(df, "Maker", "MAKER")
@@ -230,7 +262,7 @@ def parse_air(path, maker_map, item_map, alias_map=None):
     c_short = col(df, "Short Del.", "Short Del", required=False)
     c_need = col(df, "NEED ETD", "Need ETD", required=False)
     c_vendor = col(df, "업체", "거래처명(매칭)", "거래처명", "거래처", "VENDER", "VENDOR", required=False, prefix=True)
-    print(f"에어리스트 시트: {df.attrs.get('sheet')}" + (f" / 업체 열: '{c_vendor}' 사용" if c_vendor else ""))
+    print(f"에어리스트 시트: {df.attrs.get('sheet')} / 수량 열: '{c_rem}'" + (f" / 업체 열: '{c_vendor}' 사용" if c_vendor else ""))
 
     rows = []
     for _, r in df.iterrows():
@@ -242,16 +274,19 @@ def parse_air(path, maker_map, item_map, alias_map=None):
         rows.append({
             "FAC": clean(r[c_fac]), "Item cd": cd, "Maker": maker, "Part Name": clean(r[c_nm]),
             "Purchase request": r[c_rem],
-            "Short Del.": clean(r[c_short]) if c_short else "",
+            "Short Del.": fmt_date_cell(r[c_short]) if c_short else "",
             "NEED ETD": fmt_date_cell(r[c_need]) if c_need else "",
+            "_qty_col": c_rem,
             "_vendor": vendor, "_src": "에어",
         })
     return pd.DataFrame(rows)
 
 
 def fmt_date_cell(v):
+    """날짜 셀은 엑셀에서 보이는 형태(20-Nov-26)로, 글자(URGENT 등)는 그대로."""
     if isinstance(v, (dt.datetime, dt.date, pd.Timestamp)):
-        return pd.Timestamp(v).strftime("%Y-%m-%d")
+        t = pd.Timestamp(v)
+        return f"{t.day:02d}-{t.strftime('%b')}-{t.strftime('%y')}"
     return clean(v)
 
 
@@ -321,7 +356,8 @@ def build_body(vendor, air_df, ship_df, etd_sel, month, week, air_date, ship_dat
 
     if has_air:
         out.append(p(f"에어리스트 (노란색 수량, <b>{short_date(air_date)}</b> 입고 요망)"))
-        hdr = ["FAC", "Item cd", "Maker", "Part Name", "Purchase request"]
+        qty_label = air_df.iloc[0]["_qty_col"] if "_qty_col" in air_df.columns else "Purchase request"
+        hdr = ["FAC", "Item cd", "Maker", "Part Name", qty_label]
         if any(clean(r["Short Del."]) for _, r in air_df.iterrows()):
             hdr.append("Short Del.")
         hdr.append("NEED ETD")
@@ -332,7 +368,7 @@ def build_body(vendor, air_df, ship_df, etd_sel, month, week, air_date, ship_dat
                 row.append(r["Short Del."])
             row.append(r["NEED ETD"])
             rows.append(row)
-        out += [html_table(hdr, rows, highlight_cols=("Purchase request",)), br]
+        out += [html_table(hdr, rows, highlight_cols=(qty_label,)), br]
 
     out.append(p("감사합니다."))
     if with_sig:
@@ -468,6 +504,8 @@ def create_draft(app, to, cc, subject, body_html, attachments, settings):
 def main():
     ap = argparse.ArgumentParser(description="업체별 출하 요청 메일 초안 생성 (Outlook 임시 보관함)")
     ap.add_argument("--ship", help="선박리스트 .xlsx")
+    ap.add_argument("--ship-sheet", help="선박 표가 있는 시트 이름 (한 파일에 여러 개일 때)")
+    ap.add_argument("--air-sheet", help="에어 표가 있는 시트 이름 (기본: Remain 열이 있는 시트 우선, 예: 'Air up')")
     ap.add_argument("--air", help="에어리스트 .xlsx")
     ap.add_argument("--config", default=DEFAULT_CONFIG, help="설정 엑셀 (기본 config.xlsx)")
     ap.add_argument("--etd", type=int, default=None, help="메일에 넣을 ETD 열 개수 (기본: 설정 시트 값 또는 2)")
@@ -509,10 +547,10 @@ def main():
 
     ship_df, etd_sel = pd.DataFrame(), []
     if args.ship:
-        ship_df, etd_sel, etd_all = parse_ship(args.ship, etd_count, etd_names, maker_map, item_map, alias_map)
+        ship_df, etd_sel, etd_all = parse_ship(args.ship, etd_count, etd_names, maker_map, item_map, alias_map, sheet_name=args.ship_sheet)
         print(f"선박리스트 ETD 열(전체): {etd_all}")
         print(f"선박리스트 ETD 열(선택): {etd_sel}  ← 첫 열 '{etd_sel[0]}'이 이번 주(노란색)")
-    air_df = parse_air(args.air, maker_map, item_map, alias_map) if args.air else pd.DataFrame()
+    air_df = parse_air(args.air, maker_map, item_map, alias_map, sheet_name=args.air_sheet) if args.air else pd.DataFrame()
 
     os.makedirs(args.out, exist_ok=True)
     tag = f"{monday:%Y%m%d}_{month}월{week}주"

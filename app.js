@@ -11,7 +11,7 @@ const LS_KEY = "mailmaker_overlay_v1";
 const norm = (s) => (s == null ? "" : String(s).replace(/\s+/g, "").toLowerCase());
 const clean = (v) => {
   if (v == null) return "";
-  if (v instanceof Date) return fmtDate(v);
+  if (v instanceof Date) return isNaN(v) ? "" : fmtCellDate(v);
   const s = String(v).trim();
   return s.toLowerCase() === "nan" ? "" : s;
 };
@@ -33,13 +33,22 @@ const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 const makerFromName = (name) => { const m = clean(name).match(/\(([^()]+)\)\s*$/); return m ? m[1].trim() : ""; };
 const pad2 = (n) => String(n).padStart(2, "0");
 const fmtDate = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const fmtCellDate = (d) => `${pad2(d.getDate())}-${MON[d.getMonth()]}-${String(d.getFullYear()).slice(2)}`;   // 엑셀에 보이는 형태
 const parseISO = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
 const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
 const weekdayKo = (d) => WEEKDAY_KO[(d.getDay() + 6) % 7];
 const koDate = (d) => `${d.getMonth() + 1}월 ${d.getDate()}일(${weekdayKo(d)})`;
 const shortDate = (d) => `${d.getMonth() + 1}/${d.getDate()}일(${weekdayKo(d)})`;
 const safeName = (s) => s.replace(/[\\/:*?"<>|]/g, "_");
-const normName = (s) => clean(s).replace(/\(주\)|주식회사|㈜|\(\s*\d+\s*\)/g, "").replace(/[\s()\-_.]/g, "").toLowerCase();
+const normName = (s) => clean(s).replace(/\(주\)|주식회사|㈜|\(\s*\d+\s*\)|\[[^\]]*\]/g, "").replace(/[\s()\-_.]/g, "").toLowerCase();
+function matchAlias(name) {   // 리스트의 업체 칸 값 → 설정 업체명. 1) 정확히 일치 2) 별칭 포함(긴 별칭 우선)
+  const key = normName(name); if (!key) return name;
+  if (key in CONFIG.aliasMap) return CONFIG.aliasMap[key];
+  let best = null;
+  for (const [a, v] of Object.entries(CONFIG.aliasMap)) if (a.length >= 2 && (key.includes(a) || a.includes(key)) && (!best || a.length > best[0].length)) best = [a, v];
+  return best ? best[1] : name;
+}
 
 function nextMonday(today = new Date()) {
   const wd = (today.getDay() + 6) % 7; // 월=0
@@ -112,7 +121,7 @@ function parseConfig(wb, name) {
     v.to = [...new Set(v.to)];
     vendors[vname] = v; order.push(vname);
     for (const m of v.makers) if (!(m in makerMap)) makerMap[m] = vname;
-    for (const a of [vname, ...v.poNames, v.poShort]) if (a && !(norm(a) in aliasMap)) aliasMap[norm(a)] = vname;
+    for (const a of [vname, ...v.poNames, v.poShort]) if (normName(a) && !(normName(a) in aliasMap)) aliasMap[normName(a)] = vname;
   };
   vendorsRaw.forEach(addVendor);
   for (const nv of overlay.newVendors || []) if (!vendors[nv.name]) addVendor({ 업체: nv.name, 받는사람: (nv.to || []).join(","), MAKER: (nv.makers || []).join(","), "거래처명(주문서)": (nv.poNames || []).join(",") });
@@ -149,7 +158,7 @@ async function reloadConfig() {
 }
 
 function resolveVendor(rowVendor, itemCd, maker) {
-  if (rowVendor) return CONFIG.aliasMap[norm(rowVendor)] || rowVendor;
+  if (rowVendor) return matchAlias(rowVendor);
   if (norm(itemCd) in CONFIG.itemMap) return CONFIG.itemMap[norm(itemCd)];
   return CONFIG.makerMap[clean(maker).toUpperCase()] || "";
 }
@@ -166,8 +175,10 @@ function findHeaderRow(rows, mustHave, anyOf = [], prefixAny = []) {
   }
   return -1;
 }
-function loadSheet(wb, mustHave, label, anyOf = [], prefixAny = []) {
+function loadSheet(wb, mustHave, label, anyOf = [], prefixAny = [], prefer = [], sheetName = "") {
+  const found = [];
   for (const sn of wb.SheetNames) {
+    if (sheetName && norm(sn) !== norm(sheetName)) continue;
     const rows = sheetRows(wb, sn);
     const h = findHeaderRow(rows, mustHave, anyOf, prefixAny);
     if (h < 0) continue;
@@ -180,10 +191,31 @@ function loadSheet(wb, mustHave, label, anyOf = [], prefixAny = []) {
       headers.forEach((hd, j) => { if (hd) o[hd] = r[j]; });
       data.push(o);
     }
-    return { sheet: sn, headers: headers.filter(Boolean), rows: data };
+    const hn = headers.map(norm);
+    found.push({ sheet: sn, headers: headers.filter(Boolean), rows: data, score: prefer.filter((p) => hn.includes(norm(p))).length });
   }
-  throw new Error(`${label} 파일에서 ${label} 표(헤더 ${mustHave.join(", ")}${anyOf.length ? " + " + anyOf.join("/") : ""}${prefixAny.length ? " + ETD열" : ""})가 있는 시트를 못 찾았습니다. 시트: ${wb.SheetNames.join(", ")}. 선박리스트와 에어리스트에 같은 파일을 고른 것은 아닌지 확인하세요.`);
+  if (!found.length) throw new Error(`${label} 파일에서 ${label} 표(헤더 ${mustHave.join(", ")}${anyOf.length ? " + " + anyOf.join("/") : ""}${prefixAny.length ? " + ETD열" : ""})가 있는 시트를 못 찾았습니다. 시트: ${wb.SheetNames.join(", ")}${sheetName ? " / 지정한 시트: " + sheetName : ""}. 선박리스트와 에어리스트에 같은 파일을 고른 것은 아닌지 확인하세요.`);
+  found.sort((a, b) => b.score - a.score);
+  if (found.length > 1) log(`[참고] ${label} 표가 있는 시트가 ${found.length}개: ${found.map((f) => f.sheet).join(", ")} → '${found[0].sheet}' 사용${prefer.length ? " (Remain 열이 있는 시트 우선)" : ""}. 다른 시트를 쓰려면 파일 아래 시트 선택에서 고르세요.`, "warn");
+  return found[0];
 }
+// 파일을 고르면 시트 목록을 보여 주고 고를 수 있게
+async function fillSheetSelect(input, selId, mustHave, anyOf, prefixAny, prefer) {
+  const sel = $(selId); sel.innerHTML = '<option value="">(자동 선택)</option>'; sel.style.display = "none";
+  const f = input.files[0]; if (!f) return;
+  try {
+    const wb = XLSX.read(await f.arrayBuffer(), { type: "array", cellDates: true });
+    const cands = [];
+    for (const sn of wb.SheetNames) { const rows = sheetRows(wb, sn); const h = findHeaderRow(rows, mustHave, anyOf, prefixAny); if (h >= 0) { const hn = rows[h].map(norm); cands.push({ sn, score: prefer.filter((p) => hn.includes(norm(p))).length }); } }
+    if (cands.length > 1) {
+      cands.sort((a, b) => b.score - a.score);
+      sel.innerHTML = `<option value="">(자동: ${cands[0].sn})</option>` + wb.SheetNames.map((sn) => `<option value="${esc(sn)}">${esc(sn)}${cands.some((c) => c.sn === sn) ? "" : " (표 없음)"}</option>`).join("");
+      sel.style.display = "";
+    }
+  } catch (e) { console.warn(e); }
+}
+
+
 function col(sheet, cands, { required = true, prefix = false } = {}) {
   const lookup = {}; sheet.headers.forEach((c) => (lookup[norm(c)] = c));
   for (const c of cands) if (norm(c) in lookup) return lookup[norm(c)];
@@ -194,7 +226,7 @@ function col(sheet, cands, { required = true, prefix = false } = {}) {
 const VENDOR_COLS = ["업체", "거래처명(매칭)", "거래처명", "거래처", "VENDER", "VENDOR"];
 
 function parseShip(wb, etdCount) {
-  const sh = loadSheet(wb, ["ITEM CD", "MAKER"], "선박리스트", [], ["ETD"]);
+  const sh = loadSheet(wb, ["ITEM CD", "MAKER"], "선박리스트", [], ["ETD"], [], $("shipSheet").value);
   const cFac = col(sh, ["Fac", "FAC"]), cCd = col(sh, ["ITEM CD"]), cMk = col(sh, ["MAKER"]), cNm = col(sh, ["ITEM NM", "Part Name", "품명"]);
   const cV = col(sh, VENDOR_COLS, { required: false, prefix: true });
   log(`선박리스트 시트: ${sh.sheet}` + (cV ? ` / 업체 열: '${cV}' 사용` : " / 업체 열 없음 → MAKER로 매칭"));
@@ -216,18 +248,18 @@ function parseShip(wb, etdCount) {
   return { rows, etdSel, etdAll };
 }
 function parseAir(wb) {
-  const sh = loadSheet(wb, ["Item cd", "Maker"], "에어리스트", ["Remain", "Purchase request"]);
+  const sh = loadSheet(wb, ["Item cd", "Maker"], "에어리스트", ["Remain", "Purchase request"], [], ["Remain"], $("airSheet").value);
   const cFac = col(sh, ["FAC", "Fac"]), cCd = col(sh, ["Item cd", "ITEM CD"]), cMk = col(sh, ["Maker", "MAKER"]), cNm = col(sh, ["Part Name", "ITEM NM", "품명"]);
   const cRem = col(sh, ["Remain", "Purchase request"]), cShort = col(sh, ["Short Del.", "Short Del"], { required: false }), cNeed = col(sh, ["NEED ETD", "Need ETD"], { required: false });
   const cV = col(sh, VENDOR_COLS, { required: false, prefix: true });
-  log(`에어리스트 시트: ${sh.sheet}` + (cV ? ` / 업체 열: '${cV}' 사용` : ""));
+  log(`에어리스트 시트: ${sh.sheet} / 수량 열: '${cRem}'` + (cV ? ` / 업체 열: '${cV}' 사용` : ""));
   const rows = [];
   for (const r of sh.rows) {
     const cd = clean(r[cCd]); if (!cd || toNum(r[cRem]) <= 0) continue;
     const maker = clean(r[cMk]) || makerFromName(r[cNm]);
     rows.push({
       FAC: clean(r[cFac]), "Item cd": cd, Maker: maker, "Part Name": clean(r[cNm]), "Purchase request": r[cRem],
-      "Short Del.": cShort ? clean(r[cShort]) : "", "NEED ETD": cNeed ? clean(r[cNeed]) : "",
+      "Short Del.": cShort ? clean(r[cShort]) : "", "NEED ETD": cNeed ? clean(r[cNeed]) : "", _qtyCol: cRem,
       _vendor: resolveVendor(cV ? clean(r[cV]) : "", cd, maker), _src: "에어",
     });
   }
@@ -267,11 +299,12 @@ function buildShipBody(v, air, ship, etdSel, airDate, shipDate, settings, attach
   }
   if (hasAir) {
     out.push(P(`에어리스트 (노란색 수량, <b>${shortDate(airDate)}</b> 입고 요망)`));
-    const hdr = ["FAC", "Item cd", "Maker", "Part Name", "Purchase request"];
+    const qtyLabel = air[0]._qtyCol || "Purchase request";
+    const hdr = ["FAC", "Item cd", "Maker", "Part Name", qtyLabel];
     const hasShort = air.some((r) => clean(r["Short Del."]));
     if (hasShort) hdr.push("Short Del.");
     hdr.push("NEED ETD");
-    out.push(htmlTable(hdr, air.map((r) => { const row = [r.FAC, r["Item cd"], r.Maker, r["Part Name"], fmtNum(r["Purchase request"])]; if (hasShort) row.push(r["Short Del."]); row.push(r["NEED ETD"]); return row; }), ["Purchase request"]), BR);
+    out.push(htmlTable(hdr, air.map((r) => { const row = [r.FAC, r["Item cd"], r.Maker, r["Part Name"], fmtNum(r["Purchase request"])]; if (hasShort) row.push(r["Short Del."]); row.push(r["NEED ETD"]); return row; }), [qtyLabel]), BR);
   }
   out.push(P("감사합니다."), sigHtml(settings));
   return `<div style="font-family:맑은 고딕,Malgun Gothic,sans-serif;font-size:10pt">${out.join("")}</div>`;
@@ -626,12 +659,14 @@ function bindDrop(zone, input, nameEl) {
   z.addEventListener("click", () => i.click());
   z.addEventListener("dragover", (e) => { e.preventDefault(); z.classList.add("over"); });
   z.addEventListener("dragleave", () => z.classList.remove("over"));
-  z.addEventListener("drop", (e) => { e.preventDefault(); z.classList.remove("over"); i.files = e.dataTransfer.files; show(); });
+  z.addEventListener("drop", (e) => { e.preventDefault(); z.classList.remove("over"); i.files = e.dataTransfer.files; show(); i.dispatchEvent(new Event("change")); });
   i.addEventListener("change", show);
 }
 window.addEventListener("DOMContentLoaded", () => {
   if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
   bindDrop("dropShip", "ship", "shipName"); bindDrop("dropAir", "air", "airName"); bindDrop("dropPdf", "pdf", "pdfName");
+  $("ship").addEventListener("change", () => fillSheetSelect($("ship"), "shipSheet", ["ITEM CD", "MAKER"], [], ["ETD"], []));
+  $("air").addEventListener("change", () => fillSheetSelect($("air"), "airSheet", ["Item cd", "Maker"], ["Remain", "Purchase request"], [], ["Remain"]));
   $("monday").value = fmtDate(nextMonday());
   $("config").addEventListener("change", () => { $("configFile").style.display = $("config").value === "__file__" ? "" : "none"; if ($("config").value !== "__file__") reloadConfig(); });
   $("configFile").addEventListener("change", reloadConfig);

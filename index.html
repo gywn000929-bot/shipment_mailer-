@@ -46,8 +46,10 @@ ol li{margin:4px 0}
 <main>
 <section class="card"><h2><span class="step">1</span> 출하 요청 메일 (선박 / 에어)</h2>
  <div class="drop" id="dropShip"><b>선박리스트</b> 엑셀을 여기에 끌어다 놓거나 클릭<small id="shipName">아직 없음</small></div>
+ <div class="row" style="margin-top:6px"><label>선박 시트</label><select id="shipSheet" style="display:none"></select></div>
  <div style="height:8px"></div>
  <div class="drop" id="dropAir"><b>에어리스트</b> 엑셀을 여기에 끌어다 놓거나 클릭<small id="airName">아직 없음 (에어가 없는 주는 비워 두세요)</small></div>
+ <div class="row" style="margin-top:6px"><label>에어 시트</label><select id="airSheet" style="display:none"></select></div>
  <input type="file" id="ship" accept=".xlsx,.xls" hidden><input type="file" id="air" accept=".xlsx,.xls" hidden>
  <div class="row"><label>기준 주 월요일</label><input type="date" id="monday"><label>ETD 열 개수</label><input type="text" id="etd" style="width:50px" placeholder="설정값"><label>특정 업체만</label><input type="text" id="only" style="width:160px" placeholder="예: 대일CST,태양단자"></div>
  <div class="btns"><button class="pri" id="btnShip">① 미리보기 · 메일 만들기</button></div>
