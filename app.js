@@ -410,6 +410,7 @@ function renderResult() {
   const box = $("mails"); box.innerHTML = "";
   $("resultCard").style.display = RESULT.mails.length || RESULT.unmatched.length ? "" : "none";
   $("btnZip").style.display = RESULT.mails.length ? "" : "none";
+  $("btnXlsx").style.display = RESULT.mails.length && RESULT.kind === "ship" ? "" : "none";
   $("resultTitle").textContent = RESULT.mails.length ? `만들어진 메일 ${RESULT.mails.length}통` : "만들어진 메일 없음";
   RESULT.mails.forEach((m, i) => {
     const d = document.createElement("div"); d.className = "mail";
@@ -434,6 +435,31 @@ async function downloadZip() {
   const blob = await zip.generateAsync({ type: "blob" });
   download(blob, (RESULT.kind === "po" ? "주문서메일_" : "출하요청메일_") + fmtDate(new Date()) + ".zip");
   toast("ZIP을 받았습니다. 압축을 풀고 .eml 파일을 더블클릭하면 Outlook 새 메일 창이 열립니다.");
+}
+
+// ---------------------------------------------------------------- 전체 엑셀 (F1,2 / F5 시트)
+function downloadSummaryXlsx() {
+  const etdSel = RESULT.etdSel || [];
+  const hdr = ["구분", "업체", "Fac", "ITEM CD", "MAKER", "ITEM NM", etdSel[0] || "요청수량", "입고수량", ...etdSel.slice(1), "Short Del.", "NEED ETD"];
+  const groups = { "F1,2": [], "F5": [] };
+  for (const m of RESULT.mails) {
+    for (const r of m.ship || []) {
+      const row = ["선박", m.vendor, r.Fac, r["ITEM CD"], r.MAKER, r["ITEM NM"], toNum(r[etdSel[0]]) || 0, null, ...etdSel.slice(1).map((c) => toNum(r[c]) || 0), "", ""];
+      (norm(r.Fac).startsWith("f5") ? groups["F5"] : groups["F1,2"]).push(row);
+    }
+    for (const r of m.air || []) {
+      const row = ["에어", m.vendor, r.FAC, r["Item cd"], r.Maker, r["Part Name"], toNum(r["Purchase request"]) || 0, null, ...etdSel.slice(1).map(() => ""), r["Short Del."], r["NEED ETD"]];
+      (norm(r.FAC).startsWith("f5") ? groups["F5"] : groups["F1,2"]).push(row);
+    }
+  }
+  const wb = XLSX.utils.book_new();
+  for (const [name, rows] of Object.entries(groups)) {
+    const aoa = [hdr, ...rows];
+    const ws = XLSX.utils.aoa_to_sheet(aoa); styleSheet(ws, aoa.length, hdr.length, 6);
+    XLSX.utils.book_append_sheet(wb, ws, name);
+  }
+  download(new Blob([XLSX.write(wb, { type: "array", bookType: "xlsx" })]), `출하요청_${RESULT.tag || fmtDate(new Date())}.xlsx`);
+  toast(`엑셀을 받았습니다 (F1,2: ${groups["F1,2"].length}행 / F5: ${groups["F5"].length}행)`);
 }
 
 // ---------------------------------------------------------------- 미지정 업체 지정
@@ -539,7 +565,8 @@ async function runShip() {
       log(`   받는 사람: ${v.to.join(", ")}`); if (v.cc.length) log(`   추가 참조: ${v.cc.join(", ")}`); if (v.memo) log(`   메모: ${v.memo}`, "warn");
       const attached = v.attach && s.length > 0;
       const attachments = attached ? [{ name: safeName(`${subjectBase}_${v.name}.xlsx`), data: vendorXlsx(s, a, etdSel) }] : [];
-      RESULT.mails.push({ vendor: n, subject, to: v.to, cc: [...new Set([...commonCc, ...v.cc])], html: buildShipBody(v, a, s, etdSel, airDate, shipDate, S, attached), attachments, note: v.memo ? "메모: " + v.memo : "" });
+      RESULT.mails.push({ vendor: n, subject, to: v.to, cc: [...new Set([...commonCc, ...v.cc])], html: buildShipBody(v, a, s, etdSel, airDate, shipDate, S, attached), attachments, note: v.memo ? "메모: " + v.memo : "", ship: s, air: a });
+      RESULT.etdSel = etdSel; RESULT.tag = `${month}월${week}주`;
     }
     log("");
     if (problems.length) { log("[문제] 아래 업체는 메일을 만들지 않았습니다:", "warn"); problems.forEach((p) => log("   " + p, "warn")); }
@@ -670,7 +697,7 @@ window.addEventListener("DOMContentLoaded", () => {
   $("monday").value = fmtDate(nextMonday());
   $("config").addEventListener("change", () => { $("configFile").style.display = $("config").value === "__file__" ? "" : "none"; if ($("config").value !== "__file__") reloadConfig(); });
   $("configFile").addEventListener("change", reloadConfig);
-  $("btnShip").onclick = runShip; $("btnPo").onclick = runPo; $("btnZip").onclick = downloadZip;
+  $("btnShip").onclick = runShip; $("btnPo").onclick = runPo; $("btnZip").onclick = downloadZip; $("btnXlsx").onclick = downloadSummaryXlsx;
   $("btnAssign").onclick = saveAssign; $("btnDlCfg").onclick = downloadMergedConfig;
   $("btnReset").onclick = () => { if (confirm("이 브라우저에 저장된 추가 지정을 모두 지울까요?")) { const a = loadOverlay(); delete a[CONFIG_NAME]; saveOverlay(a); reloadConfig(); } };
   $("btnHelp").onclick = () => $("helpCard").scrollIntoView({ behavior: "smooth" });
