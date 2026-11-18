@@ -32,11 +32,18 @@ table{width:100%;border-collapse:collapse;margin-top:8px}th,td{text-align:left;p
 .hint{color:var(--mut);font-size:12px;margin-top:6px}.warn{color:var(--warn)}
 .mail{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px}.mh{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.subj{color:var(--mut);flex:1}
 .meta{font-size:13px;color:var(--mut);margin-top:4px}.prev{width:100%;height:320px;border:1px solid var(--line);border-radius:8px;margin-top:8px;background:#fff}
+.badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:13px;font-weight:bold;background:#e5e7eb}
+.badge.kim{background:#dcfce7;color:#166534}.badge.nam{background:#dbeafe;color:#1e40af}
+#summary{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:6px 0 10px;line-height:1.7}
+#summary .ok{color:var(--ok);font-weight:bold}
+.mail.noto{border-color:#fcd34d;background:#fffbeb}.inc{font-size:12px;color:var(--mut);display:flex;align-items:center;gap:4px}
+.steps{display:flex;gap:6px;flex-wrap:wrap;font-size:13px;color:var(--mut);margin:0 0 8px}.steps span{background:#fff;border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+#afterZip{background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:10px 12px;margin-top:10px}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 16px;border-radius:10px;opacity:0;transition:.2s;max-width:90vw}
 .toast.show{opacity:1}
 ol li{margin:4px 0}
 </style></head><body>
-<header><h1>📮 대아홀딩스 메일 작성기</h1><span class="sp"></span>
+<header><h1>📮 대아홀딩스 메일 작성기</h1><span class="badge" id="whoBadge">설정 불러오는 중…</span><span class="sp"></span>
 <label class="status">설정 파일&nbsp;</label>
 <select id="config"><option value="config.xlsx">config.xlsx (남효주)</option><option value="config_kim.xlsx">config_kim.xlsx (김민지 계장)</option><option value="__file__">내 PC의 설정 파일 올리기…</option></select>
 <input type="file" id="configFile" accept=".xlsx" style="display:none">
@@ -44,14 +51,16 @@ ol li{margin:4px 0}
 <button id="btnDlCfg" class="sm" style="display:none" title="이 브라우저에 저장된 추가 지정을 합친 설정 엑셀을 내려받습니다">설정 내려받기(수정본)</button>
 <button id="btnHelp" class="sm">사용법</button></header>
 <main>
+<div class="full steps"><span>① 엑셀/PDF 끌어다 놓기</span><span>② 미리보기 · 메일 만들기</span><span>③ 📦 전부 받기(ZIP)</span><span>④ 압축 풀고 .eml 더블클릭</span><span>⑤ Outlook에서 확인 후 보내기</span></div>
 <section class="card"><h2><span class="step">1</span> 출하 요청 메일 (선박 / 에어)</h2>
  <div class="drop" id="dropShip"><b>선박리스트</b> 엑셀을 여기에 끌어다 놓거나 클릭<small id="shipName">아직 없음</small></div>
- <div class="row" style="margin-top:6px"><label>선박 시트</label><select id="shipSheet" style="display:none"></select></div>
+ <div class="row" style="margin-top:6px;display:none"><label>선박 시트</label><select id="shipSheet" style="display:none"></select></div>
  <div style="height:8px"></div>
- <div class="drop" id="dropAir"><b>에어리스트</b> 엑셀을 여기에 끌어다 놓거나 클릭<small id="airName">아직 없음 (에어가 없는 주는 비워 두세요)</small></div>
- <div class="row" style="margin-top:6px"><label>에어 시트</label><select id="airSheet" style="display:none"></select></div>
+ <div class="drop" id="dropAir"><b>에어리스트</b> 엑셀을 여기에 끌어다 놓거나 클릭<small id="airName">아직 없음 (선박 파일 안에 Air 시트가 있으면 비워 두어도 자동으로 씁니다)</small></div>
+ <div class="row" style="margin-top:6px;display:none"><label>에어 시트</label><select id="airSheet" style="display:none"></select></div>
  <input type="file" id="ship" accept=".xlsx,.xls" hidden><input type="file" id="air" accept=".xlsx,.xls" hidden>
- <div class="row"><label>기준 주 월요일</label><input type="date" id="monday"><label>ETD 열 개수</label><input type="text" id="etd" style="width:50px" placeholder="설정값"><label>특정 업체만</label><input type="text" id="only" style="width:160px" placeholder="예: 대일CST,태양단자"></div>
+ <div class="row"><label>기준 주 월요일</label><input type="date" id="monday"><button class="sm" id="advToggle">▸ 고급 설정</button></div>
+ <div id="adv" style="display:none"><div class="row"><label>ETD 열 개수</label><input type="text" id="etd" style="width:50px" placeholder="설정값"><label>특정 업체만</label><input type="text" id="only" style="width:160px" placeholder="예: 대일CST,태양단자"><label><input type="checkbox" id="autoBoth" checked> 같은 파일의 선박·에어 표 자동 사용</label></div></div>
  <div class="btns"><button class="pri" id="btnShip">① 미리보기 · 메일 만들기</button></div>
  <div class="hint">업체별로 본문·첨부 엑셀을 만들어 아래에 보여 줍니다. 내 PC 밖으로 나가는 것은 없습니다(모두 이 브라우저 안에서 처리).</div>
 </section>
@@ -62,8 +71,10 @@ ol li{margin:4px 0}
  <div class="hint">한 PDF에 여러 업체·여러 PO가 있어도 됩니다. 업체별로 잘라서 "업체-PO번호" 메일을 만듭니다. 발주서발송=N 업체(한국단자공업·연호·경신)는 자동 제외.</div>
 </section>
 <section class="card full" id="resultCard" style="display:none"><h2><span class="step">2</span> <span id="resultTitle">만들어진 메일</span><span class="sp" style="flex:1"></span><button id="btnXlsx" title="이번 주 요청 품목 전체를 F1,2 / F5 시트로 나눈 엑셀">📊 엑셀로 받기 (F1,2 / F5)</button><button class="ok" id="btnZip">📦 전부 받기 (ZIP)</button></h2>
- <div class="hint">받은 <b>.eml 파일을 더블클릭</b>하면 Outlook에 받는 사람·제목·본문·첨부가 채워진 <b>새 메일 창</b>이 열립니다. 내용 확인 후 <b>보내기</b>만 누르세요. (자동 발송 없음)</div>
+ <div id="summary"></div>
+ <div class="hint">받은 <b>.eml 파일을 더블클릭</b>하면 Outlook에 받는 사람·제목·본문·첨부가 채워진 <b>새 메일 창</b>이 열립니다. 내용 확인 후 <b>보내기</b>만 누르세요. (자동 발송 없음) · 보내지 않을 업체는 왼쪽 "포함" 체크를 끄세요.</div>
  <div id="mails"></div>
+ <div id="afterZip" style="display:none"><b>다음 할 일:</b> 받은 ZIP을 우클릭 → "압축 풀기" → 폴더 안의 .eml 파일을 하나씩 더블클릭 → Outlook 새 메일 창에서 받는 사람·첨부를 확인하고 <b>보내기</b>. 다 보낸 뒤에는 폴더를 지워도 됩니다.</div>
 </section>
 <section class="card full" id="assignCard" style="display:none"><h2><span class="step">3</span> 미지정 업체 지정하기</h2>
  <div class="hint">아래 항목을 어느 업체로 보낼지 고르고 저장하세요. 새 업체면 "(새 업체)"를 고르고 오른쪽에 <b>업체이름, 메일주소</b>를 적습니다. 저장 후 ① 을 다시 누르세요. (이 브라우저에 기억되며, "설정 내려받기(수정본)"으로 엑셀에 합칠 수 있습니다)</div>

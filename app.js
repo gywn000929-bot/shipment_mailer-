@@ -150,6 +150,10 @@ async function reloadConfig() {
       CONFIG = await loadConfigFromUrl(sel);
     }
     CONFIG_NAME = CONFIG.name;
+    try { if (sel !== "__file__") localStorage.setItem("mailmaker_cfg", sel); } catch {}
+    const who = (CONFIG.settings["발신자소개"] || "").replace(/^대아홀딩스\s*/, "").replace(/\s*(입니다|이다)\.?$/, "").trim();
+    $("whoBadge").textContent = "보내는 사람: " + (who || CONFIG_NAME); $("whoBadge").className = "badge " + (/김민지/.test(who) ? "kim" : "nam");
+    document.title = `메일 작성기 - ${who || CONFIG_NAME}`;
     const ov = loadOverlay()[CONFIG_NAME];
     const n = ov ? ((ov.newVendors || []).length + Object.keys(ov.vendors || {}).length) : 0;
     $("cfgInfo").textContent = `업체 ${CONFIG.order.length}개 · 발신: ${CONFIG.settings["발신자소개"] || ""}` + (n ? ` · 이 브라우저에 추가 지정 ${n}건` : "");
@@ -201,7 +205,7 @@ function loadSheet(wb, mustHave, label, anyOf = [], prefixAny = [], prefer = [],
 }
 // 파일을 고르면 시트 목록을 보여 주고 고를 수 있게
 async function fillSheetSelect(input, selId, mustHave, anyOf, prefixAny, prefer) {
-  const sel = $(selId); sel.innerHTML = '<option value="">(자동 선택)</option>'; sel.style.display = "none";
+  const sel = $(selId); sel.innerHTML = '<option value="">(자동 선택)</option>'; sel.style.display = "none"; sel.parentElement.style.display = "none";
   const f = input.files[0]; if (!f) return;
   try {
     const wb = XLSX.read(await f.arrayBuffer(), { type: "array", cellDates: true });
@@ -210,7 +214,7 @@ async function fillSheetSelect(input, selId, mustHave, anyOf, prefixAny, prefer)
     if (cands.length > 1) {
       cands.sort((a, b) => b.score - a.score);
       sel.innerHTML = `<option value="">(자동: ${cands[0].sn})</option>` + wb.SheetNames.map((sn) => `<option value="${esc(sn)}">${esc(sn)}${cands.some((c) => c.sn === sn) ? "" : " (표 없음)"}</option>`).join("");
-      sel.style.display = "";
+      sel.style.display = ""; sel.parentElement.style.display = "";
     }
   } catch (e) { console.warn(e); }
 }
@@ -406,35 +410,59 @@ function download(blob, name) {
 
 // ---------------------------------------------------------------- 결과 표시
 let RESULT = { mails: [], unmatched: [], kind: "" };   // mails: [{vendor, subject, to, cc, html, attachments:[{name,data}]}]
+function sentLog() { try { return JSON.parse(localStorage.getItem("mailmaker_sent") || "{}"); } catch { return {}; } }
+function markSent(subjects) { const l = sentLog(); const today = fmtDate(new Date()); for (const s of subjects) l[s] = today; const keys = Object.keys(l); if (keys.length > 400) keys.slice(0, keys.length - 400).forEach((k) => delete l[k]); try { localStorage.setItem("mailmaker_sent", JSON.stringify(l)); } catch {} }
 function renderResult() {
   const box = $("mails"); box.innerHTML = "";
+  const ready = RESULT.mails.filter((m) => !m.noTo), noTo = RESULT.mails.filter((m) => m.noTo);
   $("resultCard").style.display = RESULT.mails.length || RESULT.unmatched.length ? "" : "none";
-  $("btnZip").style.display = RESULT.mails.length ? "" : "none";
+  $("btnZip").style.display = ready.length ? "" : "none";
   $("btnXlsx").style.display = "none";   // 전체 엑셀 받기는 에어 컨펌 도우미에서만 사용
-  $("resultTitle").textContent = RESULT.mails.length ? `만들어진 메일 ${RESULT.mails.length}통` : "만들어진 메일 없음";
+  $("resultTitle").textContent = ready.length ? `만들어진 메일 ${ready.length}통` : "만들어진 메일 없음";
+  // 요약 배너
+  const sl = sentLog(); const dup = ready.filter((m) => sl[m.subject + "|" + m.vendor]);
+  const parts = [];
+  if (ready.length) parts.push(`<span class="ok">✅ 메일 ${ready.length}통 준비됨</span> → 오른쪽 위 <b>📦 전부 받기</b>를 누르고, 받은 .eml 파일을 더블클릭해 Outlook에서 <b>보내기</b>`);
+  if (noTo.length) parts.push(`<span class="warn">⚠ 받는 사람이 없는 업체 ${noTo.length}곳</span> (${esc(noTo.map((m) => m.vendor).join(", "))}) → 아래 해당 칸에 메일 주소를 적고 <b>저장</b>하면 다음부터 기억합니다`);
+  if (RESULT.unmatched.length) parts.push(`<span class="warn">⚠ 업체를 모르는 품목 ${RESULT.unmatched.reduce((a, b) => a + b.count, 0)}건</span> → 아래 <b>③ 미지정 업체 지정하기</b>에서 업체를 고른 뒤 다시 ①`);
+  if (RESULT.skipped && RESULT.skipped.length) parts.push(`<span class="hint">건너뜀(발주서 미발송 업체): ${esc(RESULT.skipped.join(", "))}</span>`);
+  if (dup.length) parts.push(`<span class="warn">⚠ 같은 제목의 메일 파일을 이미 받은 적이 있습니다 (${esc(dup.map((m) => m.vendor + " " + sl[m.subject + "|" + m.vendor]).join(", "))}) → 중복 발송이 아닌지 보낸 편지함을 확인하세요</span>`);
+  $("summary").innerHTML = parts.map((p) => `<div>${p}</div>`).join("");
   RESULT.mails.forEach((m, i) => {
-    const d = document.createElement("div"); d.className = "mail";
-    d.innerHTML = `<div class="mh"><b>${esc(m.vendor)}</b><span class="subj">${esc(m.subject)}</span>
-      <button class="sm pri" data-i="${i}" data-act="eml">📩 메일 파일 받기</button><button class="sm" data-i="${i}" data-act="view">본문 보기</button></div>
-      <div class="meta">받는 사람: ${esc(m.to.join(", "))}${m.cc.length ? "<br>참조: " + esc(m.cc.join(", ")) : ""}${m.attachments.length ? "<br>첨부: " + esc(m.attachments.map((a) => a.name).join(", ")) : ""}${m.note ? `<br><span class="warn">${esc(m.note)}</span>` : ""}</div>
+    const d = document.createElement("div"); d.className = "mail" + (m.noTo ? " noto" : "");
+    d.innerHTML = `<div class="mh"><label class="inc"><input type="checkbox" data-i="${i}" data-act="inc" ${m.include ? "checked" : ""} ${m.noTo ? "disabled" : ""}> 포함</label><b>${esc(m.vendor)}</b><span class="subj">${esc(m.subject)}</span>
+      ${m.noTo ? "" : `<button class="sm pri" data-i="${i}" data-act="eml">📩 메일 파일 받기</button>`}<button class="sm" data-i="${i}" data-act="view">본문 보기</button></div>
+      <div class="meta">${m.noTo ? `<span class="warn">받는 사람 없음</span> → <input type="text" class="toin" data-i="${i}" placeholder="메일 주소 (여러 개면 쉼표)" style="width:300px"> <button class="sm pri" data-i="${i}" data-act="saveto">저장</button>` : "받는 사람: " + esc(m.to.join(", "))}${m.cc.length ? "<br>참조: " + esc(m.cc.join(", ")) : ""}${m.attachments.length ? "<br>첨부: " + esc(m.attachments.map((a) => a.name).join(", ")) : ""}${m.note && !m.noTo ? `<br><span class="warn">${esc(m.note)}</span>` : ""}</div>
       <iframe class="prev" style="display:none"></iframe>`;
     box.appendChild(d);
   });
   box.onclick = (e) => {
-    const b = e.target.closest("button"); if (!b) return;
+    const b = e.target.closest("button,input[type=checkbox]"); if (!b) return;
     const m = RESULT.mails[+b.dataset.i];
-    if (b.dataset.act === "eml") download(buildEml(m), safeName(m.subject + "_" + m.vendor) + ".eml");
-    else { const f = b.closest(".mail").querySelector("iframe"); if (f.style.display === "none") { f.srcdoc = `<meta charset="utf-8"><div style="padding:8px">${m.html}</div>`; f.style.display = ""; } else f.style.display = "none"; }
+    if (b.dataset.act === "inc") { m.include = b.checked; return; }
+    if (b.dataset.act === "eml") { download(buildEml(m), safeName(m.subject + "_" + m.vendor) + ".eml"); markSent([m.subject + "|" + m.vendor]); }
+    else if (b.dataset.act === "saveto") {
+      const emails = box.querySelector(`.toin[data-i="${b.dataset.i}"]`).value.split(/[,;\s]+/).map((x) => x.trim()).filter((x) => x.includes("@"));
+      if (!emails.length) { toast("메일 주소를 적어 주세요"); return; }
+      const all = loadOverlay(); const ov = all[CONFIG_NAME] || (all[CONFIG_NAME] = { vendors: {}, newVendors: [] }); ov.vendors = ov.vendors || {};
+      const t = ov.vendors[m.vendor] = ov.vendors[m.vendor] || { to: [], makers: [], poNames: [] }; t.to = [...new Set([...(t.to || []), ...emails])]; saveOverlay(all);
+      m.to = emails; m.noTo = false; m.include = true; log(`[설정 반영 · 이 브라우저에 저장] ${m.vendor}: 받는사람 + ${emails.join(",")}`, "ok");
+      reloadConfig().then(renderResult); toast(`${m.vendor} 받는 사람을 저장했습니다`);
+    } else { const f = b.closest(".mail").querySelector("iframe"); if (f.style.display === "none") { f.srcdoc = `<meta charset="utf-8"><div style="padding:8px">${m.html}</div>`; f.style.display = ""; } else f.style.display = "none"; }
   };
   renderAssign();
 }
 async function downloadZip() {
   const zip = new JSZip();
-  for (const m of RESULT.mails) zip.file(safeName(m.subject + "_" + m.vendor) + ".eml", buildEml(m));
+  const sel = RESULT.mails.filter((m) => m.include && !m.noTo);
+  if (!sel.length) { toast("포함된 메일이 없습니다 (왼쪽 '포함' 체크 확인)"); return; }
+  for (const m of sel) zip.file(safeName(m.subject + "_" + m.vendor) + ".eml", buildEml(m));
+  markSent(sel.map((m) => m.subject + "|" + m.vendor));
   if (RESULT.extraFiles) for (const f of RESULT.extraFiles) zip.file(f.name, f.data);
   const blob = await zip.generateAsync({ type: "blob" });
   download(blob, (RESULT.kind === "po" ? "주문서메일_" : "출하요청메일_") + fmtDate(new Date()) + ".zip");
-  toast("ZIP을 받았습니다. 압축을 풀고 .eml 파일을 더블클릭하면 Outlook 새 메일 창이 열립니다.");
+  toast(`메일 ${sel.length}통을 ZIP으로 받았습니다. 압축을 풀고 .eml 파일을 더블클릭하면 Outlook 새 메일 창이 열립니다.`);
+  $("afterZip").style.display = "";
 }
 
 // ---------------------------------------------------------------- 전체 엑셀 (F1,2 / F5 시트)
@@ -539,8 +567,13 @@ async function runShip() {
     const commonCc = splitList(S["공통참조"]);
 
     let ship = [], etdSel = [], air = [];
-    if (fShip) { const wb = XLSX.read(await fShip.arrayBuffer(), { type: "array", cellDates: true }); ({ rows: ship, etdSel } = parseShip(wb, etdCount)); }
-    if (fAir) { const wb = XLSX.read(await fAir.arrayBuffer(), { type: "array", cellDates: true }); air = parseAir(wb); }
+    const wbShip = fShip ? XLSX.read(await fShip.arrayBuffer(), { type: "array", cellDates: true }) : null;
+    const wbAir = fAir ? (fAir === fShip ? wbShip : XLSX.read(await fAir.arrayBuffer(), { type: "array", cellDates: true })) : null;
+    if (wbShip) ({ rows: ship, etdSel } = parseShip(wbShip, etdCount));
+    if (wbAir) air = parseAir(wbAir);
+    else if (wbShip) { try { air = parseAir(wbShip); log(`[참고] 에어리스트를 따로 넣지 않아, 선박리스트 파일 안의 에어 표를 함께 사용합니다. (에어를 빼려면 고급 설정 → "같은 파일의 에어 표 자동 사용" 해제)`, "warn"); } catch (e) { log("에어리스트 없음 (선박 파일에 에어 표도 없음) → 선박만 진행"); } }
+    if (!wbShip && wbAir) { try { ({ rows: ship, etdSel } = parseShip(wbAir, etdCount)); log("[참고] 선박리스트를 따로 넣지 않아, 에어리스트 파일 안의 선박 표를 함께 사용합니다.", "warn"); } catch (e) { log("선박리스트 없음 → 에어만 진행"); } }
+    if (!$("autoBoth").checked) { if (!fAir) air = []; if (!fShip) { ship = []; etdSel = []; } }
     if (ship.length && !includeZero) ship = ship.filter((r) => r._hasQty);
     const unShip = ship.filter((r) => !r._vendor && r._hasQty), unAir = air.filter((r) => !r._vendor);
 
@@ -556,7 +589,8 @@ async function runShip() {
       const v = CONFIG.vendors[n];
       if (!v) { problems.push(`'${n}' : 리스트의 업체 열 값이 설정 업체 시트에 없습니다 (선박 ${s.length} / 에어 ${a.length})`); unknownVendors.push({ key: n, kind: "vendor", count: s.length + a.length, samples: [...s.map((r) => r["ITEM CD"] + " " + r["ITEM NM"]), ...a.map((r) => r["Item cd"] + " " + r["Part Name"])].slice(0, 3) }); continue; }
       if (only.length && !only.includes(n)) continue;
-      if (!v.to.length) { problems.push(`'${n}' : 받는 사람이 비어 있습니다 (선박 ${s.length} / 에어 ${a.length}) → 메일 만들지 않음`); continue; }
+      const noTo = !v.to.length;
+      if (noTo) problems.push(`'${n}' : 받는 사람이 비어 있습니다 (선박 ${s.length} / 에어 ${a.length}) → 아래 결과 칸에서 메일 주소를 적어 주세요`);
       const nShipQty = s.filter((r) => r._hasQty).length;
       if (!nShipQty && !a.length) continue;
       const subject = subjectBase + (a.length && !nShipQty ? (S["에어만제목접미"] ?? "(에어)") : "");
@@ -565,7 +599,7 @@ async function runShip() {
       log(`   받는 사람: ${v.to.join(", ")}`); if (v.cc.length) log(`   추가 참조: ${v.cc.join(", ")}`); if (v.memo) log(`   메모: ${v.memo}`, "warn");
       const attached = v.attach && s.length > 0;
       const attachments = attached ? [{ name: safeName(`${subjectBase}_${v.name}.xlsx`), data: vendorXlsx(s, a, etdSel) }] : [];
-      RESULT.mails.push({ vendor: n, subject, to: v.to, cc: [...new Set([...commonCc, ...v.cc])], html: buildShipBody(v, a, s, etdSel, airDate, shipDate, S, attached), attachments, note: v.memo ? "메모: " + v.memo : "", ship: s, air: a });
+      RESULT.mails.push({ vendor: n, subject, to: v.to, cc: [...new Set([...commonCc, ...v.cc])], html: buildShipBody(v, a, s, etdSel, airDate, shipDate, S, attached), attachments, note: v.memo ? "메모: " + v.memo : "", ship: s, air: a, noTo, include: !noTo });
       RESULT.etdSel = etdSel; RESULT.tag = `${month}월${week}주`;
     }
     log("");
@@ -665,8 +699,9 @@ async function runPo() {
       const note = v.to.length ? "" : "[받는 사람 없음] 설정 업체 시트에 메일을 적어 주세요";
       if (v.to.length) log(`   받는 사람: ${v.to.join(", ")}`); else log("   " + note, "warn");
       if (v.cc.length) log(`   추가 참조: ${v.cc.join(", ")}`);
-      RESULT.mails.push({ vendor: n, subject, to: v.to, cc: [...new Set([...commonCc, ...v.cc])], html: buildPoBody(v, S), attachments, note });
+      RESULT.mails.push({ vendor: n, subject, to: v.to, cc: [...new Set([...commonCc, ...v.cc])], html: buildPoBody(v, S), attachments, note, noTo: !v.to.length, include: v.to.length > 0, pos });
     }
+    RESULT.skipped = skipped.map((e) => `PO ${e.po} ${e.vendor}`);
     if (skipped.length) { log(""); log("[발주서 미발송 업체 - 건너뜀]"); skipped.forEach((e) => log(`   PO ${e.po}  ${e.vendor}`)); }
     if (unknown.length) {
       log(""); log("[업체를 못 찾음 - 아래 ③에서 지정하세요]", "warn"); unknown.forEach((e) => log(`   PO ${e.po}  거래처명: ${e.vendor}  (코드 ${e.code})`, "warn"));
@@ -695,6 +730,12 @@ window.addEventListener("DOMContentLoaded", () => {
   $("ship").addEventListener("change", () => fillSheetSelect($("ship"), "shipSheet", ["ITEM CD", "MAKER"], [], ["ETD"], []));
   $("air").addEventListener("change", () => fillSheetSelect($("air"), "airSheet", ["Item cd", "Maker"], ["Remain", "Purchase request"], [], ["Remain"]));
   $("monday").value = fmtDate(nextMonday());
+  { // 설정 파일 기본값: 주소의 ?who=kim → 계장님, 아니면 지난번 선택
+    const q = new URLSearchParams(location.search).get("who"); let last = null; try { last = localStorage.getItem("mailmaker_cfg"); } catch {}
+    const want = q === "kim" ? "config_kim.xlsx" : q === "nam" ? "config.xlsx" : last;
+    if (want && [...$("config").options].some((o) => o.value === want)) $("config").value = want;
+  }
+  $("advToggle").onclick = () => { const a = $("adv"); a.style.display = a.style.display === "none" ? "" : "none"; $("advToggle").textContent = (a.style.display === "none" ? "▸" : "▾") + " 고급 설정"; };
   $("config").addEventListener("change", () => { $("configFile").style.display = $("config").value === "__file__" ? "" : "none"; if ($("config").value !== "__file__") reloadConfig(); });
   $("configFile").addEventListener("change", reloadConfig);
   $("btnShip").onclick = runShip; $("btnPo").onclick = runPo; $("btnZip").onclick = downloadZip; $("btnXlsx").onclick = downloadSummaryXlsx;

@@ -3,6 +3,8 @@
 ## 🌐 설치 없이 바로 쓰기 (브라우저 버전)
 **https://gywn000929-bot.github.io/shipment_mailer-/**
 
+계장님용 바로가기(설정이 김민지 계장으로 자동 선택): **https://gywn000929-bot.github.io/shipment_mailer-/?who=kim**
+
 링크를 열고 → 설정 파일 고르기(계장님은 config_kim.xlsx) → 선박/에어 엑셀이나 주문서 PDF를 끌어다 놓기 → **① 미리보기 · 메일 만들기** → **📦 전부 받기(ZIP)** → 압축 풀고 `.eml` 더블클릭 → Outlook 새 메일 창에서 **보내기**.
 모든 처리는 브라우저 안에서만 이루어지며 파일이 외부로 전송되지 않습니다. (파일: `index.html`, `app.js`)
 
