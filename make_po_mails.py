@@ -176,7 +176,10 @@ def build_body(vendor, settings, with_sig):
     out = dedup
     if with_sig and settings.get("서명"):
         out += [br] + [p(html.escape(l)) for l in settings["서명"].split("\n")]
-    return '<div style="font-family:맑은 고딕,Malgun Gothic,sans-serif;font-size:10pt">' + "".join(out) + "</div>"
+    size = clean(settings.get("본문크기")) or "10"
+    bold = clean(settings.get("본문굵게")).upper() in ("Y", "YES", "O", "1")
+    return (f'<div style="font-family:맑은 고딕,Malgun Gothic,sans-serif;font-size:{size}pt{";font-weight:bold" if bold else ""}">'
+            + "".join(out) + "</div>")
 
 
 def make_subject(settings, vendor, pos):

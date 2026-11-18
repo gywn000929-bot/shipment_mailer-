@@ -32,18 +32,19 @@ VENDORS = [
  ["번영하이테크",  "by_hitech@naver.com", "", "수신: 이미경 실장님", "실장님", "BUNYOUNG", "N", "", "Y", "번영하이테크, 번영", "Y", "번영", ""],
  ["대아산업",     "sale@daeatube.com, songdh40@daeatube.com", "", "수신: 송대호 과장님, 조정화 대리님", "대리님", "", "N", "출하 요청 메일에 주문서(PDF) 첨부 필요", "Y", "대아산업", "Y", "대아산업", ""],
  ["뉴콘",        "", "", "", "", "", "N", "메일 주소 확인 필요", "Y", "뉴콘", "Y", "뉴콘", ""],
- ["대성테크",     "", "", "", "", "", "N", "메일 주소 확인 필요", "Y", "대성테크", "Y", "대성테크", ""],
+ ["대성테크",     "daesung3570@naver.com", "", "", "대표님", "", "N", "최석주 대표 (계장님 메일 기준)", "Y", "대성테크", "Y", "대성테크", ""],
  # ---- 계장님 주문서 대상 (하단 업체) ----
  ["KET",         "kkh@ket.com", "hkko@ket.com, ksj95@ket.com, kim.js@ket.com, grace@ket.com, nsc@ket.com, ketsale@ket.com, tskim@ket.com", "", "", "KET", "N",
   "주문서 메일 안 보냄 (주간 긴급 자재 메일은 별도)", "Y", "한국단자공업, 한국단자, KET", "N", "KET", ""],
  ["BIT",         "gb0831@nate.com, aaa0802@nate.com", "", "", "대리님", "BIT", "N", "", "Y", "비아이티 이앤엠, 비아이티, BIT, 비아이티이엔엠, BITENM", "Y", "BIT", ""],
- ["경신",        "", "", "", "", "KYUNG SHIN", "N", "주문서 메일 안 보냄", "Y", "경신전선, 경신", "N", "경신", ""],
+ ["경신",        "hdlee@kyungshin.co.kr, hksong@kyungshin.co.kr", "", "", "매니저님", "KYUNG SHIN", "N", "주문서 메일 안 보냄(엑셀 발주서 별도). 이헌동 선임매니저·송현경 매니저", "Y", "경신전선, 경신", "N", "경신", ""],
  ["필룩스",       "vtrboy@feelux.com", "rhkdqja2801@feelux.com, gotn@feelux.com, ryu80@feelux.com", "", "부장님", "FEELUX", "N", "", "Y", "필룩스, KH필룩스, 케이에이치필룩스", "Y", "필룩스", ""],
  ["TSE",         "tse2023@naver.com", "", "", "대표님", "TSE", "N", "", "Y", "티에스이, TSE, 태성일렉트론", "Y", "TSE", ""],
  ["한림",        "hanlimsale@daum.net", "", "", "", "HANLIM", "N", "", "Y", "한림전자, 한림", "Y", "한림", ""],
  ["JST",         "theconn@theconnintl.co.kr", "", "수신: 유진서 주임님", "주임님", "JST", "N", "더콘INTL 경유 (더콘과 같은 주소). 거래처명 확인 필요", "Y", "JST, 한국제이에스티", "Y", "JST", ""],
  ["SL",          "", "", "", "", "SL", "N", "메일 주소 확인 필요", "Y", "SL, 에스엘", "Y", "SL", ""],
- ["더콘",        "theconn@theconnintl.co.kr", "", "수신: 유진서 주임님", "주임님", "", "N", "텔콤 임충신(cslim@telcom.kr)도 관련 담당. 확인 필요", "Y", "더콘, 더콘INTL, 텔콤, 텔콤씨앤에스", "Y", "더콘", ""],
+ ["더콘",        "theconn@theconnintl.co.kr", "", "수신: 유진서 주임님", "주임님", "", "N", "AMPHENOL 품목은 텔콤 업체로 분리함", "Y", "더콘, 더콘INTL", "Y", "더콘", ""],
+ ["텔콤",        "cslim@telcom.kr", "chlee@telcom.kr, seunghwan.lee@telcom.kr, kslee@telcom.kr", "", "", "AMPHENOL", "N", "임충신 담당(미납잔량 메일 기준). 더콘과 같은 회사인지 확인 필요", "Y", "텔콤, 텔콤씨앤에스", "Y", "텔콤", ""],
  ["태진",        "taejin@taejin2.com", "", "", "", "TAEJIN", "N", "", "Y", "태진아이엔티, 태진", "Y", "태진", ""],
  ["삼화전자공업",  "cbc2728@samwha.com, hms@samwha.com", "", "", "", "SAMWHA", "N", "", "Y", "삼화전자공업, 삼화", "Y", "삼화", ""],
  ["행성사",       "runnertec@runnertec.com", "", "수신: 최성호 팀장님", "팀장님", "", "N", "런너테크 경유 (행성사 리드타임 5~6주)", "Y", "행성사, 런너테크", "Y", "행성사", ""],
@@ -68,10 +69,13 @@ NOTES = [
 ]
 
 
-def build(path, settings_rows, overrides_rows):
+def build(path, settings_rows, overrides_rows, strip_greeting=False):
     wb = Workbook(); ws = wb.active; ws.title = "업체"
     ws.append(HDR)
     for r in VENDORS:
+        r = list(r)
+        if strip_greeting:      # 계장님 메일은 '수신: ○○○' 줄·호칭을 쓰지 않음 (기존 메일 기준)
+            r[3] = ""; r[4] = ""
         ws.append(r)
     ws.append([])
     for n in NOTES:
@@ -122,6 +126,8 @@ KIM = [
  ["주문서본문", "수고많으십니다. 대아홀딩스 김민지 계장입니다.\n\n발주서 첨부드립니다.\n\n{추가문구}\n\n감사합니다.",
   "주문서 메일 본문(줄바꿈 Alt+Enter). {추가문구}=업체 시트 주문서추가문구(없으면 그 줄 삭제)"],
  ["서명", "D.E.TECH / DAE-A HOLDINGS CO.,LTD\nMIN JI KIM(金 敏 智)\nTEL : 055-296-1677~8\nFAX : 055-296-1679\nMOBILE : 010-2992-3907\nMAIL : minji3907@kdaea.com", "Outlook 기본 서명이 없을 때만 사용"],
+ ["본문굵게", "Y", "Y: 본문 전체 굵게 (계장님 기존 메일 스타일)"],
+ ["본문크기", "11", "본문 글자 크기(pt). 계장님 기존 메일 11pt"],
 ]
 
 OVR = [["(예) KET-12345", "태양단자", "KET 품목 중 태양단자 경유 건. 품목 코드로 업체를 직접 지정 (MAKER보다 우선)"]]
@@ -131,4 +137,4 @@ if __name__ == "__main__":
         p = os.path.join(HERE, name)
         if os.path.exists(p) and "--force" not in sys.argv:
             print(f"{p} 가 이미 있습니다. 다시 만들려면 --force"); continue
-        build(p, st, OVR)
+        build(p, st, OVR, strip_greeting=(name == "config_kim.xlsx"))

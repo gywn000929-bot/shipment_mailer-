@@ -375,7 +375,10 @@ def build_body(vendor, air_df, ship_df, etd_sel, month, week, air_date, ship_dat
         sig = settings.get("서명", "")
         if sig:
             out += [br] + [p(html.escape(line)) for line in sig.split("\n")]
-    return '<div style="font-family:맑은 고딕,Malgun Gothic,sans-serif;font-size:10pt">' + "".join(out) + "</div>"
+    size = clean(settings.get("본문크기")) or "10"
+    bold = clean(settings.get("본문굵게")).upper() in ("Y", "YES", "O", "1")
+    return (f'<div style="font-family:맑은 고딕,Malgun Gothic,sans-serif;font-size:{size}pt{";font-weight:bold" if bold else ""}">'
+            + "".join(out) + "</div>")
 
 
 def short_date(d):

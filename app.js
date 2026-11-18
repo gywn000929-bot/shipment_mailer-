@@ -283,6 +283,10 @@ function htmlTable(headers, rows, highlight = []) {
   return `<table style="border-collapse:collapse;font-family:맑은 고딕,Malgun Gothic,sans-serif;font-size:10pt"><tr>${th}</tr>${trs}</table>`;
 }
 const P = (s) => `<p style="margin:0">${s}</p>`;
+function bodyWrap(settings, inner) {   // 설정: 본문크기(pt), 본문굵게(Y/N)
+  const size = parseInt(settings["본문크기"]) || 10, bold = /^(Y|YES|O|1)$/i.test(clean(settings["본문굵게"]));
+  return `<div style="font-family:맑은 고딕,Malgun Gothic,sans-serif;font-size:${size}pt${bold ? ";font-weight:bold" : ""}">${inner}</div>`;
+}
 const BR = '<p style="margin:0">&nbsp;</p>';
 function sigHtml(settings) {
   const sig = settings["서명"] || "";
@@ -311,7 +315,7 @@ function buildShipBody(v, air, ship, etdSel, airDate, shipDate, settings, attach
     out.push(htmlTable(hdr, air.map((r) => { const row = [r.FAC, r["Item cd"], r.Maker, r["Part Name"], fmtNum(r["Purchase request"])]; if (hasShort) row.push(r["Short Del."]); row.push(r["NEED ETD"]); return row; }), [qtyLabel]), BR);
   }
   out.push(P("감사합니다."), sigHtml(settings));
-  return `<div style="font-family:맑은 고딕,Malgun Gothic,sans-serif;font-size:10pt">${out.join("")}</div>`;
+  return bodyWrap(settings, out.join(""));
 }
 function buildPoBody(v, settings) {
   let tpl = settings["주문서본문"] || ("안녕하세요. " + (settings["발신자소개"] || "대아홀딩스 남효주 입니다.") + "\n수고 많으십니다.\n\n상기 제목에 따라 주문서 송부하오니\n첨부파일 확인 및 수신 여부 회신 부탁드리겠습니다.\n\n감사합니다.");
@@ -325,7 +329,7 @@ function buildPoBody(v, settings) {
   }
   out = out.filter((x, i) => !(x === BR && out[i - 1] === BR));
   out.push(sigHtml(settings));
-  return `<div style="font-family:맑은 고딕,Malgun Gothic,sans-serif;font-size:10pt">${out.join("")}</div>`;
+  return bodyWrap(settings, out.join(""));
 }
 
 // ---------------------------------------------------------------- 첨부 엑셀 (xlsx-js-style)
