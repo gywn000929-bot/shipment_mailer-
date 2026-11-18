@@ -410,7 +410,7 @@ function renderResult() {
   const box = $("mails"); box.innerHTML = "";
   $("resultCard").style.display = RESULT.mails.length || RESULT.unmatched.length ? "" : "none";
   $("btnZip").style.display = RESULT.mails.length ? "" : "none";
-  $("btnXlsx").style.display = RESULT.mails.length && RESULT.kind === "ship" ? "" : "none";
+  $("btnXlsx").style.display = "none";   // 전체 엑셀 받기는 에어 컨펌 도우미에서만 사용
   $("resultTitle").textContent = RESULT.mails.length ? `만들어진 메일 ${RESULT.mails.length}통` : "만들어진 메일 없음";
   RESULT.mails.forEach((m, i) => {
     const d = document.createElement("div"); d.className = "mail";
