@@ -427,6 +427,10 @@ function renderResult() {
   if (RESULT.unmatched.length) parts.push(`<span class="warn">⚠ 업체를 모르는 품목 ${RESULT.unmatched.reduce((a, b) => a + b.count, 0)}건</span> → 아래 <b>③ 미지정 업체 지정하기</b>에서 업체를 고른 뒤 다시 ①`);
   if (RESULT.skipped && RESULT.skipped.length) parts.push(`<span class="hint">건너뜀(발주서 미발송 업체): ${esc(RESULT.skipped.join(", "))}</span>`);
   if (dup.length) parts.push(`<span class="warn">⚠ 같은 제목의 메일 파일을 이미 받은 적이 있습니다 (${esc(dup.map((m) => m.vendor + " " + sl[m.subject + "|" + m.vendor]).join(", "))}) → 중복 발송이 아닌지 보낸 편지함을 확인하세요</span>`);
+  if (RESULT.poTable && RESULT.poTable.length) {
+    const cls = (st) => st === "메일 생성" ? "ok" : st.includes("건너뜀") ? "hint" : "warn";
+    parts.push(`<details><summary>PDF에서 읽은 주문서 ${RESULT.poTable.length}건 보기</summary><table><tr><th>PO</th><th>쪽수</th><th>PDF 거래처명</th><th>매칭 업체</th><th>처리</th></tr>${RESULT.poTable.map((r) => `<tr><td>${esc(r.po)}</td><td>${r.pages}</td><td>${esc(r.pdfVendor)}</td><td>${esc(r.vendor || "-")}</td><td class="${cls(r.status)}">${esc(r.status)}</td></tr>`).join("")}</table></details>`);
+  }
   $("summary").innerHTML = parts.map((p) => `<div>${p}</div>`).join("");
   RESULT.mails.forEach((m, i) => {
     const d = document.createElement("div"); d.className = "mail" + (m.noTo ? " noto" : "");
@@ -681,11 +685,14 @@ async function runPo() {
       }
     }
     if (!poPages.size) throw new Error("주문서를 하나도 읽지 못했습니다. (스캔 이미지 PDF면 텍스트가 없어 읽을 수 없습니다)");
-    const plan = {}, skipped = [], unknown = [];
+    const plan = {}, skipped = [], unknown = []; RESULT.poTable = [];
     for (const key of order) {
       const e = poPages.get(key); const v = findVendorByPo(e.vendor);
-      if (!v) { unknown.push(e); continue; }
-      if (!v.sendPo) { skipped.push(e); continue; }
+      const row = { po: e.po, pages: e.pages.length, pdfVendor: e.vendor, vendor: v ? v.name : "", status: "" };
+      RESULT.poTable.push(row);
+      if (!v) { unknown.push(e); row.status = "업체 못 찾음"; continue; }
+      if (!v.sendPo) { skipped.push(e); row.status = "발주서 미발송 업체(건너뜀)"; continue; }
+      row.status = v.to.length ? "메일 생성" : "받는 사람 없음";
       (plan[v.name] = plan[v.name] || { vendor: v, entries: [], poVendor: e.vendor }).entries.push(e);
     }
     log("==================== 미리보기 ====================", "head");
