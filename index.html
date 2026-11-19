@@ -4,12 +4,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-<script src="js/core.js?v=8" defer></script>
-<script src="js/config.js?v=8" defer></script>
-<script src="js/lists.js?v=8" defer></script>
-<script src="js/mail.js?v=8" defer></script>
-<script src="js/run.js?v=8" defer></script>
-<script src="js/ui.js?v=8" defer></script>
+<script src="js/core.js?v=9" defer></script>
+<script src="js/config.js?v=9" defer></script>
+<script src="js/lists.js?v=9" defer></script>
+<script src="js/mail.js?v=9" defer></script>
+<script src="js/run.js?v=9" defer></script>
+<script src="js/ui.js?v=9" defer></script>
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css");
 :root{--bg:#f4f6fa;--card:#fff;--line:#e3e7ee;--txt:#1f2937;--mut:#6b7280;--pri:#2563eb;--pri2:#1d4ed8;--ok:#16a34a;--warn:#d97706;--err:#dc2626;--chip:#eef2ff}
@@ -99,6 +99,7 @@ a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;ba
  <div class="row"><label>기준 주 월요일</label><input type="date" id="monday"><button class="sm" id="advToggle">▸ 고급 설정</button></div>
  <div class="hint warn" id="monHint" style="display:none">오늘은 월요일입니다. 지금은 <b>다음 주</b> 월요일로 잡혀 있습니다. 이번 주 것을 만들려면 → <button class="sm" id="btnThisWeek">이번 주(오늘)로 바꾸기</button></div>
  <div id="adv" style="display:none"><div class="row"><label>ETD 열 개수</label><input type="text" id="etd" style="width:50px" placeholder="설정값"><label>특정 업체만</label><input type="text" id="only" style="width:160px" placeholder="예: 대일CST,태양단자"><label><input type="checkbox" id="autoBoth" checked> 같은 파일의 선박·에어 표 자동 사용</label></div><div class="row"><label><input type="checkbox" id="sigOn" checked> 본문 끝에 서명 넣기</label><span class="hint">Outlook이 서명을 스스로 넣어서 두 번 보이면 끄세요 (이 PC에 기억)</span></div></div>
+ <div class="row" id="mineRow" style="display:none"><label style="color:var(--txt)"><input type="checkbox" id="mineOnly"> <b>내 업체만</b></label><span class="hint" id="mineInfo"></span></div>
  <div class="hint warn" id="onlyNote" style="display:none"></div>
  <div class="btns"><button class="pri" id="btnShip">미리보기 · 메일 만들기</button></div>
  <div class="hint">업체별로 본문·첨부 엑셀을 만들어 아래에 보여 줍니다. 설정에 "긴급메일업체"(KET)가 있으면 에어리스트의 그 업체 품목으로 <b>긴급 자재 메일</b>도 함께 만듭니다. 내 PC 밖으로 나가는 것은 없습니다(모두 이 브라우저 안에서 처리).</div>
