@@ -193,14 +193,13 @@ function onConfigLoaded() {
 }
 
 // ---------------------------------------------------------------- UI 연결
-function bindDrop(zone, input, nameEl) {
-  const z = $(zone), i = $(input);
-  const show = () => { const fs = [...i.files]; $(nameEl).textContent = fs.length ? fs.map((f) => f.name).join(", ") : "아직 없음"; z.classList.toggle("has", fs.length > 0); };
-  z.addEventListener("click", () => i.click());
-  z.addEventListener("dragover", (e) => { e.preventDefault(); z.classList.add("over"); });
-  z.addEventListener("dragleave", () => z.classList.remove("over"));
-  z.addEventListener("drop", (e) => { e.preventDefault(); z.classList.remove("over"); i.files = e.dataTransfer.files; show(); i.dispatchEvent(new Event("change")); });
-  i.addEventListener("change", show);
+// "주간 리스트 만들기" 화면에서 넘겨준 리스트가 있으면 선박리스트 칸에 넣는다 (같은 PC·같은 브라우저 안에서만)
+function takeHandoff() {
+  let h = null; try { h = JSON.parse(sessionStorage.getItem(HANDOFF_KEY) || localStorage.getItem(HANDOFF_KEY) || "null"); localStorage.removeItem(HANDOFF_KEY); sessionStorage.removeItem(HANDOFF_KEY); } catch {}
+  if (!h || !h.b64) return;
+  const bytes = Uint8Array.from(atob(h.b64), (c) => c.charCodeAt(0)), dt = new DataTransfer();
+  dt.items.add(new File([bytes], h.name || "선박 및 에어리스트.xlsx")); $("ship").files = dt.files; $("ship").dispatchEvent(new Event("change"));
+  $("firstCard").style.display = "none"; setTimeout(() => { $("dropShip").scrollIntoView({ behavior: "smooth", block: "center" }); toast("만든 리스트를 선박리스트 칸에 넣었습니다. 기준 주를 확인하고 ① 미리보기 · 메일 만들기를 누르세요."); }, 600);
 }
 window.addEventListener("DOMContentLoaded", () => {
   if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
@@ -224,7 +223,7 @@ window.addEventListener("DOMContentLoaded", () => {
   $("btnAssign").onclick = saveAssign;
   $("btnDlCfg").onclick = downloadConfig; $("btnDiscard").onclick = discardLocal;
   $("btnEdit").onclick = () => openEditor(false); $("btnEditNoMail").onclick = () => openEditor(true);
-  bindEditor(); bindBuild();
+  bindEditor(); takeHandoff();
   $("btnHelp").onclick = () => $("helpCard").scrollIntoView({ behavior: "smooth" });
   $("btnFirst").onclick = () => { $("firstCard").style.display = ""; fcShow(""); $("firstCard").scrollIntoView({ behavior: "smooth" }); };
   $("firstCard").addEventListener("click", onFirstCheck);
