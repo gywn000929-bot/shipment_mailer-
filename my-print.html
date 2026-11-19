@@ -1,0 +1,106 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>주간 스케줄표 (인쇄용)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css");
+@page{size:A4 landscape;margin:9mm}
+*{box-sizing:border-box}
+body{margin:0;background:#888;color:#000;font-family:'Pretendard Variable',Pretendard,'Malgun Gothic','맑은 고딕',sans-serif;font-size:9.6pt;line-height:1.42;letter-spacing:-0.01em;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.bar{background:#222;color:#fff;padding:10px 16px;display:flex;gap:12px;align-items:center;font-size:14px}
+.bar button{font:inherit;font-weight:700;border:0;border-radius:6px;padding:7px 16px;background:#fff;color:#000;cursor:pointer}.bar a{color:#fff}
+.sheet{width:297mm;min-height:210mm;margin:10px auto;background:#fff;padding:9mm;display:flex;flex-direction:column}
+h1{margin:0;font-size:17pt;font-weight:800;letter-spacing:-0.02em}
+.top{display:flex;align-items:flex-end;gap:14px;border-bottom:2.2pt solid #000;padding-bottom:5px;margin-bottom:7px}
+.top .sub{font-size:9.5pt}.top .fill{margin-left:auto;font-size:11pt;white-space:nowrap}
+.blank{display:inline-block;border-bottom:1pt solid #000;min-width:30px;height:1em;vertical-align:baseline}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th,td{border:1pt solid #000;vertical-align:top;padding:4px 6px;text-align:left}
+.wk th{font-size:12pt;font-weight:800;text-align:center;padding:5px 4px;border-bottom:2pt solid #000}
+.wk th small{display:block;font-size:8.6pt;font-weight:500;margin-top:1px}
+.wk td{height:126mm}
+ul{list-style:none;margin:0;padding:0}
+li{position:relative;padding:0 0 0 17px;margin:0 0 6px}
+li::before{content:"";position:absolute;left:0;top:2.5px;width:10px;height:10px;border:1.1pt solid #000;background:#fff}
+b{font-weight:800}.v{font-size:8.6pt;display:block;margin-top:1px}
+.memo{margin-top:6px;border-top:1pt dashed #000;padding-top:3px;font-size:8.4pt}
+.row2{margin-top:6px}.row2 th{width:27mm;text-align:center;font-weight:800;font-size:9.6pt;vertical-align:middle}.row2 td{font-size:9.2pt}
+.row2 li{display:inline-block;margin:0 16px 2px 0}
+.foot{margin-top:auto;padding-top:5px;font-size:8.2pt;display:flex;justify-content:space-between;gap:10px}
+.vt th{font-weight:800;text-align:center;font-size:9.4pt;border-bottom:2pt solid #000;padding:5px 4px}
+.vt td{font-size:9pt;padding:4px 6px}.vt td.c{text-align:center}.vt tr.sep td{border-top:2pt solid #000}
+.vt col.n{width:27mm}.vt col.w{width:24mm}.vt col.p{width:15mm}.vt col.k{width:14mm}.vt col.m{width:62mm}.vt col.to{width:58mm}
+.new{display:inline-block;border:1pt solid #000;font-size:7.4pt;font-weight:800;padding:0 3px;margin-left:3px;vertical-align:1px}
+h2{margin:0 0 6px;font-size:13pt;font-weight:800;border-bottom:2.2pt solid #000;padding-bottom:5px}
+@media print{body{background:#fff}.bar{display:none}.sheet{margin:0;padding:0;width:auto;min-height:0;height:191mm;page-break-after:always}.sheet:last-child{page-break-after:auto}}
+</style></head><body>
+<div class="bar"><button onclick="window.print()">🖨 인쇄하기</button><span>A4 가로 · 흑백 · 2장 (1장: 주간 스케줄표, 2장: 업체 정리표). 인쇄 창에서 <b>용지 A4, 방향 가로, 배율 100%</b>로 맞추세요.</span><a href="my.html">← 화면용으로 돌아가기</a></div>
+
+<div class="sheet">
+ <div class="top"><h1>주간 스케줄표</h1><span class="sub">남효주 · 담당 12곳 (기존 4 + 신규 8)</span>
+  <span class="fill"><span class="blank"></span>월 <span class="blank"></span>주 &nbsp;( <span class="blank"></span> / <span class="blank"></span> ~ <span class="blank"></span> / <span class="blank"></span> )</span></div>
+ <table class="wk">
+  <tr><th>월<small>리스트 만들고 메일 보내기</small></th><th>화<small>에어 입고 요청일 *</small></th><th>수<small>선박 입고 요청일 *</small></th><th>목<small>빠진 것 챙기기 *</small></th><th>금<small>에어 컨펌</small></th></tr>
+  <tr>
+   <td><ul>
+    <li>전산 <b>Balance</b> 받기<span class="v">F1 · F2 · F5, JST 따로 (파일 이름에 JST)</span></li>
+    <li><b>주간 리스트</b> 만들기<span class="v">요청 파일 3개 + 에어 리포트 + Balance</span></li>
+    <li>내 업체 <b>B-R 부족 품목</b> 확인</li>
+    <li><b>출하 요청 메일</b> 만들기 (11곳)<span class="v">"내 업체만 메일 만들기"로 열기</span></li>
+    <li>엑셀 첨부 4곳 첨부 확인<span class="v">김해반도 · 대일CST · 진영반도 · 태양기전</span></li>
+    <li><b>대아산업</b> 주문서 PDF 직접 첨부,<br>빨간 안내 줄 지우기</li>
+    <li>보낸 메일 "보냈음" 체크</li>
+   </ul><div class="memo">메모</div></td>
+   <td><ul>
+    <li>월요일 메일 <b>회신 없는 업체</b> 확인</li>
+    <li><b>에어 품목 입고</b> 확인<span class="v">김해반도 · 대일CST · 진영반도 · 태양기전 · KET · 번영하이테크 · 연호엠에스</span></li>
+    <li>공장 재고(Stock) 새로 나오면<br>리스트에 반영 *</li>
+   </ul><div class="memo">메모</div></td>
+   <td><ul>
+    <li>회신 엑셀 → <b>입고 파일</b> 만들기<span class="v">엑셀 첨부 4곳</span></li>
+    <li>본문 표 업체 · 연호엠에스:<br>주간 리스트 넣고 <b>입고수량 입력</b><span class="v">필룩스 · 번영하이테크 · 성우실업 · 위성단자 · 태양단자 · 대아산업 · KET</span></li>
+    <li>입고 파일 <b>전산에 올리기</b><span class="v">파일 이름 앞 4자리 = 입고 날짜</span></li>
+    <li><b>KET 입출고</b> 시트 정리</li>
+   </ul><div class="memo">메모</div></td>
+   <td><ul>
+    <li><b>안 들어온 품목 · 수량 다른 품목</b><br>업체에 확인</li>
+    <li>나온 <b>주문서 PDF</b> → 주문서 메일<span class="v">KET · 연호엠에스는 주문서 메일 없음</span></li>
+   </ul><div class="memo">메모</div></td>
+   <td><ul>
+    <li><b>에어 컨펌</b><span class="v">에어 컨펌 도우미</span></li>
+    <li>리스트 <b>Air up 시트</b> 정리<span class="v">다음 월요일 에어 표가 여기서 나옴</span></li>
+    <li>다음 주 요청 파일 도착 확인 *<span class="v">F1 · F2 · F5, 에어 리포트</span></li>
+   </ul><div class="memo">메모</div></td>
+  </tr>
+ </table>
+ <table class="row2">
+  <tr><th>수시</th><td><ul><li>주문서 PDF 나오면 주문서 메일</li><li><b>성우실업</b> 주문서는 부족 일정 확인 후 발송</li><li>담당자 · 메일 바뀌면 "업체·설정 고치기"</li></ul></td></tr>
+  <tr><th>매달 15일 이후</th><td><ul><li><b>대아산업</b> 다음 달 분 발주 (선박리스트 참조)</li></ul></td></tr>
+ </table>
+ <div class="foot"><span>* 표시는 받은 파일의 날짜로 짐작한 요일입니다. 실제와 다르면 고쳐 쓰세요.</span><span>화면용: gywn000929-bot.github.io/shipment_mailer-/my.html</span></div>
+</div>
+
+<div class="sheet">
+ <h2>담당 업체 정리표 <span style="font-size:9.5pt;font-weight:500">— 물량은 11월 3주 리스트 기준</span></h2>
+ <table class="vt">
+  <colgroup><col class="n"><col class="w"><col class="p"><col class="k"><col class="to"><col class="m"><col></colgroup>
+  <tr><th>업체</th><th>출하 요청</th><th>주문서</th><th>코드</th><th>받는 사람</th><th>리스트 표기 · MAKER</th><th>챙길 점</th></tr>
+  <tr><td><b>연호엠에스</b></td><td class="c">메일 없음</td><td class="c">×</td><td class="c">3840</td><td>—</td><td>연호엠에스 · YEONHO</td><td>전산 발주만. <b>입고 처리만</b> 함. 물량 최다 (선박 158줄)</td></tr>
+  <tr><td><b>필룩스</b></td><td class="c">본문 표</td><td class="c">○</td><td class="c">2410</td><td>vtrboy@feelux.com (참조 3명)</td><td>필룩스 · FEELUX</td><td>이 업체만 참조 3명 추가</td></tr>
+  <tr><td><b>KET</b></td><td class="c">본문 표</td><td class="c">×</td><td class="c">2465</td><td>kkh@ket.com (참조 7명)</td><td>한국단자공업(KET) · KET</td><td>입출고 시트는 직접 정리. 선박 184줄</td></tr>
+  <tr><td><b>태양기전</b></td><td class="c">엑셀 첨부</td><td class="c">○</td><td class="c">4350</td><td>kyc8391@hanmail.net 외 2</td><td>태양기전 · DAEMYUNG, TAEYOUNG, DONG-A 등</td><td>회신 엑셀 → 입고 파일. DONG-A BESTECH 일부는 위성단자</td></tr>
+  <tr class="sep"><td><b>김해반도</b><span class="new">신규</span></td><td class="c">엑셀 첨부</td><td class="c">○</td><td class="c">2150</td><td>sclee@bandoamp.com, kjkim@bandoamp.com</td><td>반도기전(김해) · AMP</td><td>신규 중 물량 최다 (선박 80 · 에어 12). 화요일 에어 확인</td></tr>
+  <tr><td><b>대아산업</b><span class="new">신규</span></td><td class="c">본문 표</td><td class="c">○</td><td class="c">4120</td><td>sale@daeatube.com, songdh40@daeatube.com</td><td>대아산업 · DAE-A INDUSTRIAL</td><td><b>15일 이후 익월분 발주.</b> 출하 메일에 주문서 PDF 직접 첨부</td></tr>
+  <tr><td><b>대일CST</b><span class="new">신규</span></td><td class="c">엑셀 첨부</td><td class="c">○</td><td class="c">2090</td><td>skim@daeilcst.co.kr</td><td>대일 CST · DAEIL CST</td><td>리스트에는 "대일 CST"로 띄어 적힘</td></tr>
+  <tr><td><b>번영하이테크</b><span class="new">신규</span></td><td class="c">본문 표</td><td class="c">○</td><td class="c">5440</td><td>by_hitech@naver.com</td><td>주식회사 번영하이테크 · BUNYOUNG</td><td>본문 첫 줄 "수신: 이미경 실장님". 에어 요청 잦음</td></tr>
+  <tr><td><b>성우실업</b><span class="new">신규</span></td><td class="c">본문 표</td><td class="c">○</td><td class="c">3470</td><td>swcfuse@thermalcutoff.com</td><td>성우실업 · SUNG WOO</td><td><b>주문서는 부족 일정 확인 후</b> 발송</td></tr>
+  <tr><td><b>위성단자</b><span class="new">신규</span></td><td class="c">본문 표</td><td class="c">○</td><td class="c">2330</td><td>wesung-1989@daum.net</td><td>위성단자 · CAIS, JIN, JEONO, WESUNG</td><td>DONG-A BESTECH 일부가 여기로 옴 (나머지는 태양기전)</td></tr>
+  <tr><td><b>진영반도</b><span class="new">신규</span></td><td class="c">엑셀 첨부</td><td class="c">○</td><td class="c">2140</td><td>sales4@bandomk.com, sales1@bandomk.com (참조 1명)</td><td>반도기전(진영) · MOLEX</td><td>MOLEX 일부(4품목)는 뉴콘으로 감</td></tr>
+  <tr><td><b>태양단자</b><span class="new">신규</span></td><td class="c">본문 표</td><td class="c">○</td><td class="c">2451</td><td>kwak@tae-yang.co.kr</td><td>태양단자 · KET (일부)</td><td>KET 품목 중 26품목만 여기. 나머지는 한국단자공업</td></tr>
+ </table>
+ <table class="row2" style="margin-top:8px">
+  <tr><th>나뉘는 MAKER</th><td>MOLEX → 진영반도 / 뉴콘 &nbsp;·&nbsp; KET → 한국단자공업 / 태양단자 &nbsp;·&nbsp; DONG-A BESTECH → 태양기전 / 위성단자 &nbsp;&nbsp;<b>리스트의 거래처 칸이 기준</b></td></tr>
+  <tr><th>회신 방식</th><td><b>엑셀 첨부 4곳</b>은 엑셀에 입고수량을 적어 회신 → 입고 파일 만들기에 그대로 넣기. <b>본문 표 7곳 · 연호엠에스</b>는 주간 리스트를 넣고 입고수량 직접 입력</td></tr>
+  <tr><th>공장 코드</th><td>F1 = 1010 &nbsp;·&nbsp; F2 = 1060 &nbsp;·&nbsp; F5 = 1150 &nbsp;&nbsp;(입고 파일에 자동으로 들어감) &nbsp;&nbsp;|&nbsp;&nbsp; 공통 참조: ejkim@kdaea.com, minji3907@kdaea.com</td></tr>
+ </table>
+ <div class="foot"><span>담당자 전화번호는 넣지 않았습니다. 필요하면 빈 곳에 적어 두세요.</span><span>화면용: gywn000929-bot.github.io/shipment_mailer-/my.html</span></div>
+</div>
+</body></html>
