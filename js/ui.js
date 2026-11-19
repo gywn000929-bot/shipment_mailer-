@@ -216,6 +216,10 @@ window.addEventListener("DOMContentLoaded", () => {
     const want = q === "kim" ? "config_kim.xlsx" : q === "nam" ? "config.xlsx" : last;
     if (want && [...$("config").options].some((o) => o.value === want)) $("config").value = want;
   }
+  { // 주소의 ?only=업체1,업체2 → "특정 업체만" 칸을 미리 채운다 (내 담당 업체 화면에서 넘어올 때)
+    const only = new URLSearchParams(location.search).get("only");
+    if (only) { $("only").value = only; $("adv").style.display = ""; $("onlyNote").style.display = ""; $("onlyNote").textContent = `지금은 ${only.split(",").length}개 업체만 만들도록 되어 있습니다 (고급 설정의 "특정 업체만"). 전체를 만들려면 그 칸을 비우세요.`; }
+  }
   $("advToggle").onclick = () => { const a = $("adv"); a.style.display = a.style.display === "none" ? "" : "none"; $("advToggle").textContent = (a.style.display === "none" ? "▸" : "▾") + " 고급 설정"; };
   $("config").addEventListener("change", () => { $("configFile").style.display = $("config").value === "__file__" ? "" : "none"; if ($("config").value !== "__file__") reloadConfig(); });
   $("configFile").addEventListener("change", () => reloadConfig());
