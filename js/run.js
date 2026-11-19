@@ -36,7 +36,9 @@ async function runShip() {
     const subjectBase = (S["제목형식"] || "대아홀딩스 {월}월 {주}주 출하 요청의 건").replace("{월}", month).replace("{주}", week);
     const includeZero = !["N", "NO", "X", "0"].includes(clean(S["수량없는행포함"] ?? "Y").toUpperCase());
     const etdCount = parseInt($("etd").value) || parseInt(S["ETD열개수"]) || 2;
-    const only = splitList($("only").value);
+    const typed = splitList($("only").value), mine = $("mineOnly").checked ? myVendors() : null;
+    const only = typed.length ? typed : (mine || []);   // "특정 업체만" 칸이 우선, 비어 있으면 "내 업체만"
+    if (!typed.length && mine) log(`[내 업체만] ${mine.length}곳만 만듭니다. 전체를 만들려면 "내 업체만" 체크를 끄세요.`, "warn");
     const commonCc = splitList(S["공통참조"]);
 
     let ship = [], etdSel = [], air = [], hasSum = false;

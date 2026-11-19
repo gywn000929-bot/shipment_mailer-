@@ -186,6 +186,13 @@ async function reloadConfig({ refetch = true } = {}) {
     if (typeof onConfigLoaded === "function") onConfigLoaded();
   } catch (e) { console.error(e); toast(String(e.message || e)); $("cfgInfo").textContent = "설정을 못 읽음: " + (e.message || e); }
 }
+// "내 업체만": 설정 "내업체"(이 업체들만) 또는 "내업체제외"(이 업체들 빼고 전부). 둘 다 없으면 null
+function myVendors() {
+  const S = CONFIG.settings, inc = splitList(S["내업체"]).map(matchAlias), exc = splitList(S["내업체제외"]).map(matchAlias);
+  if (inc.length) return CONFIG.order.filter((n) => inc.includes(n));
+  if (exc.length) return CONFIG.order.filter((n) => !exc.includes(n));
+  return null;
+}
 const senderName = () => (CONFIG.settings["발신자소개"] || "").replace(/^대아홀딩스\s*/, "").replace(/\s*(입니다|이다)\.?$/, "").trim();
 function repoUrl() {
   const m = location.hostname.match(/^([^.]+)\.github\.io$/), seg = location.pathname.split("/").filter(Boolean)[0];

@@ -187,7 +187,16 @@ function syncPrefsUi() {
   const st = pref("check", CONFIG_NAME);
   $("btnFirst").textContent = st === "ok" ? "처음 확인 ✔" : st === "copy" ? "처음 확인 (복사 방식)" : "🔰 처음 확인";
 }
+function syncMine() {   // "내 업체만" 칸: 설정에 내 업체 목록이 있을 때만 보인다. 켠 상태는 이 PC에 기억
+  const mine = myVendors(); $("mineRow").style.display = mine ? "" : "none";
+  if (!mine) { $("mineOnly").checked = false; return; }
+  if (new URLSearchParams(location.search).get("mine") === "1") pref("mineOnly", CONFIG_NAME, true);
+  $("mineOnly").checked = !!pref("mineOnly", CONFIG_NAME);
+  const exc = splitList(CONFIG.settings["내업체제외"]);
+  $("mineInfo").textContent = exc.length ? `켜면 ${mine.length}곳만 만듭니다 (제외 ${exc.length}곳: ${exc.join(", ")})` : `켜면 ${mine.length}곳만 만듭니다 (${mine.join(", ")})`;
+}
 function onConfigLoaded() {
+  syncMine();
   syncPrefsUi(); renderHist();
   if (!pref("check", CONFIG_NAME) && !pref("fcSeen", CONFIG_NAME)) $("firstCard").style.display = "";
 }
@@ -220,6 +229,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const only = new URLSearchParams(location.search).get("only");
     if (only) { $("only").value = only; $("adv").style.display = ""; $("onlyNote").style.display = ""; $("onlyNote").textContent = `지금은 ${only.split(",").length}개 업체만 만들도록 되어 있습니다 (고급 설정의 "특정 업체만"). 전체를 만들려면 그 칸을 비우세요.`; }
   }
+  $("mineOnly").addEventListener("change", () => { pref("mineOnly", CONFIG_NAME, $("mineOnly").checked); toast($("mineOnly").checked ? "내 업체만 만듭니다. 미리보기 · 메일 만들기를 누르세요." : "모든 업체를 만듭니다."); if (RESULT.mails.length && RESULT.kind === "ship") toast("내 업체만 설정을 바꿨습니다. 미리보기 · 메일 만들기를 다시 누르세요."); });
   $("advToggle").onclick = () => { const a = $("adv"); a.style.display = a.style.display === "none" ? "" : "none"; $("advToggle").textContent = (a.style.display === "none" ? "▸" : "▾") + " 고급 설정"; };
   $("config").addEventListener("change", () => { $("configFile").style.display = $("config").value === "__file__" ? "" : "none"; if ($("config").value !== "__file__") reloadConfig(); });
   $("configFile").addEventListener("change", () => reloadConfig());
