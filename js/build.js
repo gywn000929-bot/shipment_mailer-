@@ -236,9 +236,12 @@ function bindBuild() {
   $("btnBuildClear").onclick = () => { BUILD.inputs = []; BUILD.out = null; $("bdFiles").value = ""; $("bdName").textContent = "아직 없음"; $("dropBuild").classList.remove("has"); renderBuild(); };
   $("btnBuild").onclick = () => { try { buildLists(); } catch (e) { console.error(e); toast(String(e.message || e)); BUILD.out = null; } renderBuild(); };
   $("btnBuildDl").onclick = () => download(new Blob([listBytes()]), listFileName());
-  $("btnBuildUse").onclick = () => {   // 만든 리스트를 아래 "출하 요청 메일" 칸에 바로 넣는다
-    const dt = new DataTransfer(); dt.items.add(new File([listBytes()], listFileName())); $("ship").files = dt.files; $("ship").dispatchEvent(new Event("change"));
-    $("dropShip").scrollIntoView({ behavior: "smooth", block: "center" }); toast("아래 선박리스트 칸에 넣었습니다. 기준 주를 확인하고 ① 미리보기 · 메일 만들기를 누르세요.");
+  $("btnBuildUse").onclick = () => {   // 만든 리스트를 메일 작성기 화면으로 넘긴다 (이 PC의 브라우저 안에서만 전달)
+    try {
+      let s = ""; const bytes = listBytes(); for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+      localStorage.setItem(HANDOFF_KEY, JSON.stringify({ name: listFileName(), b64: btoa(s) }));
+      location.href = "index.html" + location.search;
+    } catch (e) { console.error(e); toast("바로 넘기지 못했습니다. '리스트 엑셀 받기'로 받은 뒤 메일 작성기에 넣어 주세요."); }
   };
   renderBuild();
 }

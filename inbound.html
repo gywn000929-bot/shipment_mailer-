@@ -1,0 +1,89 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>입고 파일 만들기</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="js/core.js?v=5" defer></script>
+<script src="js/config.js?v=5" defer></script>
+<script src="js/inbound.js?v=5" defer></script>
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--line:#e3e7ee;--txt:#1f2937;--mut:#6b7280;--pri:#2563eb;--pri2:#1d4ed8;--ok:#16a34a;--warn:#d97706;--err:#dc2626;--chip:#eef2ff}
+*{box-sizing:border-box}body{margin:0;font-family:"Malgun Gothic","맑은 고딕",system-ui,sans-serif;background:var(--bg);color:var(--txt);font-size:14px}
+header{background:#fff;border-bottom:1px solid var(--line);padding:12px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+header h1{font-size:18px;margin:0}header .sp{flex:1}
+select,input[type=text],input[type=date],input[type=file]{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:14px;background:#fff}
+main{max-width:1100px;margin:20px auto;padding:0 16px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:800px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.card h2{margin:0 0 12px;font-size:16px;display:flex;align-items:center;gap:8px}
+.step{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--pri);color:#fff;font-size:12px;align-items:center;justify-content:center;flex:none}
+.drop{border:2px dashed #c7d2fe;border-radius:12px;padding:16px;text-align:center;color:var(--mut);background:#fafbff;cursor:pointer;transition:.15s}
+.drop.over{background:#eef2ff;border-color:var(--pri)}.drop.has{border-style:solid;border-color:var(--ok);background:#f0fdf4;color:var(--txt)}
+.drop b{color:var(--txt)}.drop small{display:block;margin-top:4px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}.row label{color:var(--mut);font-size:13px}
+.btns{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+button{border:0;border-radius:10px;padding:10px 14px;font-size:14px;cursor:pointer;background:#e5e7eb;color:var(--txt)}
+button.pri{background:var(--pri);color:#fff}button.pri:hover{background:var(--pri2)}button.ok{background:var(--ok);color:#fff}button.sm{padding:6px 10px;font-size:13px}
+.full{grid-column:1/-1}
+#log{background:#0f172a;color:#e2e8f0;border-radius:12px;padding:14px;height:300px;overflow:auto;font-family:Consolas,"D2Coding",monospace;font-size:13px;white-space:pre-wrap;line-height:1.5}
+#log .head{color:#93c5fd;font-weight:bold}#log .ok{color:#86efac}#log .warn{color:#fcd34d}#log .err{color:#fca5a5}
+.status{font-size:13px;color:var(--mut);font-weight:normal}.status.run{color:var(--pri)}
+table{width:100%;border-collapse:collapse;margin-top:8px}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);font-size:13px}
+.tag{display:inline-block;background:var(--chip);color:var(--pri2);border-radius:6px;padding:2px 8px;font-size:12px;margin-right:6px}
+.hint{color:var(--mut);font-size:12px;margin-top:6px}.warn{color:var(--warn)}
+.mail{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px}.mh{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.subj{color:var(--mut);flex:1}
+.meta{font-size:13px;color:var(--mut);margin-top:4px}.prev{width:100%;height:320px;border:1px solid var(--line);border-radius:8px;margin-top:8px;background:#fff}
+.badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:13px;font-weight:bold;background:#e5e7eb}
+.badge.kim{background:#dcfce7;color:#166534}.badge.nam{background:#dbeafe;color:#1e40af}
+#summary{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:6px 0 10px;line-height:1.7}
+#summary .ok{color:var(--ok);font-weight:bold}
+.mail.noto{border-color:#fcd34d;background:#fffbeb}.inc{font-size:12px;color:var(--mut);display:flex;align-items:center;gap:4px}
+.steps{display:flex;gap:6px;flex-wrap:wrap;font-size:13px;color:var(--mut);margin:0 0 8px}.steps span{background:#fff;border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+#afterZip{background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:10px 12px;margin-top:10px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 16px;border-radius:10px;opacity:0;transition:.2s;max-width:90vw}
+.toast.show{opacity:1}
+ol li{margin:4px 0}
+.chip{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:2px 10px;margin:2px 4px 2px 0;font-size:12px;color:var(--mut);background:#fff}.chip.on{border-color:#86efac;background:#f0fdf4;color:#166534}
+button:disabled{opacity:.5;cursor:not-allowed}
+a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;background:#e5e7eb;color:var(--txt);text-decoration:none}
+.tag.red{background:#fee2e2;color:#b91c1c}.mail.dup{border-color:#fca5a5;background:#fef2f2}
+.alt{background:#f8fafc;border:1px dashed var(--line);border-radius:8px;padding:8px 10px;margin-top:8px}.alt>*{margin-right:6px}.sent{font-size:13px}
+#pendingBar{background:#fffbeb;border:1px solid #fcd34d;border-radius:12px;padding:10px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}#pendingText{flex:1;min-width:260px}
+#uploadGuide{background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:12px 16px}
+#firstCard{border-color:#93c5fd;background:#f8fbff}#fcResult{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-top:10px}
+.flow{font-size:13px;color:var(--mut);margin:0}.flow a{color:var(--pri2)}
+.edwrap{overflow:auto;max-height:60vh;border:1px solid var(--line);border-radius:8px}
+#edTbl{margin:0}#edTbl th{position:sticky;top:0;background:#eef2f7;z-index:1;white-space:nowrap}#edTbl td{padding:2px 3px}
+#edTbl td input[type=text]{width:100%;border:1px solid transparent;border-radius:4px;padding:5px 6px;background:transparent}#edTbl td input[type=text]:focus{border-color:var(--pri);background:#fff;outline:none}
+#edTbl td.c{text-align:center}#edTbl td.nm{white-space:nowrap;padding:5px 8px;position:sticky;left:0;background:#fff}
+#edTbl td.chg,textarea.chg{background:#fef9c3}#edTbl td.miss{background:#fee2e2}#edTbl tr.off td{opacity:.45}
+.setrow{display:grid;grid-template-columns:260px 1fr;gap:10px;margin-top:8px;align-items:start}.setrow label{display:flex;flex-direction:column}
+.setrow textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;resize:vertical}
+@media(max-width:800px){.setrow{grid-template-columns:1fr}}
+.intbl{margin-top:8px}.intbl td,.intbl th{padding:3px 6px}.intbl tr.chg td{background:#fef9c3}.intbl input{border:1px solid var(--line);border-radius:6px;padding:4px 6px}
+</style></head><body>
+<header><h1>📦 입고 파일 만들기</h1><span class="hint">업체가 입고수량을 적어 보낸 엑셀 → 전산에 올리는 엑셀</span><span class="sp"></span>
+<span class="hint" id="inCfg">설정 불러오는 중…</span>
+<a class="btn" data-nav href="list.html">📋 주간 리스트 만들기</a><a class="btn" data-nav href="index.html">📮 메일 작성기</a></header>
+<main>
+<div class="full"><div class="steps"><span>① 업체가 보낸 엑셀(또는 주간 리스트) 끌어다 놓기</span><span>② 업체·입고수량 확인</span><span>③ 받기 → 전산에 올리기</span></div></div>
+<section class="card full"><h2><span class="step">1</span> 파일 넣기 <span class="status" id="inCount"></span></h2>
+ <div class="drop" id="dropIn"><b>업체가 입고수량을 적어 보낸 엑셀</b>을 여기에 끌어다 놓거나 클릭 (여러 업체 한꺼번에 가능)<small id="inName">아직 없음</small></div>
+ <input type="file" id="inFiles" accept=".xlsx,.xls" multiple hidden>
+ <div class="hint">업체가 엑셀 없이 메일 본문으로만 답했으면, <b>주간 리스트 엑셀</b>을 넣으세요. 업체별로 나눠서 보여 주니 입고수량만 적으면 됩니다.</div>
+ <div id="inTop" style="display:none"><div class="row"><label>입고 날짜 (파일 이름 앞 4자리)</label><input type="date" id="inDate">
+  <button id="btnInFillAll" title="입고수량이 빈 줄을 요청 수량으로 채웁니다">모든 빈칸을 요청 수량대로</button><button class="ok" id="btnInZip">📦 전부 받기 (ZIP)</button><button id="btnInClear">비우기</button></div></div>
+ <div id="inItems"></div>
+</section>
+<section class="card full"><h2>사용법</h2>
+ <ol>
+  <li>업체가 입고수량을 적어 회신한 엑셀을 끌어다 놓습니다. <b>파일 이름에 업체 이름이 들어 있으면</b> 업체와 업체코드를 자동으로 고릅니다(메일 작성기가 만든 첨부 파일 이름 그대로면 됩니다). 틀리면 고르는 칸에서 바꾸세요.</li>
+  <li>이번 주(첫 ETD) 요청 수량이 있는 줄만 남기고, 공장은 전산 코드(F1=1010, F2=1060, F5=1150)로 바꾸고, 업체코드 칸을 넣습니다.</li>
+  <li><b>"수량 보기·고치기"</b>로 입고수량을 확인합니다. 요청과 다른 줄은 노란색입니다. 업체가 수량을 안 적었으면 "빈칸을 요청 수량대로"를 누르고 다른 줄만 고치세요. 안 들어온 품목은 칸을 비워 둡니다.</li>
+  <li>"받기"를 누르면 <b>"1118 태양기전.xlsx"</b> 같은 이름으로 받아집니다. 앞 4자리는 위의 입고 날짜입니다.</li>
+  <li>업체코드가 없는 업체는 칸에 직접 적으면 이 PC가 기억합니다. 계속 쓰려면 메일 작성기의 "⚙ 업체·설정 고치기"에서 "전산 업체코드" 칸에 넣어 주세요.</li>
+ </ol>
+ <div class="hint">넣은 파일은 내 PC 밖으로 나가지 않습니다(모두 이 브라우저 안에서 처리). 전산에 올리는 것은 직접 하셔야 합니다.</div>
+</section>
+</main><div class="toast" id="toast"></div>
+<script>window.addEventListener("DOMContentLoaded", () => { document.querySelectorAll("a[data-nav]").forEach((a) => { a.href += location.search; }); initInbound(); });</script>
+</body></html>

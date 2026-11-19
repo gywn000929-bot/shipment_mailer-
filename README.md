@@ -6,7 +6,7 @@
 계장님용 바로가기(설정이 김민지 계장으로 자동 선택): **https://gywn000929-bot.github.io/shipment_mailer-/?who=kim**
 
 링크를 열고 → 설정 파일 고르기(계장님은 config_kim.xlsx) → 선박/에어 엑셀이나 주문서 PDF를 끌어다 놓기 → **① 미리보기 · 메일 만들기** → **📦 전부 받기(ZIP)** → 압축 풀고 `.eml` 더블클릭 → Outlook 새 메일 창에서 **보내기**.
-모든 처리는 브라우저 안에서만 이루어지며 파일이 외부로 전송되지 않습니다. (파일: `index.html`, `js/*.js` — 빌드 없음)
+모든 처리는 브라우저 안에서만 이루어지며 파일이 외부로 전송되지 않습니다. (파일: `index.html` 메일 작성기, `list.html` 주간 리스트 만들기, `inbound.html` 입고 파일 만들기, `js/*.js` — 빌드 없음)
 
 > 저장소 Settings → Pages → Branch `main` / `(root)` 로 한 번 켜 두어야 위 링크가 열립니다.
 
@@ -143,7 +143,7 @@ python make_drafts.py --ship sample/ship_sample.xlsx --air sample/air_sample.xls
 | KET 긴급 자재 메일 | 출하 요청과 함께 자동 | 설정 `긴급메일업체`(config_kim.xlsx = KET). 에어리스트의 그 업체 품목을 품목 코드별로 합쳐 NO·품목명·미납수량 합계(선박 SUM 열)·AIR 수량(Remain)·부족일정(Short Del.) 표를 만든다. 부족일정이 URGENT이거나 기준 주 안이면 붉은 음영 |
 | 중복 발송 방지 | 결과 목록 | 주문서는 PO 번호, 출하 요청·긴급 자재는 업체+기준 주로 기록. 이미 받은 메일은 빨간 테두리 + "포함" 꺼짐. "Outlook에서 보냈음" 체크 가능 |
 
-### 주간 리스트 만들기 (`js/build.js`)
+### 주간 리스트 만들기 (`list.html`, `js/build.js`)
 받은 파일을 그대로 넣으면 `선박 및 에어리스트` 엑셀을 만든다. 엑셀 매크로 `선박리스트_만들기`와 같은 규칙이며, 실제 한 주 치 파일로 완성본과 대조했다(선박 822줄 × 16열 일치).
 - 선박: 요청 파일의 `SUMMARY*` 시트에서 ITEM NM 바로 뒤 열들이 ETD 수량(F2처럼 머리글에 날짜가 없으면 시트 이름의 ETD 날짜 사용). SUM이 0인 줄은 제외
 - BALANCE/STOCK: `F1 Bal`, `F2 JST Bal`, `F2 Sto` 같은 이름의 시트(또는 파일 이름)에서 품목 코드로 조회. MAKER가 JST이고 비어 있으면 JST 시트에서 다시 조회
@@ -152,6 +152,13 @@ python make_drafts.py --ship sample/ship_sample.xlsx --air sample/air_sample.xls
 - 정렬: FAC → MAKER → 품목명(엑셀처럼 하이픈 무시)
 - 에어: 리포트의 `600>>2,100`은 2,100으로, `500>>0`은 제외
 - 거래처 표는 한 번 넣으면 브라우저가 기억한다. 틀 고정은 넣지 못했다(엑셀에서 직접)
+
+### 입고 파일 만들기 (`inbound.html`, `js/inbound.js`)
+업체가 입고수량을 적어 회신한 엑셀(또는 주간 리스트)을 전산에 올리는 엑셀(`1118 태양기전.xlsx` 모양)로 바꾼다. 실제 한 쌍(보낸 파일 → 올린 파일)으로 대조했다(37줄 × 7열 일치).
+- 첫 ETD 열 요청 수량이 있는 줄만, 원래 순서대로
+- Fac → 수주처 코드(설정 `공장코드`: F1=1010, F2=1060, F5=1150)
+- 열: 수주처 코드 | ITEM CD | MAKER | 업체코드 | ITEM NM | 요청 수량 | 입고수량
+- 업체는 파일 이름에 들어 있는 업체 이름(별칭 포함)으로 찾고, 업체코드는 업체 시트의 `업체코드` 열에서 가져온다
 
 ### 설정 파일의 기준
 - 브라우저에서 고쳐 GitHub에 올린 `config*.xlsx` 가 기준이다. `make_config.py --force` 는 엑셀이 `VENDORS` 와 다르면 멈춘다(엑셀 내용을 `VENDORS` 로 먼저 옮기거나 `--discard-web-edits`).

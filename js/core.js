@@ -107,3 +107,15 @@ function sheetObjs(wb, name) {
   if (!ws) return [];
   return XLSX.utils.sheet_to_json(ws, { defval: "", raw: true });
 }
+
+// ---------------------------------------------------------------- 파일 끌어다 놓는 칸
+function bindDrop(zone, input, nameEl) {
+  const z = $(zone), i = $(input);
+  const show = () => { const fs = [...i.files]; $(nameEl).textContent = fs.length ? fs.map((f) => f.name).join(", ") : "아직 없음"; z.classList.toggle("has", fs.length > 0); };
+  z.addEventListener("click", () => i.click());
+  z.addEventListener("dragover", (e) => { e.preventDefault(); z.classList.add("over"); });
+  z.addEventListener("dragleave", () => z.classList.remove("over"));
+  z.addEventListener("drop", (e) => { e.preventDefault(); z.classList.remove("over"); i.files = e.dataTransfer.files; show(); i.dispatchEvent(new Event("change")); });
+  i.addEventListener("change", show);
+}
+const HANDOFF_KEY = "mailmaker_handoff";   // 리스트 만들기 화면 → 메일 작성기로 넘기는 파일
