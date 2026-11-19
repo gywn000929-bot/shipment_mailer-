@@ -5,6 +5,10 @@
   config_kim.xlsx : 김민지 계장 기준 (주문서 전 업체 + 출하 요청)
 업체 시트는 둘 다 같고, 설정 시트(이름/서명/제목형식/본문)만 다르다.
 실행: python make_config.py --force
+
+주의: 브라우저 화면의 "업체·설정 고치기"로 고쳐서 GitHub에 올린 config*.xlsx 가 있으면 그 파일이 기준이다.
+      이 스크립트로 다시 만들면 그 수정이 사라지므로, 엑셀과 VENDORS 가 다르면 멈춘다.
+      (엑셀 쪽 수정을 버리고 다시 만들려면 --discard-web-edits 를 함께 준다. 보통은 엑셀 내용을 VENDORS 에 먼저 옮긴다.)
 """
 import os, sys
 from openpyxl import Workbook
@@ -128,13 +132,43 @@ KIM = [
  ["서명", "D.E.TECH / DAE-A HOLDINGS CO.,LTD\nMIN JI KIM(金 敏 智)\nTEL : 055-296-1677~8\nFAX : 055-296-1679\nMOBILE : 010-2992-3907\nMAIL : minji3907@kdaea.com", "Outlook 기본 서명이 없을 때만 사용"],
  ["본문굵게", "Y", "Y: 본문 전체 굵게 (계장님 기존 메일 스타일)"],
  ["본문크기", "11", "본문 글자 크기(pt). 계장님 기존 메일 11pt"],
+ ["긴급메일업체", "KET", "주간 '긴급 자재의 건' 메일을 만들 업체(업체 시트의 이름). 비우면 만들지 않음. 브라우저 버전 전용"],
+ ["긴급제목형식", "대아홀딩스 {월}월 {주}주 긴급 자재의 건", "긴급 자재 메일 제목. {월}, {주}가 숫자로 바뀜"],
+ ["긴급본문", "수고많으십니다. 대아홀딩스 김민지 계장입니다.\n\n하기 긴급 자재 건 납기 확인 후 회신 부탁드립니다.\n\n{표}\n\n감사합니다.",
+  "긴급 자재 메일 본문. {표} 자리에 NO·품목명·미납수량 합계·AIR 수량·부족일정 표가 들어감"],
 ]
 
 OVR = [["(예) KET-12345", "태양단자", "KET 품목 중 태양단자 경유 건. 품목 코드로 업체를 직접 지정 (MAKER보다 우선)"]]
+
+def web_edits(path, strip_greeting):
+    """이미 있는 엑셀의 업체 시트가 VENDORS 와 다른 업체 이름 목록 (브라우저에서 고쳐 올린 흔적)"""
+    from openpyxl import load_workbook
+    ws = load_workbook(path)["업체"]
+    rows = list(ws.iter_rows(values_only=True)); hdr = [str(c or "").strip() for c in rows[0]]
+    cur = {}
+    for r in rows[1:]:
+        name = str(r[0] or "").strip()
+        if name and not name.startswith("※"):
+            cur[name] = {h: str(v or "").strip() for h, v in zip(hdr, r)}
+    diff = []
+    for v in VENDORS:
+        v = list(v)
+        if strip_greeting:
+            v[3] = ""; v[4] = ""
+        c = cur.pop(v[0], None)
+        if c is None or any(c.get(h, "") != str(x).strip() for h, x in zip(HDR, v)):
+            diff.append(v[0])
+    return diff + list(cur)
+
 
 if __name__ == "__main__":
     for name, st in (("config.xlsx", NAM), ("config_kim.xlsx", KIM)):
         p = os.path.join(HERE, name)
         if os.path.exists(p) and "--force" not in sys.argv:
             print(f"{p} 가 이미 있습니다. 다시 만들려면 --force"); continue
+        if os.path.exists(p) and "--discard-web-edits" not in sys.argv:
+            d = web_edits(p, name == "config_kim.xlsx")
+            if d:
+                print(f"{p}: 엑셀의 업체 시트가 VENDORS 와 다릅니다 → 만들지 않음. 다른 업체: {', '.join(d)}")
+                print("   (브라우저에서 고쳐 올린 내용으로 보입니다. VENDORS 에 옮긴 뒤 다시 실행하거나, 버리려면 --discard-web-edits)"); continue
         build(p, st, OVR, strip_greeting=(name == "config_kim.xlsx"))

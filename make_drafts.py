@@ -151,7 +151,7 @@ def load_config(path):
     maker_map = {}
     for _, r in vendors.iterrows():
         name = clean(r.get("업체"))
-        if not name or clean(r.get("활성", "Y")).upper() in ("N", "NO", "X", "0"):
+        if not name or name.startswith("※") or clean(r.get("활성", "Y")).upper() in ("N", "NO", "X", "0"):
             continue
         v = {
             "name": name,
