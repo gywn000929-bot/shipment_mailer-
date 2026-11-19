@@ -38,10 +38,15 @@ function readInputs(fileName, wb) {
     if (headerRowOf(rows, ["매입업체", "MAKER"], 3) >= 0) { out.push({ ...base, kind: "vendor" }); continue; }
     if (/^SUMMARY/i.test(sn.trim()) && headerRowOf(rows, ["ITEMCD"]) >= 0) { let facs = []; try { facs = parseSea(base).facs; } catch (e) { console.warn(e); } out.push({ ...base, kind: "sea", facs }); continue; }
     if (headerRowOf(rows, ["ITEMCD", "PARTNAME", "PURCHASEREQUEST", "SPEC"]) >= 0) { out.push({ ...base, kind: "air" }); continue; }
+    const hb = headerRowOf(rows, ["거래처품목코드", "미납수량합계"], 5);
+    if (hb >= 0) {   // 전산에서 받은 미납수량 합계 원본: 수주처 칸(F1/F2/F5)으로 공장을 알고, JST 여부는 파일 이름으로
+      const cF = rows[hb].map(nsp).indexOf("수주처"), fac = cF >= 0 ? nsp((rows.slice(hb + 1).find((r) => r && clean(r[cF])) || [])[cF]) : "";
+      const byName = slotOf(sn, "") || slotOf(fileName.replace(/\.[^.]+$/, ""), "");
+      out.push({ ...base, kind: "bal", slot: /^F[125]$/.test(fac) ? `${fac} ${/JST/i.test(sn + fileName) ? "JST " : ""}Bal` : byName }); continue;
+    }
     const slot = slotOf(sn, wb.SheetNames.length === 1 ? fileName : "");
     const looksBal = rows.slice(0, 30).some((r) => (r || []).slice(0, 10).some(isCode)) && rows.length > 1 && (rows[0] || []).length <= 12;
     if (slot && looksBal) { out.push({ ...base, kind: "bal", slot }); continue; }
-    if (wb.SheetNames.length === 1 && looksBal && headerRowOf(rows, ["미납수량합계"], 5) >= 0) out.push({ ...base, kind: "bal", slot: "" });   // 공장을 모르는 Balance 파일 → 화면에서 고르게
   }
   return out;
 }
