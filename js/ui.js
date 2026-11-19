@@ -56,7 +56,7 @@ function renderResult() {
   if (dup.length) parts.push(`<span class="warn">⚠ 이미 만든 적이 있는 메일 ${dup.length}통</span> (${esc(dup.map((m) => m.vendor).join(", "))}) → 두 번 보내지 않도록 <b>"포함"을 꺼 두었습니다.</b> 정말 다시 보내야 하면 Outlook 보낸 편지함을 확인한 뒤 "포함"을 켜세요.`);
   if (noTo.length) parts.push(`<span class="warn">⚠ 받는 사람이 없는 업체 ${noTo.length}곳</span> (${esc(noTo.map((m) => m.vendor).join(", "))}) → 아래 해당 칸에 메일 주소를 적고 <b>저장</b>하면 다음부터 기억합니다`);
   if (RESULT.unmatched.length) parts.push(`<span class="warn">⚠ 업체를 모르는 품목 ${RESULT.unmatched.reduce((a, b) => a + b.count, 0)}건</span> → 아래 <b>③ 미지정 업체 지정하기</b>에서 업체를 고른 뒤 다시 ①`);
-  if (RESULT.skipped && RESULT.skipped.length) parts.push(`<span class="hint">건너뜀(주문서 메일을 보내지 않는 업체): ${esc(RESULT.skipped.join(", "))}</span>`);
+  if (RESULT.skipped && RESULT.skipped.length) parts.push(`<span class="hint">건너뜀(메일을 보내지 않는 업체): ${esc(RESULT.skipped.join(", "))}</span>`);
   if (RESULT.poTable && RESULT.poTable.length) {
     const cls = (st) => st === "메일 생성" ? "ok" : st.includes("건너뜀") ? "hint" : "warn";
     parts.push(`<details><summary>PDF에서 읽은 주문서 ${RESULT.poTable.length}건 보기</summary><table><tr><th>PO</th><th>쪽수</th><th>PDF 거래처명</th><th>매칭 업체</th><th>처리</th></tr>${RESULT.poTable.map((r) => `<tr><td>${esc(r.po)}</td><td>${r.pages}</td><td>${esc(r.pdfVendor)}</td><td>${esc(r.vendor || "-")}</td><td class="${cls(r.status)}">${esc(r.status)}</td></tr>`).join("")}</table></details>`);

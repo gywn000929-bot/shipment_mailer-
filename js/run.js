@@ -63,6 +63,7 @@ async function runShip() {
       const v = CONFIG.vendors[n];
       if (!v) { problems.push(`'${n}' : 리스트의 업체 열 값이 설정 업체 시트에 없습니다 (선박 ${s.length} / 에어 ${a.length})`); unknownVendors.push({ key: n, kind: "vendor", count: s.length + a.length, samples: [...s.map((r) => r["ITEM CD"] + " " + r["ITEM NM"]), ...a.map((r) => r["Item cd"] + " " + r["Part Name"])].slice(0, 3) }); continue; }
       if (only.length && !only.includes(n)) continue;
+      if (!v.sendShip) { if (s.some((r) => r._hasQty) || a.length) (RESULT.skipped = RESULT.skipped || []).push(`${n} (선박 ${s.filter((r) => r._hasQty).length} / 에어 ${a.length})`); continue; }
       const noTo = !v.to.length;
       if (noTo) problems.push(`'${n}' : 받는 사람이 비어 있습니다 (선박 ${s.length} / 에어 ${a.length}) → 아래 결과 칸에서 메일 주소를 적어 주세요`);
       const nShipQty = s.filter((r) => r._hasQty).length;
@@ -88,6 +89,7 @@ async function runShip() {
       RESULT.mails.push({ kind: "urgent", vendor: v.name, subject, to: v.to, cc: uniq([...commonCc, ...v.cc]), body: buildUrgentBody(v, items, S), attachments: [], note: "긴급 자재 메일: 표의 수량·부족일정을 보내기 전에 한 번 더 확인하세요", noTo: !v.to.length, include: v.to.length > 0, keys: [`urgent|${RESULT.weekKey}|${v.name}`] });
     }
     log("");
+    if (RESULT.skipped && RESULT.skipped.length) log(`[출하 요청 메일을 보내지 않는 업체 - 건너뜀] ${RESULT.skipped.join(", ")}`);
     if (problems.length) { log("[문제] 아래 업체는 메일을 만들지 않았습니다:", "warn"); problems.forEach((p) => log("   " + p, "warn")); }
     if (unShip.length || unAir.length) {
       log(`[미지정 품목] 선박 ${unShip.length}건 / 에어 ${unAir.length}건 → 메일 생성 안 함 (아래 ③에서 업체를 지정하세요)`, "warn");
