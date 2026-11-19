@@ -1,54 +1,59 @@
 <!doctype html><html lang="ko"><head><meta charset="utf-8"><title>사용 안내 - 대아홀딩스 메일 작성기</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-:root{--bg:#f4f6fa;--card:#fff;--line:#e3e7ee;--txt:#1f2937;--mut:#6b7280;--pri:#2563eb;--pri2:#1d4ed8;--ok:#16a34a;--warn:#b45309;--err:#dc2626}
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css");
+:root{--navy:#1B3A6B;--navy2:#2E5C8A;--navy3:#4A7AAD;--bg:#f5f7fa;--card:#fff;--line:#D0DFF0;--txt:#141414;--mut:#5b5b62;--pri:#2E5C8A;--pri2:#1B3A6B;--ok:#2E7D32;
+ --font:'Aptos','Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,system-ui,'Segoe UI',Roboto,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace}
 *{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:16px}
-body{margin:0;font-family:"Malgun Gothic","맑은 고딕",system-ui,sans-serif;background:var(--bg);color:var(--txt);font-size:16px;line-height:1.75}
-header{background:#fff;border-bottom:1px solid var(--line);padding:18px 24px}
-header h1{margin:0;font-size:22px}header p{margin:4px 0 0;color:var(--mut);font-size:14px}
-.wrap{max-width:1180px;margin:0 auto;padding:20px 16px 60px;display:grid;grid-template-columns:240px 1fr;gap:24px;align-items:start}
-nav{position:sticky;top:16px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 14px 10px;font-size:14px}
-nav b{display:block;margin-bottom:6px}nav a{display:block;padding:5px 8px;border-radius:8px;color:var(--txt);text-decoration:none}nav a:hover{background:#eef2ff;color:var(--pri2)}
-nav .tools{border-top:1px solid var(--line);margin-top:8px;padding-top:8px}nav .tools a{color:var(--pri2);font-weight:bold}
+body{margin:0;font-family:var(--font);background:var(--bg);color:var(--txt);font-size:15px;line-height:1.7;text-rendering:optimizeLegibility;letter-spacing:-0.01em;-webkit-font-smoothing:antialiased}
+header{background:linear-gradient(135deg,#16315C,#2E5C8A);color:#fff;padding:26px 28px}
+header h1{margin:0;font-size:25px;font-weight:700;line-height:1.25}header p{margin:8px 0 0;font-size:16px;opacity:.85}
+.wrap{max-width:1180px;margin:0 auto;padding:22px 16px 60px;display:grid;grid-template-columns:250px 1fr;gap:24px;align-items:start}
+nav{position:sticky;top:16px;background:linear-gradient(180deg,#16315C,#1B3A6B);border-radius:12px;padding:16px 12px 12px;font-size:15px}
+nav b{display:block;margin:0 8px 6px;color:rgba(255,255,255,.88);font-size:12px;letter-spacing:1px;font-weight:700}
+nav a{display:block;padding:8px 10px;border-radius:8px;color:rgba(255,255,255,.88);text-decoration:none;border-left:3px solid transparent}nav a:hover{background:rgba(255,255,255,.09);color:#fff}
+nav .tools{border-top:1px solid rgba(255,255,255,.15);margin-top:10px;padding-top:12px}nav .tools a{color:#fff;font-weight:600}
 @media(max-width:860px){.wrap{grid-template-columns:1fr}nav{position:static}}
 main{min-width:0}
-section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-bottom:18px}
-h2{margin:0 0 6px;font-size:20px;display:flex;gap:10px;align-items:center}
-h2 .n{display:inline-flex;min-width:30px;height:30px;padding:0 8px;border-radius:999px;background:var(--pri);color:#fff;font-size:15px;align-items:center;justify-content:center;flex:none}
-h3{margin:22px 0 6px;font-size:17px}
-p{margin:8px 0}.lead{color:var(--mut);margin-top:0}
-ol,ul{margin:8px 0;padding-left:24px}li{margin:6px 0}
+section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:24px 26px;margin-bottom:18px}
+h2{margin:0 0 6px;font-size:20px;font-weight:700;color:var(--navy);display:flex;gap:10px;align-items:center;line-height:1.3}
+h2 .n{display:inline-flex;width:32px;height:32px;border-radius:50%;background:var(--navy2);color:#fff;font-size:16px;font-weight:700;align-items:center;justify-content:center;flex:none;font-variant-numeric:tabular-nums}
+h3{margin:24px 0 6px;font-size:16px;font-weight:700;color:var(--navy)}
+p{margin:8px 0}.lead{color:var(--mut);margin-top:0;font-size:15px}
+ol,ul{margin:8px 0;padding-left:22px}li{margin:6px 0}
 ol.steps{list-style:none;padding:0;counter-reset:s}
-ol.steps>li{counter-increment:s;position:relative;padding:10px 12px 10px 52px;border:1px solid var(--line);border-radius:12px;margin:8px 0;background:#fafbfe}
-ol.steps>li::before{content:counter(s);position:absolute;left:12px;top:10px;width:28px;height:28px;border-radius:50%;background:#dbeafe;color:var(--pri2);font-weight:bold;display:flex;align-items:center;justify-content:center}
-.btn{display:inline-block;border-radius:8px;padding:1px 9px;font-size:14px;background:#e5e7eb;color:var(--txt);white-space:nowrap;font-weight:bold}
-.btn.pri{background:var(--pri);color:#fff}.btn.ok{background:var(--ok);color:#fff}
-.box{border-radius:12px;padding:12px 16px;margin:12px 0}
-.tip{background:#eff6ff;border:1px solid #bfdbfe}.warn{background:#fffbeb;border:1px solid #fcd34d}.stop{background:#fef2f2;border:1px solid #fca5a5}.good{background:#f0fdf4;border:1px solid #86efac}
-.box b:first-child{display:block;margin-bottom:2px}
-table{width:100%;border-collapse:collapse;margin:10px 0;font-size:15px}th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}th{background:#f8fafc;white-space:nowrap}
+ol.steps>li{counter-increment:s;position:relative;padding:11px 14px 11px 56px;border:1px solid var(--line);border-radius:10px;margin:8px 0;background:#fafcff}
+ol.steps>li::before{content:counter(s);position:absolute;left:14px;top:11px;width:28px;height:28px;border-radius:50%;background:var(--navy2);color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+.btn{display:inline-block;border-radius:6px;padding:1px 9px;font-size:13.5px;background:#D4E4F7;color:var(--navy);white-space:nowrap;font-weight:700;line-height:1.6}
+.btn.pri{background:var(--navy2);color:#fff}.btn.ok{background:var(--ok);color:#fff}
+.box{border-radius:8px;padding:12px 16px;margin:12px 0;font-size:14.5px;line-height:1.65}
+.tip{background:#EEF3FA;border-left:3px solid var(--navy3)}.warn{background:#FFF8E1;border-left:3px solid #F9A825}.stop{background:#FFF3E0;border-left:3px solid #E65100}.good{background:#E8F5E9;border-left:3px solid #2E7D32}
+.box>b:first-child{display:block;margin-bottom:2px;color:var(--navy)}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:15px;font-variant-numeric:tabular-nums}
+th{background:var(--navy2);color:#fff;padding:10px 14px;text-align:left;font-weight:600;font-size:14px;white-space:nowrap}
+td{padding:9px 14px;border-bottom:1px solid var(--line);vertical-align:top}
 .flow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}
-.flow div{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fafbfe;font-size:14px;line-height:1.6}
-.flow div b{display:block;font-size:15px}.flow div span{display:inline-block;background:#dbeafe;color:var(--pri2);border-radius:999px;padding:0 10px;font-size:13px;font-weight:bold;margin-bottom:4px}
+.flow div{border:1px solid var(--line);border-radius:10px;padding:14px;background:#fafcff;font-size:14px;line-height:1.6;color:var(--mut)}
+.flow div b{display:block;font-size:16px;color:var(--navy);margin:2px 0}.flow div span{display:inline-block;background:var(--navy);color:#fff;border-radius:10px;padding:1px 10px;font-size:12px;font-weight:600}
 @media(max-width:860px){.flow{grid-template-columns:1fr 1fr}}
-.tool{display:block;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:8px 0;text-decoration:none;color:var(--txt);background:#fff}
-.tool:hover{border-color:var(--pri);background:#f8fbff}.tool b{color:var(--pri2);font-size:17px}.tool small{display:block;color:var(--mut);font-size:14px}
-code{background:#f1f5f9;border-radius:6px;padding:1px 6px;font-family:Consolas,"D2Coding",monospace;font-size:14px}
-.q{font-weight:bold;margin-top:16px}.a{margin:2px 0 0 0}
+.tool{display:block;border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:8px 0;text-decoration:none;color:var(--txt);background:#fff}
+.tool:hover{border-color:var(--navy3);background:#f6f9fe}.tool b{color:var(--navy);font-size:16px;font-weight:700}.tool small{display:block;color:var(--mut);font-size:14px;margin-top:2px}
+code{background:#EEF3FA;color:var(--navy);border-radius:4px;padding:1px 7px;font-family:var(--mono);font-size:13.5px}
+.q{font-weight:700;color:var(--navy);margin-top:18px}.a{margin:3px 0 0 0;color:var(--mut)}
 .muted{color:var(--mut);font-size:14px}
 </style></head><body>
-<header><h1>📖 사용 안내</h1><p>대아홀딩스 주간 리스트 · 메일 작성기 · 입고 파일 — 처음 쓰는 분도 이 순서대로 따라 하면 됩니다</p></header>
+<header><h1>사용 안내</h1><p>대아홀딩스 주간 리스트 · 메일 작성기 · 입고 파일 — 처음 쓰는 분도 이 순서대로 따라 하면 됩니다</p></header>
 <div class="wrap">
 <nav><b>차례</b>
  <a href="#start">먼저 알아 둘 것</a>
  <a href="#week">한 주 순서 한눈에</a>
- <a href="#first">① 처음 한 번만 하는 확인</a>
- <a href="#list">② 주간 리스트 만들기</a>
- <a href="#ship">③ 출하 요청 메일</a>
- <a href="#ket">④ KET 긴급 자재 메일</a>
- <a href="#po">⑤ 주문서 메일</a>
- <a href="#inbound">⑥ 입고 파일 만들기</a>
- <a href="#vendor">⑦ 업체 정보 고치기</a>
+ <a href="#first">1. 처음 한 번만 하는 확인</a>
+ <a href="#list">2. 주간 리스트 만들기</a>
+ <a href="#ship">3. 출하 요청 메일</a>
+ <a href="#ket">4. KET 긴급 자재 메일</a>
+ <a href="#po">5. 주문서 메일</a>
+ <a href="#inbound">6. 입고 파일 만들기</a>
+ <a href="#vendor">7. 업체 정보 고치기</a>
  <a href="#faq">막힐 때 보는 곳</a>
  <a href="#limits">꼭 직접 확인할 것</a>
  <div class="tools"><b>화면 바로 가기</b>
@@ -80,7 +85,7 @@ code{background:#f1f5f9;border-radius:6px;padding:1px 6px;font-family:Consolas,"
  <p>주문서 메일은 요일과 상관없이, 주문서 PDF가 나올 때마다 메일 작성기에서 만듭니다.</p>
 </section>
 
-<section id="first"><h2><span class="n">①</span>처음 한 번만 하는 확인</h2>
+<section id="first"><h2><span class="n">1</span>처음 한 번만 하는 확인</h2>
  <p class="lead">내 PC의 Outlook에서 메일 파일이 제대로 열리는지 딱 한 번 확인합니다. 5분이면 됩니다.</p>
  <ol class="steps">
   <li><b>메일 작성기</b>를 엽니다. 위쪽에 "처음 한 번만" 상자가 보입니다. 안 보이면 오른쪽 위 <span class="btn">🔰 처음 확인</span>을 누릅니다.</li>
@@ -98,7 +103,7 @@ code{background:#f1f5f9;border-radius:6px;padding:1px 6px;font-family:Consolas,"
  <div class="box warn"><b>이 확인은 PC마다 한 번씩</b>PC를 바꾸거나 다른 브라우저를 쓰면 한 번 더 해야 합니다.</div>
 </section>
 
-<section id="list"><h2><span class="n">②</span>주간 리스트 만들기</h2>
+<section id="list"><h2><span class="n">2</span>주간 리스트 만들기</h2>
  <p class="lead">받은 파일을 옮겨 붙이거나 엑셀 매크로를 돌릴 필요 없이, 파일을 넣으면 리스트가 나옵니다.</p>
  <h3>넣을 파일</h3>
  <table>
@@ -129,13 +134,13 @@ code{background:#f1f5f9;border-radius:6px;padding:1px 6px;font-family:Consolas,"
  <p>리스트를 고치지 않고 바로 메일을 만들 거라면 <span class="btn pri">이 리스트로 메일 만들기 →</span>를 누르세요. 메일 작성기로 넘어가면서 리스트가 자동으로 들어갑니다.</p>
 </section>
 
-<section id="ship"><h2><span class="n">③</span>출하 요청 메일</h2>
+<section id="ship"><h2><span class="n">3</span>출하 요청 메일</h2>
  <p class="lead">리스트 엑셀 하나로 업체별 메일이 한꺼번에 만들어집니다.</p>
  <ol class="steps">
   <li><b>메일 작성기</b>를 엽니다. 오른쪽 위에 "보내는 사람: 김민지 계장"이 맞는지 봅니다.</li>
   <li>왼쪽 "출하 요청 메일" 칸의 <b>선박리스트</b> 자리에 리스트 엑셀을 끌어다 놓습니다. 에어 표가 같은 파일에 있으면 에어 칸은 비워 두어도 됩니다.</li>
   <li><b>기준 주 월요일</b> 날짜를 확인합니다. 이 날짜로 제목의 "○월 ○주"와 입고 요청 날짜가 정해집니다.</li>
-  <li><span class="btn pri">① 미리보기 · 메일 만들기</span>를 누릅니다.</li>
+  <li><span class="btn pri">1. 미리보기 · 메일 만들기</span>를 누릅니다.</li>
   <li>아래에 업체별 메일 목록이 나옵니다. <span class="btn">본문 보기</span>로 몇 개 열어 내용을 확인합니다.</li>
   <li><span class="btn ok">📦 전부 받기 (ZIP)</span>을 누릅니다.</li>
   <li>받은 ZIP 파일을 마우스 오른쪽 버튼 → "압축 풀기".</li>
@@ -148,15 +153,15 @@ code{background:#f1f5f9;border-radius:6px;padding:1px 6px;font-family:Consolas,"
   <tr><th>보이는 것</th><th>뜻</th><th>할 일</th></tr>
   <tr><td>✅ 메일 ○통 준비됨</td><td>정상으로 만들어졌습니다</td><td>전부 받기 → 보내기</td></tr>
   <tr><td>⚠ 받는 사람이 없는 업체</td><td>그 업체의 메일 주소가 설정에 없습니다</td><td>그 업체 줄의 빈칸에 메일 주소를 적고 "저장"</td></tr>
-  <tr><td>⚠ 업체를 모르는 품목</td><td>리스트의 거래처 이름을 설정에서 못 찾았습니다</td><td>아래 "③ 미지정 업체 지정하기"에서 업체를 고르고 저장한 뒤, 다시 ①</td></tr>
+  <tr><td>⚠ 업체를 모르는 품목</td><td>리스트의 거래처 이름을 설정에서 못 찾았습니다</td><td>아래 "미지정 업체 지정하기"에서 업체를 고르고 저장한 뒤, 다시 미리보기</td></tr>
   <tr><td>⚠ 이미 만든 적이 있는 메일 (빨간 테두리)</td><td>같은 주에 같은 업체로 이미 메일 파일을 받았습니다</td><td>두 번 보내지 않도록 "포함"이 꺼져 있습니다. 정말 다시 보내야 할 때만 Outlook 보낸 편지함을 확인하고 "포함"을 켭니다</td></tr>
   <tr><td>건너뜀(메일을 보내지 않는 업체)</td><td>출하 요청을 보내지 않기로 한 업체입니다 (예: 연호엠에스)</td><td>할 일 없음</td></tr>
  </table>
  <div class="box tip"><b>보내지 않을 업체가 있으면</b>그 메일 줄 왼쪽의 "포함" 체크를 끄면 ZIP에서 빠집니다. 한 통만 받고 싶으면 그 줄의 <span class="btn pri">📩 메일 파일 받기</span>를 누르세요.</div>
- <div class="box tip"><b>업체에 엑셀이 첨부되는 경우</b>일부 업체는 본문 표 대신 선박 리스트 엑셀이 첨부됩니다. 업체가 그 엑셀의 "입고수량" 칸을 채워 회신하면, ⑥에서 그대로 쓸 수 있습니다.</div>
+ <div class="box tip"><b>업체에 엑셀이 첨부되는 경우</b>일부 업체는 본문 표 대신 선박 리스트 엑셀이 첨부됩니다. 업체가 그 엑셀의 "입고수량" 칸을 채워 회신하면, 6번(입고 파일 만들기)에서 그대로 쓸 수 있습니다.</div>
 </section>
 
-<section id="ket"><h2><span class="n">④</span>KET 긴급 자재 메일</h2>
+<section id="ket"><h2><span class="n">4</span>KET 긴급 자재 메일</h2>
  <p class="lead">따로 누를 것은 없습니다. 출하 요청 메일을 만들 때 함께 만들어집니다.</p>
  <ul>
   <li>에어리스트에 KET 품목이 있으면, 목록에 빨간 <b>"긴급 자재"</b> 표시가 붙은 메일이 하나 더 나옵니다.</li>
@@ -165,11 +170,11 @@ code{background:#f1f5f9;border-radius:6px;padding:1px 6px;font-family:Consolas,"
  <div class="box stop"><b>보내기 전에 표를 꼭 확인하세요</b>이 메일의 표 모양과 숫자 기준은 실제로 보내던 메일과 아직 맞춰 보지 못했습니다. 특히 "미납수량 합계" 숫자가 맞는지 확인하고, 다르면 Outlook 창에서 고친 뒤 보내세요.</div>
 </section>
 
-<section id="po"><h2><span class="n">⑤</span>주문서 메일</h2>
+<section id="po"><h2><span class="n">5</span>주문서 메일</h2>
  <p class="lead">전산에서 뽑은 주문서 PDF를 넣으면 업체별로 잘라서 메일을 만듭니다.</p>
  <ol class="steps">
   <li>메일 작성기 오른쪽 "주문서(발주서) 메일" 칸에 <b>주문서 PDF</b>를 끌어다 놓습니다. 한 파일에 여러 업체, 여러 주문서가 섞여 있어도 되고, 파일을 여러 개 넣어도 됩니다.</li>
-  <li><span class="btn pri">① 미리보기 · 메일 만들기</span>를 누릅니다.</li>
+  <li><span class="btn pri">1. 미리보기 · 메일 만들기</span>를 누릅니다.</li>
   <li>"PDF에서 읽은 주문서 ○건 보기"를 눌러 PO 번호와 업체가 맞게 읽혔는지 봅니다.</li>
   <li>그다음은 출하 요청 메일과 같습니다. 전부 받기 → 압축 풀기 → 더블클릭 → 보내기.</li>
  </ol>
@@ -181,7 +186,7 @@ code{background:#f1f5f9;border-radius:6px;padding:1px 6px;font-family:Consolas,"
  <div class="box warn"><b>스캔한 PDF는 읽지 못합니다</b>종이를 스캔한 그림 PDF에는 글자가 없어서 PO 번호를 읽을 수 없습니다. 전산에서 바로 저장한 PDF를 넣어 주세요.</div>
 </section>
 
-<section id="inbound"><h2><span class="n">⑥</span>입고 파일 만들기</h2>
+<section id="inbound"><h2><span class="n">6</span>입고 파일 만들기</h2>
  <p class="lead">업체가 입고수량을 적어 보낸 엑셀을, 전산에 올리는 엑셀(<code>1118 태양기전.xlsx</code> 모양)로 바꿉니다.</p>
  <ol class="steps">
   <li><b>입고 파일 만들기</b> 화면을 엽니다.</li>
@@ -203,7 +208,7 @@ code{background:#f1f5f9;border-radius:6px;padding:1px 6px;font-family:Consolas,"
  <div class="box warn"><b>"업체코드가 없습니다"라고 나오면</b>기성전선, 명보케이블, 동성폴리머는 아직 코드가 들어 있지 않습니다. 그 칸에 코드를 직접 적으면 이 PC가 기억합니다.</div>
 </section>
 
-<section id="vendor"><h2><span class="n">⑦</span>업체 정보 고치기</h2>
+<section id="vendor"><h2><span class="n">7</span>업체 정보 고치기</h2>
  <p class="lead">담당자 메일이 바뀌거나 새 업체가 생겼을 때 합니다.</p>
  <h3>급할 때: 그 자리에서 메일 주소만 넣기</h3>
  <p>메일 목록에 "받는 사람 없음"이 뜨면, 그 줄의 빈칸에 메일 주소를 적고 "저장"을 누르면 바로 메일이 만들어집니다.</p>
@@ -234,7 +239,7 @@ code{background:#f1f5f9;border-radius:6px;padding:1px 6px;font-family:Consolas,"
  <p class="q">메일 파일을 더블클릭했는데 Outlook이 안 열려요.</p>
  <p class="a">파일을 마우스 오른쪽 버튼 → 연결 프로그램 → 다른 앱 선택 → Outlook → "항상". 그래도 안 되면 메일 작성기의 "🔰 처음 확인"에서 "다른 프로그램이 열렸다"를 눌러 안내를 따라 하세요.</p>
  <p class="q">메일은 열리는데 "보내기" 버튼이 없어요.</p>
- <p class="a">Outlook 오른쪽 위 "새 Outlook" 스위치를 끄고 다시 해 보세요. 스위치가 없으면 메일 줄의 <span class="btn">다른 방법</span>을 누르면 ① 새 메일 창 열기 ② 본문 복사 ③ 첨부 받기 버튼이 나옵니다. 새 메일 창 본문에 Ctrl+V로 붙이고 첨부를 끌어다 놓으면 됩니다.</p>
+ <p class="a">Outlook 오른쪽 위 "새 Outlook" 스위치를 끄고 다시 해 보세요. 스위치가 없으면 메일 줄의 <span class="btn">다른 방법</span>을 누르면 1. 새 메일 창 열기 2. 본문 복사 3. 첨부 받기 버튼이 나옵니다. 새 메일 창 본문에 Ctrl+V로 붙이고 첨부를 끌어다 놓으면 됩니다.</p>
  <p class="q">서명이 두 번 들어가요 / 서명이 없어요.</p>
  <p class="a">메일 작성기 → "고급 설정" → "본문 끝에 서명 넣기"를 끄거나 켭니다.</p>
  <p class="q">업체가 목록에 안 나와요.</p>

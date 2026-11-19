@@ -4,15 +4,16 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-<script src="js/core.js?v=6" defer></script>
-<script src="js/config.js?v=6" defer></script>
-<script src="js/lists.js?v=6" defer></script>
-<script src="js/mail.js?v=6" defer></script>
-<script src="js/run.js?v=6" defer></script>
-<script src="js/ui.js?v=6" defer></script>
+<script src="js/core.js?v=7" defer></script>
+<script src="js/config.js?v=7" defer></script>
+<script src="js/lists.js?v=7" defer></script>
+<script src="js/mail.js?v=7" defer></script>
+<script src="js/run.js?v=7" defer></script>
+<script src="js/ui.js?v=7" defer></script>
 <style>
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css");
 :root{--bg:#f4f6fa;--card:#fff;--line:#e3e7ee;--txt:#1f2937;--mut:#6b7280;--pri:#2563eb;--pri2:#1d4ed8;--ok:#16a34a;--warn:#d97706;--err:#dc2626;--chip:#eef2ff}
-*{box-sizing:border-box}body{margin:0;font-family:"Malgun Gothic","맑은 고딕",system-ui,sans-serif;background:var(--bg);color:var(--txt);font-size:14px}
+*{box-sizing:border-box}body{margin:0;font-family:'Aptos','Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,system-ui,'Segoe UI',Roboto,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;text-rendering:optimizeLegibility;letter-spacing:-0.01em;background:var(--bg);color:var(--txt);font-size:14px}
 header{background:#fff;border-bottom:1px solid var(--line);padding:12px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 header h1{font-size:18px;margin:0}header .sp{flex:1}
 select,input[type=text],input[type=date],input[type=file]{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:14px;background:#fff}
@@ -32,7 +33,7 @@ button.pri{background:var(--pri);color:#fff}button.pri:hover{background:var(--pr
 #log{background:#0f172a;color:#e2e8f0;border-radius:12px;padding:14px;height:300px;overflow:auto;font-family:Consolas,"D2Coding",monospace;font-size:13px;white-space:pre-wrap;line-height:1.5}
 #log .head{color:#93c5fd;font-weight:bold}#log .ok{color:#86efac}#log .warn{color:#fcd34d}#log .err{color:#fca5a5}
 .status{font-size:13px;color:var(--mut);font-weight:normal}.status.run{color:var(--pri)}
-table{width:100%;border-collapse:collapse;margin-top:8px}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);font-size:13px}
+table{width:100%;border-collapse:collapse;margin-top:8px;font-variant-numeric:tabular-nums}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);font-size:13px}
 .tag{display:inline-block;background:var(--chip);color:var(--pri2);border-radius:6px;padding:2px 8px;font-size:12px;margin-right:6px}
 .hint{color:var(--mut);font-size:12px;margin-top:6px}.warn{color:var(--warn)}
 .mail{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px}.mh{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.subj{color:var(--mut);flex:1}
@@ -86,7 +87,7 @@ a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;ba
  </ol>
  <div id="fcResult" style="display:none"></div>
 </section>
-<div class="full"><div class="steps"><span>① 엑셀/PDF 끌어다 놓기</span><span>② 미리보기 · 메일 만들기</span><span>③ 📦 전부 받기(ZIP)</span><span>④ 압축 풀고 .eml 더블클릭</span><span>⑤ Outlook에서 확인 후 보내기</span></div>
+<div class="full"><div class="steps"><span>1. 엑셀/PDF 끌어다 놓기</span><span>2. 미리보기 · 메일 만들기</span><span>3. 📦 전부 받기(ZIP)</span><span>4. 압축 풀고 .eml 더블클릭</span><span>5. Outlook에서 확인 후 보내기</span></div>
  <p class="flow">한 주 순서: 받은 파일로 <a href="list.html"><b>주간 리스트 만들기</b></a> → <b>금요일</b> <a href="https://gywn000929-bot.github.io/air-confirm/" target="_blank" rel="noopener">에어 컨펌 도우미</a>로 컨펌 → 주간 엑셀의 Air up 시트 정리 → <b>월요일</b> 이 화면에서 출하 요청 메일(+ KET 긴급 자재 메일) · 주문서는 PDF가 나올 때마다 · 업체가 입고수량을 회신하면 <a href="inbound.html"><b>입고 파일 만들기</b></a></p></div>
 <section class="card"><h2><span class="step">1</span> 출하 요청 메일 (선박 / 에어)</h2>
  <div class="drop" id="dropShip"><b>선박리스트</b> 엑셀을 여기에 끌어다 놓거나 클릭<small id="shipName">아직 없음</small></div>
@@ -98,13 +99,13 @@ a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;ba
  <div class="row"><label>기준 주 월요일</label><input type="date" id="monday"><button class="sm" id="advToggle">▸ 고급 설정</button></div>
  <div class="hint warn" id="monHint" style="display:none">오늘은 월요일입니다. 지금은 <b>다음 주</b> 월요일로 잡혀 있습니다. 이번 주 것을 만들려면 → <button class="sm" id="btnThisWeek">이번 주(오늘)로 바꾸기</button></div>
  <div id="adv" style="display:none"><div class="row"><label>ETD 열 개수</label><input type="text" id="etd" style="width:50px" placeholder="설정값"><label>특정 업체만</label><input type="text" id="only" style="width:160px" placeholder="예: 대일CST,태양단자"><label><input type="checkbox" id="autoBoth" checked> 같은 파일의 선박·에어 표 자동 사용</label></div><div class="row"><label><input type="checkbox" id="sigOn" checked> 본문 끝에 서명 넣기</label><span class="hint">Outlook이 서명을 스스로 넣어서 두 번 보이면 끄세요 (이 PC에 기억)</span></div></div>
- <div class="btns"><button class="pri" id="btnShip">① 미리보기 · 메일 만들기</button></div>
+ <div class="btns"><button class="pri" id="btnShip">미리보기 · 메일 만들기</button></div>
  <div class="hint">업체별로 본문·첨부 엑셀을 만들어 아래에 보여 줍니다. 설정에 "긴급메일업체"(KET)가 있으면 에어리스트의 그 업체 품목으로 <b>긴급 자재 메일</b>도 함께 만듭니다. 내 PC 밖으로 나가는 것은 없습니다(모두 이 브라우저 안에서 처리).</div>
 </section>
 <section class="card"><h2><span class="step">1</span> 주문서(발주서) 메일</h2>
  <div class="drop" id="dropPdf"><b>주문서 PDF</b>를 여기에 끌어다 놓거나 클릭 (여러 개 가능)<small id="pdfName">아직 없음</small></div>
  <input type="file" id="pdf" accept=".pdf" multiple hidden>
- <div class="btns"><button class="pri" id="btnPo">① 미리보기 · 메일 만들기</button></div>
+ <div class="btns"><button class="pri" id="btnPo">미리보기 · 메일 만들기</button></div>
  <div class="hint">한 PDF에 여러 업체·여러 PO가 있어도 됩니다. 업체별로 잘라서 "업체-PO번호" 메일을 만듭니다. 발주서발송=N 업체(한국단자공업·연호·경신)는 자동 제외.</div>
 </section>
 <section class="card full" id="resultCard" style="display:none"><h2><span class="step">2</span> <span id="resultTitle">만들어진 메일</span><span class="sp" style="flex:1"></span><button class="ok" id="btnZip">📦 전부 받기 (ZIP)</button></h2>
@@ -114,7 +115,7 @@ a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;ba
  <div id="afterZip" style="display:none"><b>다음 할 일:</b> 받은 ZIP을 우클릭 → "압축 풀기" → 폴더 안의 .eml 파일을 하나씩 더블클릭 → Outlook 새 메일 창에서 받는 사람·첨부를 확인하고 <b>보내기</b>. 다 보낸 뒤에는 폴더를 지워도 됩니다. <b>보낸 메일은 위 목록의 "Outlook에서 보냈음"에 체크</b>해 두면, 같은 메일을 또 만들 때 알려 줍니다.</div>
 </section>
 <section class="card full" id="assignCard" style="display:none"><h2><span class="step">3</span> 미지정 업체 지정하기</h2>
- <div class="hint">아래 항목을 어느 업체로 보낼지 고르고 저장하세요. 새 업체면 "(새 업체)"를 고르고 오른쪽에 <b>업체이름, 메일주소</b>를 적습니다. 저장 후 ① 을 다시 누르세요. (이 PC에 기억되며, 위쪽 노란 알림의 "설정 파일 받아서 올리기"로 다른 PC에도 적용할 수 있습니다)</div>
+ <div class="hint">아래 항목을 어느 업체로 보낼지 고르고 저장하세요. 새 업체면 "(새 업체)"를 고르고 오른쪽에 <b>업체이름, 메일주소</b>를 적습니다. 저장 후 1. 을 다시 누르세요. (이 PC에 기억되며, 위쪽 노란 알림의 "설정 파일 받아서 올리기"로 다른 PC에도 적용할 수 있습니다)</div>
  <table id="assignTbl"><thead><tr><th>항목</th><th>예시</th><th>업체</th><th>새 업체 이름 / 메일</th></tr></thead><tbody></tbody></table>
  <div class="btns"><button class="pri" id="btnAssign">저장</button><button id="btnEditNoMail">메일 주소 없는 업체 한꺼번에 적기</button></div>
 </section>
@@ -132,12 +133,12 @@ a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;ba
  <ol>
   <li><b>처음 한 번</b>: 위쪽 <b>🔰 처음 확인</b>을 눌러 시험 메일이 내 PC의 Outlook에서 "보내기" 가능한 새 메일 창으로 열리는지 확인합니다. 안 열리면 화면이 알려 주는 대로 따라 하세요.</li>
   <li><b>리스트부터 만들 때</b>: <a href="list.html">주간 리스트 만들기</a> 화면에서 받은 요청 파일과 전산 Balance를 넣어 "선박 및 에어리스트" 엑셀을 만듭니다. 거기서 "이 리스트로 메일 만들기"를 누르면 이 화면으로 넘어옵니다.</li>
-  <li>선박리스트·에어리스트가 들어 있는 주간 엑셀(또는 주문서 PDF)을 끌어다 놓고 <b>① 미리보기 · 메일 만들기</b>를 누릅니다.</li>
+  <li>선박리스트·에어리스트가 들어 있는 주간 엑셀(또는 주문서 PDF)을 끌어다 놓고 <b>미리보기 · 메일 만들기</b>를 누릅니다.</li>
   <li>업체별 메일이 아래에 나옵니다. "본문 보기"로 확인하고 <b>📦 전부 받기 (ZIP)</b> 또는 메일마다 "메일 파일 받기"를 누릅니다.</li>
   <li>받은 ZIP의 압축을 풀고 <b>.eml 파일을 더블클릭</b> → Outlook 새 메일 창 → 내용 확인 → <b>보내기</b>. 보낸 메일은 목록의 "Outlook에서 보냈음"에 체크해 둡니다.</li>
   <li><b>같은 메일을 또 만들면</b> 빨간 테두리로 알려 주고 "포함"이 꺼진 채로 나옵니다(두 번 보내기 방지). 주문서는 PO 번호, 출하 요청은 업체와 기준 주로 구분합니다.</li>
   <li><b>업체 메일 주소·문구를 고치려면</b> 위쪽 <b>⚙ 업체·설정 고치기</b>. 고친 뒤 "저장하고 설정 파일 받기"를 누르면 올리는 방법이 화면에 나옵니다. 올리기 전까지는 이 PC에서만 적용됩니다(위쪽 노란 알림).</li>
-  <li>"업체를 모르는 품목"이 나오면 ③에서 업체를 골라 저장하고 ①을 다시 누릅니다. "받는 사람 없음" 업체는 그 칸에 메일 주소를 적고 저장하면 됩니다.</li>
+  <li>"업체를 모르는 품목"이 나오면 미지정 업체 지정하기에서 업체를 골라 저장하고 미리보기를 다시 누릅니다. "받는 사람 없음" 업체는 그 칸에 메일 주소를 적고 저장하면 됩니다.</li>
   <li>선박리스트 파일 안에 Air 시트가 같이 있으면 선박 칸에만 넣어도 에어까지 자동으로 만듭니다. 에어 표가 여러 시트(Air, Air up)면 Remain 열이 있는 시트를 쓰고, 파일 아래 "에어 시트"에서 바꿀 수 있습니다.</li>
   <li><b>KET 긴급 자재 메일</b>: 에어리스트에 KET 품목이 있으면 "긴급 자재" 표시가 붙은 메일이 하나 더 만들어집니다. 표(NO·품목명·미납수량 합계·AIR 수량·부족일정)의 숫자와 붉은 칸을 보내기 전에 꼭 확인하세요.</li>
  </ol>

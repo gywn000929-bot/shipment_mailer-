@@ -318,7 +318,7 @@ function bindEditor() {
     $("editCard").style.display = "none";
     if (dl && CONFIG.pending.length) downloadConfig();
     else toast(count ? "이 PC에 저장했습니다. 다른 PC에서도 쓰려면 위 노란 알림의 '설정 파일 받아서 올리기'를 누르세요." : "바뀐 내용이 없습니다.");
-    if (typeof RESULT !== "undefined" && RESULT.mails.length) toast("설정을 고쳤습니다. ① 미리보기 · 메일 만들기를 다시 눌러 주세요.");
+    if (typeof RESULT !== "undefined" && RESULT.mails.length) toast("설정을 고쳤습니다. 미리보기 · 메일 만들기를 다시 눌러 주세요.");
   };
   $("edSave").onclick = () => save(false); $("edSaveDl").onclick = () => save(true);
   $("edCancel").onclick = () => { $("editCard").style.display = "none"; };

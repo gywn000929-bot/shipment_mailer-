@@ -2,12 +2,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="js/core.js?v=6" defer></script>
-<script src="js/config.js?v=6" defer></script>
-<script src="js/inbound.js?v=6" defer></script>
+<script src="js/core.js?v=7" defer></script>
+<script src="js/config.js?v=7" defer></script>
+<script src="js/inbound.js?v=7" defer></script>
 <style>
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css");
 :root{--bg:#f4f6fa;--card:#fff;--line:#e3e7ee;--txt:#1f2937;--mut:#6b7280;--pri:#2563eb;--pri2:#1d4ed8;--ok:#16a34a;--warn:#d97706;--err:#dc2626;--chip:#eef2ff}
-*{box-sizing:border-box}body{margin:0;font-family:"Malgun Gothic","맑은 고딕",system-ui,sans-serif;background:var(--bg);color:var(--txt);font-size:14px}
+*{box-sizing:border-box}body{margin:0;font-family:'Aptos','Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,system-ui,'Segoe UI',Roboto,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;text-rendering:optimizeLegibility;letter-spacing:-0.01em;background:var(--bg);color:var(--txt);font-size:14px}
 header{background:#fff;border-bottom:1px solid var(--line);padding:12px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 header h1{font-size:18px;margin:0}header .sp{flex:1}
 select,input[type=text],input[type=date],input[type=file]{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:14px;background:#fff}
@@ -27,7 +28,7 @@ button.pri{background:var(--pri);color:#fff}button.pri:hover{background:var(--pr
 #log{background:#0f172a;color:#e2e8f0;border-radius:12px;padding:14px;height:300px;overflow:auto;font-family:Consolas,"D2Coding",monospace;font-size:13px;white-space:pre-wrap;line-height:1.5}
 #log .head{color:#93c5fd;font-weight:bold}#log .ok{color:#86efac}#log .warn{color:#fcd34d}#log .err{color:#fca5a5}
 .status{font-size:13px;color:var(--mut);font-weight:normal}.status.run{color:var(--pri)}
-table{width:100%;border-collapse:collapse;margin-top:8px}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);font-size:13px}
+table{width:100%;border-collapse:collapse;margin-top:8px;font-variant-numeric:tabular-nums}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);font-size:13px}
 .tag{display:inline-block;background:var(--chip);color:var(--pri2);border-radius:6px;padding:2px 8px;font-size:12px;margin-right:6px}
 .hint{color:var(--mut);font-size:12px;margin-top:6px}.warn{color:var(--warn)}
 .mail{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px}.mh{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.subj{color:var(--mut);flex:1}
@@ -65,7 +66,7 @@ a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;ba
 <span class="hint" id="inCfg">설정 불러오는 중…</span>
 <a class="btn" href="guide.html#inbound" target="_blank" rel="noopener">📖 사용 안내</a><a class="btn" data-nav href="list.html">📋 주간 리스트 만들기</a><a class="btn" data-nav href="index.html">📮 메일 작성기</a></header>
 <main>
-<div class="full"><div class="steps"><span>① 업체가 보낸 엑셀(또는 주간 리스트) 끌어다 놓기</span><span>② 업체·입고수량 확인</span><span>③ 받기 → 전산에 올리기</span></div></div>
+<div class="full"><div class="steps"><span>1. 업체가 보낸 엑셀(또는 주간 리스트) 끌어다 놓기</span><span>2. 업체·입고수량 확인</span><span>3. 받기 → 전산에 올리기</span></div></div>
 <section class="card full"><h2><span class="step">1</span> 파일 넣기 <span class="status" id="inCount"></span></h2>
  <div class="drop" id="dropIn"><b>업체가 입고수량을 적어 보낸 엑셀</b>을 여기에 끌어다 놓거나 클릭 (여러 업체 한꺼번에 가능)<small id="inName">아직 없음</small></div>
  <input type="file" id="inFiles" accept=".xlsx,.xls" multiple hidden>
