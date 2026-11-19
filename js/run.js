@@ -92,7 +92,7 @@ async function runShip() {
     if (RESULT.skipped && RESULT.skipped.length) log(`[출하 요청 메일을 보내지 않는 업체 - 건너뜀] ${RESULT.skipped.join(", ")}`);
     if (problems.length) { log("[문제] 아래 업체는 메일을 만들지 않았습니다:", "warn"); problems.forEach((p) => log("   " + p, "warn")); }
     if (unShip.length || unAir.length) {
-      log(`[미지정 품목] 선박 ${unShip.length}건 / 에어 ${unAir.length}건 → 메일 생성 안 함 (아래 ③에서 업체를 지정하세요)`, "warn");
+      log(`[미지정 품목] 선박 ${unShip.length}건 / 에어 ${unAir.length}건 → 메일 생성 안 함 (아래 미지정 업체 지정하기에서 업체를 지정하세요)`, "warn");
       unShip.forEach((r) => log(`   선박  ${r["ITEM CD"].padEnd(20)} ${r.MAKER.padEnd(18)} ${r["ITEM NM"]}`));
       unAir.forEach((r) => log(`   에어  ${r["Item cd"].padEnd(20)} ${r.Maker.padEnd(18)} ${r["Part Name"]}`));
       RESULT.extraFiles.push({ name: `미지정_품목_${fmtDate(monday).replace(/-/g, "")}_${month}월${week}주.xlsx`, data: unmappedXlsx(unShip, unAir, etdSel) });
@@ -196,7 +196,7 @@ async function runPo() {
     RESULT.skipped = skipped.map((e) => `PO ${e.po} ${e.vendor}`);
     if (skipped.length) { log(""); log("[발주서 미발송 업체 - 건너뜀]"); skipped.forEach((e) => log(`   PO ${e.po}  ${e.vendor}`)); }
     if (unknown.length) {
-      log(""); log("[업체를 못 찾음 - 아래 ③에서 지정하세요]", "warn"); unknown.forEach((e) => log(`   PO ${e.po}  거래처명: ${e.vendor}  (코드 ${e.code})`, "warn"));
+      log(""); log("[업체를 못 찾음 - 아래 미지정 업체 지정하기에서 지정하세요]", "warn"); unknown.forEach((e) => log(`   PO ${e.po}  거래처명: ${e.vendor}  (코드 ${e.code})`, "warn"));
       const grp = {}; for (const e of unknown) (grp[e.vendor || "(거래처명 없음)"] = grp[e.vendor || "(거래처명 없음)"] || []).push("PO " + e.po);
       RESULT.unmatched = Object.entries(grp).map(([k, v]) => ({ key: k, kind: "po", count: v.length, samples: v }));
       for (const e of unknown) RESULT.extraFiles.push({ name: `미지정_${e.po}.pdf`, data: await splitPdf(e.buf, e.pages) });

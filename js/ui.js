@@ -49,13 +49,13 @@ function renderResult() {
   $("btnZip").style.display = ready.length ? "" : "none";
   $("resultTitle").textContent = ready.length ? `만들어진 메일 ${ready.length}통` : "만들어진 메일 없음";
   $("resultHint").innerHTML = copyMode
-    ? '이 PC는 <b>복사해서 보내기</b> 방식입니다. 메일마다 <b>① 새 메일 창 열기 → ② 본문 복사 후 붙여넣기(Ctrl+V) → ③ 첨부 받아서 끌어다 놓기</b> 순서로 하고, 확인 후 보내세요. (자동 발송 없음)'
+    ? '이 PC는 <b>복사해서 보내기</b> 방식입니다. 메일마다 <b>1. 새 메일 창 열기 → 2. 본문 복사 후 붙여넣기(Ctrl+V) → 3. 첨부 받아서 끌어다 놓기</b> 순서로 하고, 확인 후 보내세요. (자동 발송 없음)'
     : '받은 <b>.eml 파일을 더블클릭</b>하면 Outlook에 받는 사람·제목·본문·첨부가 채워진 <b>새 메일 창</b>이 열립니다. 내용 확인 후 <b>보내기</b>만 누르세요. (자동 발송 없음) · 보내지 않을 업체는 왼쪽 "포함" 체크를 끄세요.';
   const parts = [];
   if (ready.length) parts.push(`<span class="ok">✅ 메일 ${ready.length}통 준비됨</span> → 오른쪽 위 <b>📦 전부 받기</b>를 누르고, 받은 .eml 파일을 더블클릭해 Outlook에서 <b>보내기</b>`);
   if (dup.length) parts.push(`<span class="warn">⚠ 이미 만든 적이 있는 메일 ${dup.length}통</span> (${esc(dup.map((m) => m.vendor).join(", "))}) → 두 번 보내지 않도록 <b>"포함"을 꺼 두었습니다.</b> 정말 다시 보내야 하면 Outlook 보낸 편지함을 확인한 뒤 "포함"을 켜세요.`);
   if (noTo.length) parts.push(`<span class="warn">⚠ 받는 사람이 없는 업체 ${noTo.length}곳</span> (${esc(noTo.map((m) => m.vendor).join(", "))}) → 아래 해당 칸에 메일 주소를 적고 <b>저장</b>하면 다음부터 기억합니다`);
-  if (RESULT.unmatched.length) parts.push(`<span class="warn">⚠ 업체를 모르는 품목 ${RESULT.unmatched.reduce((a, b) => a + b.count, 0)}건</span> → 아래 <b>③ 미지정 업체 지정하기</b>에서 업체를 고른 뒤 다시 ①`);
+  if (RESULT.unmatched.length) parts.push(`<span class="warn">⚠ 업체를 모르는 품목 ${RESULT.unmatched.reduce((a, b) => a + b.count, 0)}건</span> → 아래 <b>미지정 업체 지정하기</b>에서 업체를 고른 뒤 다시 미리보기`);
   if (RESULT.skipped && RESULT.skipped.length) parts.push(`<span class="hint">건너뜀(메일을 보내지 않는 업체): ${esc(RESULT.skipped.join(", "))}</span>`);
   if (RESULT.poTable && RESULT.poTable.length) {
     const cls = (st) => st === "메일 생성" ? "ok" : st.includes("건너뜀") ? "hint" : "warn";
@@ -65,10 +65,10 @@ function renderResult() {
   RESULT.mails.forEach((m, i) => {
     const d = document.createElement("div"); d.className = "mail" + (m.noTo ? " noto" : m.dupRecs.length ? " dup" : "");
     const alt = `<div class="alt" style="display:${copyMode && !m.noTo ? "" : "none"}"><b>복사해서 보내기</b>
-       <a class="btn sm" href="${esc(mailtoUrl(m))}" data-i="${i}" data-act="mailto">① 새 메일 창 열기</a>
-       <button class="sm" data-i="${i}" data-act="copy">② 본문 복사</button>
-       ${m.attachments.map((a, j) => `<button class="sm" data-i="${i}" data-j="${j}" data-act="att">③ 첨부 받기: ${esc(a.name)}</button>`).join("")}
-       <div class="hint">①로 열린 새 메일 창의 본문 칸을 누르고 Ctrl+V → 받은 첨부 파일을 메일 창에 끌어다 놓기 → 확인 후 보내기</div></div>`;
+       <a class="btn sm" href="${esc(mailtoUrl(m))}" data-i="${i}" data-act="mailto">1. 새 메일 창 열기</a>
+       <button class="sm" data-i="${i}" data-act="copy">2. 본문 복사</button>
+       ${m.attachments.map((a, j) => `<button class="sm" data-i="${i}" data-j="${j}" data-act="att">3. 첨부 받기: ${esc(a.name)}</button>`).join("")}
+       <div class="hint">1번으로 열린 새 메일 창의 본문 칸을 누르고 Ctrl+V → 받은 첨부 파일을 메일 창에 끌어다 놓기 → 확인 후 보내기</div></div>`;
     d.innerHTML = `<div class="mh"><label class="inc"><input type="checkbox" data-i="${i}" data-act="inc" ${m.include ? "checked" : ""} ${m.noTo ? "disabled" : ""}> 포함</label><b>${esc(m.vendor)}</b>${m.kind === "urgent" ? '<span class="tag red">긴급 자재</span>' : ""}<span class="subj">${esc(m.subject)}</span>
       ${m.noTo ? "" : `<button class="sm pri" data-i="${i}" data-act="eml">📩 메일 파일 받기</button><button class="sm" data-i="${i}" data-act="alt" title=".eml 파일이 Outlook 새 메일 창으로 열리지 않을 때">다른 방법</button>`}<button class="sm" data-i="${i}" data-act="view">본문 보기</button></div>
       <div class="meta">${m.noTo ? `<span class="warn">받는 사람 없음</span> → <input type="text" class="toin" data-i="${i}" placeholder="메일 주소 (여러 개면 쉼표)" style="width:300px"> <button class="sm pri" data-i="${i}" data-act="saveto">저장</button>` : "받는 사람: " + esc(m.to.join(", "))}${m.cc.length ? "<br>참조: " + esc(m.cc.join(", ")) : ""}${m.attachments.length ? "<br>첨부: " + esc(m.attachments.map((a) => a.name).join(", ")) : ""}${m.note && !m.noTo ? `<br><span class="warn">${esc(m.note)}</span>` : ""}${m.dupRecs.length ? `<br><span class="warn">⚠ ${esc(dupText(m))}</span>` : ""}
@@ -149,7 +149,7 @@ function saveAssign() {
   });
   setLocal(CONFIG_NAME, local);
   log("[설정 반영 · 이 PC에 저장] " + (changes.length ? changes.join(" / ") : "변경 없음"), "ok");
-  toast(changes.length ? "저장했습니다. ① 미리보기를 다시 누르세요." : "변경 없음");
+  toast(changes.length ? "저장했습니다. 미리보기를 다시 누르세요." : "변경 없음");
   reloadConfig({ refetch: false });
 }
 
@@ -166,7 +166,7 @@ const FC_MSG = {
   other: `<b>다른 프로그램이 열리거나 아무 일도 없는 경우</b> — .eml 파일을 Outlook으로 열도록 한 번만 정해 주면 됩니다.
      <ol><li>받은 시험 파일(.eml)을 <b>마우스 오른쪽 버튼</b>으로 누릅니다.</li><li><b>연결 프로그램</b> → <b>다른 앱 선택</b>을 누릅니다.</li><li>목록에서 <b>Outlook</b>을 고르고 <b>항상</b>을 누릅니다. <span class="hint">("Outlook (classic)"이 보이면 그것을 고르세요)</span></li><li>파일을 다시 더블클릭합니다. 새 메일 창이 열리면 위에서 맞는 버튼을 다시 눌러 주세요.</li></ol>
      목록에 Outlook이 없거나 그래도 안 되면: <button class="sm" data-fc="copy">복사해서 보내기 방식으로 쓰기</button>`,
-  copy: `<span class="ok">✅ 이 PC는 "복사해서 보내기" 방식으로 바꿨습니다.</span> 메일을 만들면 메일마다 ① 새 메일 창 열기 ② 본문 복사 ③ 첨부 받기 버튼이 나옵니다. 나중에 .eml이 잘 열리게 되면 여기서 첫 번째 버튼을 다시 누르면 원래 방식으로 돌아갑니다.`,
+  copy: `<span class="ok">✅ 이 PC는 "복사해서 보내기" 방식으로 바꿨습니다.</span> 메일을 만들면 메일마다 1. 새 메일 창 열기 2. 본문 복사 3. 첨부 받기 버튼이 나옵니다. 나중에 .eml이 잘 열리게 되면 여기서 첫 번째 버튼을 다시 누르면 원래 방식으로 돌아갑니다.`,
 };
 function fcShow(key) { $("fcResult").innerHTML = FC_MSG[key] || ""; $("fcResult").style.display = key ? "" : "none"; }
 function onFirstCheck(e) {
@@ -199,7 +199,7 @@ function takeHandoff() {
   if (!h || !h.b64) return;
   const bytes = Uint8Array.from(atob(h.b64), (c) => c.charCodeAt(0)), dt = new DataTransfer();
   dt.items.add(new File([bytes], h.name || "선박 및 에어리스트.xlsx")); $("ship").files = dt.files; $("ship").dispatchEvent(new Event("change"));
-  $("firstCard").style.display = "none"; setTimeout(() => { $("dropShip").scrollIntoView({ behavior: "smooth", block: "center" }); toast("만든 리스트를 선박리스트 칸에 넣었습니다. 기준 주를 확인하고 ① 미리보기 · 메일 만들기를 누르세요."); }, 600);
+  $("firstCard").style.display = "none"; setTimeout(() => { $("dropShip").scrollIntoView({ behavior: "smooth", block: "center" }); toast("만든 리스트를 선박리스트 칸에 넣었습니다. 기준 주를 확인하고 미리보기 · 메일 만들기를 누르세요."); }, 600);
 }
 window.addEventListener("DOMContentLoaded", () => {
   if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";

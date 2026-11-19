@@ -188,7 +188,7 @@ function testMail() {
   const ws = XLSX.utils.aoa_to_sheet([hdr, ...rows]); styleSheet(ws, 3, 4, 3);
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "시험");
   const body = [P("이 메일은 메일 작성기가 내 PC에서 잘 되는지 보는 시험용입니다. 보내지 않고 닫아도 됩니다."), BR,
-    P("확인할 것: ① 위에 '보내기' 버튼이 있는지 ② 받는 사람·제목이 채워져 있는지 ③ 아래 표의 노란 칸이 보이는지 ④ 첨부 엑셀이 붙어 있는지 ⑤ 맨 아래 서명이 한 번만 나오는지"), BR,
+    P("확인할 것: 1. 위에 '보내기' 버튼이 있는지 2. 받는 사람·제목이 채워져 있는지 3. 아래 표의 노란 칸이 보이는지 4. 첨부 엑셀이 붙어 있는지 5. 맨 아래 서명이 한 번만 나오는지"), BR,
     htmlTable(hdr, rows.map((r) => [r[0], r[1], r[2], fmtNum(r[3])]), ["수량"]), BR, P("감사합니다.")].join("");
   return { vendor: "시험", subject: "[시험] 메일 작성기 확인용", to: me ? [me] : [], cc: [], body, attachments: [{ name: "시험_첨부.xlsx", data: new Uint8Array(XLSX.write(wb, { type: "array", bookType: "xlsx" })) }] };
 }
