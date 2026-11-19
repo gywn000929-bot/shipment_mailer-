@@ -1,0 +1,239 @@
+/* 주간 리스트 만들기: 받은 요청 파일(F1·F2·F5 선박, 에어 리포트) + 전산 Balance/Stock + 거래처 표
+   → "선박 및 에어리스트" 엑셀. (엑셀 매크로 "선박리스트_만들기"와 같은 규칙)
+   규칙
+   - 선박: 각 요청 파일의 SUMMARY 시트에서 ITEM NM 바로 뒤 열들이 ETD 수량. SUM=ETD 합, SUM이 0인 줄은 뺀다.
+   - BALANCE/STOCK: 공장별 시트에서 품목 코드로 찾는다. MAKER가 JST이고 값이 비어 있으면 JST 시트에서 다시 찾는다.
+   - BALANCE 1 = BALANCE + STOCK, B-R = BALANCE 1 - SUM (에어는 B-R = BALANCE 1 - 요청 수량)
+   - 거래처: ① 예외표에서 M코드가 같고 품목명이 예외 품목명으로 시작 ② 품목명이 예외 품목명과 같음 ③ MAKER별 기본 거래처
+   - 에어: 요청 수량이 "600>>2,100"이면 2,100, "500>>0"이면 그 줄은 뺀다.
+ - 정렬: FAC → MAKER → 품목명 (엑셀처럼 하이픈은 무시) */
+"use strict";
+const LS_VTBL = "mailmaker_vendor_table_v1";
+const SLOTS = ["F1 Bal", "F2 Bal", "F5 Bal", "F1 JST Bal", "F2 JST Bal", "F5 JST Bal", "F1 Sto", "F2 Sto", "F5 Sto", "F1 JST Sto", "F2 JST Sto", "F5 JST Sto"];
+const BUILD = { inputs: [], out: null };
+const nsp = (s) => clean(s).replace(/\s+/g, "").toUpperCase();
+const isCode = (v) => /^[MS]0/i.test(clean(v));
+
+// ---------------------------------------------------------------- 파일·시트 알아보기
+function slotOf(sheetName, fileName) {   // 매크로와 같은 시트 이름 규칙 + 파일 이름
+  const tryName = (raw) => {
+    const s = nsp(raw).replace(/[_\-.()]/g, "");
+    const f = (s.match(/F([125])/) || s.match(/(?:BALANCE|JST|STO|STOCK)([125])/) || [])[1];
+    if (!f) return "";
+    const jst = s.includes("JST"), sto = /STO|재고/.test(s), bal = /BAL|미납/.test(s);
+    if (!sto && !bal && !jst) return "";
+    return `F${f} ${jst ? "JST " : ""}${sto ? "Sto" : "Bal"}`;
+  };
+  return tryName(sheetName) || tryName(fileName.replace(/\.[^.]+$/, ""));
+}
+function headerRowOf(rows, needs, max = 12) {
+  for (let i = 0; i < Math.min(max, rows.length); i++) { const c = (rows[i] || []).map(nsp); if (needs.every((n) => c.includes(n))) return i; }
+  return -1;
+}
+function readInputs(fileName, wb) {
+  const out = [];
+  for (const sn of wb.SheetNames) {
+    const rows = sheetRows(wb, sn); if (!rows.length) continue;
+    const base = { file: fileName, sheet: sn, rows, sheetNames: wb.SheetNames };
+    if (headerRowOf(rows, ["매입업체", "MAKER"], 3) >= 0) { out.push({ ...base, kind: "vendor" }); continue; }
+    if (/^SUMMARY/i.test(sn.trim()) && headerRowOf(rows, ["ITEMCD"]) >= 0) { let facs = []; try { facs = parseSea(base).facs; } catch (e) { console.warn(e); } out.push({ ...base, kind: "sea", facs }); continue; }
+    if (headerRowOf(rows, ["ITEMCD", "PARTNAME", "PURCHASEREQUEST", "SPEC"]) >= 0) { out.push({ ...base, kind: "air" }); continue; }
+    const slot = slotOf(sn, wb.SheetNames.length === 1 ? fileName : "");
+    const looksBal = rows.slice(0, 30).some((r) => (r || []).slice(0, 10).some(isCode)) && rows.length > 1 && (rows[0] || []).length <= 12;
+    if (slot && looksBal) { out.push({ ...base, kind: "bal", slot }); continue; }
+    if (wb.SheetNames.length === 1 && looksBal && headerRowOf(rows, ["미납수량합계"], 5) >= 0) out.push({ ...base, kind: "bal", slot: "" });   // 공장을 모르는 Balance 파일 → 화면에서 고르게
+  }
+  return out;
+}
+async function addBuildFiles(files) {
+  for (const f of files) {
+    try {
+      const wb = XLSX.read(await f.arrayBuffer(), { type: "array", cellDates: true });
+      const got = readInputs(f.name, wb);
+      if (!got.length) { toast(`${f.name}: 쓸 수 있는 표를 찾지 못했습니다`); continue; }
+      for (const g of got) {   // 같은 종류·같은 자리는 새 파일로 바꾼다
+        BUILD.inputs = BUILD.inputs.filter((x) => !(x.kind === g.kind && (g.kind === "vendor" || (g.kind === "bal" && g.slot && x.slot === g.slot) || (x.file === g.file && x.sheet === g.sheet))));
+        BUILD.inputs.push(g);
+      }
+    } catch (e) { console.error(e); toast(`${f.name}: 읽지 못했습니다 (${e.message || e})`); }
+  }
+  const v = BUILD.inputs.find((x) => x.kind === "vendor");
+  if (v) store.set(LS_VTBL, { rows: v.rows.map((r) => (r || []).slice(0, 8).map((c) => (c == null ? "" : clean(c)))), from: v.file, at: fmtDate(new Date()) });
+  BUILD.out = null; renderBuild();
+}
+
+// ---------------------------------------------------------------- 선박 요청 파일 읽기
+const etdKey = (s) => { const m = clean(s).toUpperCase().match(/(\d{1,2})[\s\-]*([A-Z]{3})/); return m ? `${+m[1]}-${m[2]}` : ""; };   // "ETD 04-DEC-26", "ETD 4 DEC" → "4-DEC"
+function parseSea(inp) {
+  const rows = inp.rows, h = headerRowOf(rows, ["ITEMCD"]);
+  const hd = rows[h].map(nsp), cCd = hd.indexOf("ITEMCD"), cFac = cCd - 1;
+  const cMk = hd.indexOf("MAKER"), cNm = hd.findIndex((c) => c === "ITEMNM");
+  if (cMk < 0 || cNm < 0) throw new Error(`${inp.file}: SUMMARY 시트에서 MAKER / ITEM NM 열을 찾지 못했습니다`);
+  let names = [];
+  for (let c = cNm + 1; c < hd.length && hd[c].startsWith("ETD"); c++) names.push(clean(rows[h][c]));
+  if (!names.length) names = inp.sheetNames.filter((s) => /ETD\s*\d/i.test(s)).map((s) => "ETD " + (s.toUpperCase().match(/\d{1,2}[\s\-]*[A-Z]{3}(?:[\s\-]*\d{2})?/) || [""])[0].trim());   // F2처럼 머리글에 날짜가 없으면 시트 이름에서
+  if (!names.length) throw new Error(`${inp.file}: ETD 열을 알아내지 못했습니다`);
+  const data = [];
+  for (let i = h + 1; i < rows.length; i++) {
+    const r = rows[i] || [], fac = nsp(r[cFac]);
+    if (!/^F\d$/.test(fac) || !clean(r[cCd])) continue;
+    data.push({ fac, cd: clean(r[cCd]), maker: clean(r[cMk]), nm: clean(r[cNm]), q: names.map((_, k) => toNum(r[cNm + 1 + k])) });
+  }
+  return { names, data, facs: uniq(data.map((d) => d.fac)) };
+}
+
+// ---------------------------------------------------------------- Balance / Stock / 거래처 표
+function lookupTable(inp) {   // 매크로처럼: 처음 나오는 M0…/S0… 칸의 열이 코드, 그 오른쪽 두 번째 열이 값. 같은 코드는 첫 줄
+  const rows = inp.rows; let cc = -1;
+  for (let r = 0; r < Math.min(30, rows.length) && cc < 0; r++) for (let c = 0; c < 10; c++) if (isCode((rows[r] || [])[c])) { cc = c; break; }
+  const map = new Map(); if (cc < 0) return map;
+  for (const r of rows) { const k = clean((r || [])[cc]); if (isCode(k) && !map.has(k)) map.set(k, (r || [])[cc + 2]); }
+  return map;
+}
+function vendorRule(tblRows) {
+  const maker = new Map(), ex = [];
+  for (const r of tblRows.slice(1)) {
+    const mk = nsp(r[1]) ? clean(r[1]).toUpperCase() : "";
+    if (mk && !maker.has(mk)) maker.set(mk, clean(r[0]));
+    if (clean(r[4]) && clean(r[5])) ex.push({ vendor: clean(r[4]), nm: nsp(r[5]), codes: clean(r[7]).split(",").map((x) => x.trim()).filter(Boolean) });
+  }
+  return (cd, nm, mk) => {
+    const n = nsp(nm);
+    for (const e of ex) if (e.codes.includes(cd) && n.startsWith(e.nm)) return e.vendor;
+    for (const e of ex) if (n === e.nm) return e.vendor;
+    return maker.get(clean(mk).toUpperCase()) || "";
+  };
+}
+const xlSortKey = (s) => clean(s).toUpperCase().replace(/[-']/g, "");
+const cmpStr = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+const rowSort = (a, b) => cmpStr(a.fac, b.fac) || cmpStr(xlSortKey(a.maker), xlSortKey(b.maker)) || cmpStr(xlSortKey(a.nm), xlSortKey(b.nm)) || cmpStr(a.nm, b.nm);
+
+// ---------------------------------------------------------------- 만들기
+function buildLists() {
+  const notes = [], I = BUILD.inputs;
+  const seas = I.filter((x) => x.kind === "sea").map(parseSea);
+  const airIn = I.find((x) => x.kind === "air");
+  if (!seas.length && !airIn) throw new Error("선박 요청 파일(F1·F2·F5)이나 에어 리포트를 넣어 주세요.");
+  const vt = I.find((x) => x.kind === "vendor") || store.get(LS_VTBL, null);
+  if (!vt) notes.push("거래처 표(거래처코드 시트)가 없어 거래처명을 붙이지 못했습니다.");
+  const vendorOf = vt ? vendorRule(vt.rows) : () => "";
+  const tbl = {}; for (const b of I.filter((x) => x.kind === "bal" && x.slot)) tbl[b.slot] = lookupTable(b);
+  for (const b of I.filter((x) => x.kind === "bal" && !x.slot)) notes.push(`${b.file}: 어느 공장의 Balance인지 몰라 쓰지 않았습니다. 위 표에서 골라 주세요.`);
+  const find = (fac, cd, maker, kind) => {   // kind: "Bal" | "Sto"
+    let v = (tbl[`${fac} ${kind}`] || new Map()).get(cd);
+    if (clean(maker).toUpperCase() === "JST" && (v == null || clean(v) === "" || toNum(v) === 0)) { const j = (tbl[`${fac} JST ${kind}`] || new Map()).get(cd); if (j != null && clean(j) !== "") v = j; }
+    return v == null || clean(v) === "" ? null : toNum(v);
+  };
+  // ---- 선박
+  let etd = [], ship = [];
+  if (seas.length) {
+    const hasYear = (s) => (s.names.every((n) => /\d{2}\s*$/.test(n.replace(/^ETD\s*\d+/i, ""))) ? 1 : 0);
+    const master = seas.slice().sort((a, b) => b.names.length - a.names.length || hasYear(b) - hasYear(a))[0];
+    etd = master.names.slice();
+    const pos = Object.fromEntries(etd.map((n, i) => [etdKey(n), i]));
+    for (const s of seas) {
+      const idx = s.names.map((n) => pos[etdKey(n)]);
+      if (idx.some((x) => x == null)) notes.push(`${s.facs.join(",")} 요청 파일의 ETD(${s.names.join(", ")}) 중 기준 날짜(${etd.join(", ")})에 없는 것이 있어 순서대로 맞췄습니다. 날짜를 확인하세요.`);
+      for (const d of s.data) {
+        const q = etd.map(() => 0); d.q.forEach((v, k) => { const p = idx[k] == null ? k : idx[k]; if (p < q.length) q[p] += v; });
+        const sum = q.reduce((a, b) => a + b, 0); if (sum === 0) continue;
+        const bal = find(d.fac, d.cd, d.maker, "Bal"), sto = find(d.fac, d.cd, d.maker, "Sto"), b1 = (bal || 0) + (sto || 0);
+        ship.push({ ...d, q, sum, bal, sto, b1, br: b1 - sum, vendor: vendorOf(d.cd, d.nm, d.maker) });
+      }
+      for (const f of s.facs) if (!tbl[`${f} Bal`]) notes.push(`${f} Balance 파일이 없어 ${f} 품목의 BALANCE가 비어 있습니다.`);
+    }
+    ship.sort(rowSort);
+  }
+  // ---- 에어
+  let air = [];
+  if (airIn) {
+    const rows = airIn.rows, h = headerRowOf(rows, ["ITEMCD", "PARTNAME", "PURCHASEREQUEST"]), hd = rows[h].map(nsp), c = (n) => hd.indexOf(n);
+    for (let i = h + 1; i < rows.length; i++) {
+      const r = rows[i] || [], fac = nsp(r[c("FAC")]), cd = clean(r[c("ITEMCD")]); if (!cd || !/^F\d$/.test(fac)) continue;
+      const maker = clean(r[c("MAKER")]), nm = clean(r[c("PARTNAME")]), req = toNum(clean(r[c("PURCHASEREQUEST")]).split(">>").pop());   // "600>>2,100"처럼 수량이 바뀐 칸은 바뀐 뒤 수량
+      if (req === 0) continue;   // "500>>0": 요청 취소
+      const bal = find(fac, cd, maker, "Bal"), sto = find(fac, cd, maker, "Sto"), b1 = (bal || 0) + (sto || 0);
+      air.push({ fac, cd, maker, nm, req, bal, sto, b1, br: b1 - req, short: r[c("SHORTDEL.")], need: r[c("NEEDETD")], remark: c("REMARK") >= 0 ? clean(r[c("REMARK")]) : "", vendor: vendorOf(cd, nm, maker) });
+    }
+    air.sort(rowSort);
+  }
+  const noVendor = uniq([...ship, ...air].filter((r) => !r.vendor).map((r) => r.maker || "(MAKER 없음)"));
+  if (vt && noVendor.length) notes.push(`거래처를 못 붙인 MAKER: ${noVendor.join(", ")} → 거래처 표에 MAKER를 추가하세요.`);
+  BUILD.out = { etd, ship, air, notes, vt, tbl };
+  return BUILD.out;
+}
+
+// ---------------------------------------------------------------- 엑셀로 (매크로와 같은 모양)
+function listWorkbook(o) {
+  const thin = { style: "thin", color: { rgb: "B4B4B4" } }, border = { top: thin, bottom: thin, left: thin, right: thin };
+  const font = (x = {}) => ({ name: "맑은 고딕", sz: 10, ...x }), NF = "#,##0;[Red]-#,##0;";
+  const FAC = { F1: "FFFFFF", F2: "FFFF00", F5: "00B0F0" };
+  const cell = (v, st = {}) => {
+    const c = { v: v == null ? "" : v, t: typeof v === "number" ? "n" : "s", s: { border, font: font(st.bold ? { bold: true } : {}), alignment: { horizontal: st.align || "left", vertical: "center" } } };
+    if (st.bg) c.s.fill = { patternType: "solid", fgColor: { rgb: st.bg } };
+    if (c.t === "n") c.z = NF;
+    return c;
+  };
+  const num = (v, st) => cell(v == null ? "" : v, { align: "center", ...st });
+  const wb = XLSX.utils.book_new();
+  if (o.ship.length) {
+    const hdr = ["Fac", "ITEM CD", "MAKER", "ITEM NM", ...o.etd, "SUM", "BALANCE", "STOCK", "BALANCE 1", "B-R", "거래처명(매칭)"];
+    let grp = 0, prev = ""; const tint = o.etd.map((n) => { const mo = (n.toUpperCase().match(/JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC/) || [""])[0]; if (prev && mo !== prev) grp++; prev = mo; return grp % 2 ? "E4F0DC" : "DBE9F7"; });
+    const aoa = [hdr.map((h, i) => cell(h, { bold: true, align: "center", bg: i >= 4 && i < 4 + o.etd.length ? tint[i - 4] : "FFFFFF" }))];
+    for (const r of o.ship) aoa.push([cell(r.fac, { align: "center", bg: FAC[r.fac] }), cell(r.cd), cell(r.maker), cell(r.nm), ...r.q.map((v, k) => num(v, { bg: tint[k] })), num(r.sum, { bold: true }), num(r.bal), num(r.sto), num(r.b1), num(r.br, { bold: true }), cell(r.vendor)]);
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"] = [5, 14, 12, 34, ...o.etd.map(() => 11), 11, 11, 11, 11, 11, 24].map((w) => ({ wch: w }));
+    ws["!rows"] = [{ hpt: 26 }]; ws["!autofilter"] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: aoa.length - 1, c: hdr.length - 1 } }) };
+    XLSX.utils.book_append_sheet(wb, ws, "선박");
+  }
+  if (o.air.length) {
+    const hdr = ["FAC", "Item cd", "Maker", "Part Name", "Purchase request", "BALANCE", "STOCK", "BALANCE 1", "B-R", "Short Del.", "NEED ETD", "REMARK", "거래처명(매칭)"];
+    const aoa = [hdr.map((h) => cell(h, { bold: true, align: "center", bg: "FFFFFF" }))];
+    const dv = (v) => { if (!(v instanceof Date) || isNaN(v)) return cell(clean(v), { align: "center" }); const d = dayOf(v), c = cell((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(1899, 11, 30)) / 86400000, { align: "center" }); c.z = "dd-mmm-yy"; return c; };
+    for (const r of o.air) aoa.push([cell(r.fac, { align: "center", bg: FAC[r.fac] }), cell(r.cd), cell(r.maker), cell(r.nm), num(r.req, { bold: true }), num(r.bal), num(r.sto), num(r.b1), num(r.br, { bold: true }), dv(r.short), dv(r.need), cell(r.remark), cell(r.vendor)]);
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"] = [5, 14, 14, 34, 14, 11, 11, 11, 11, 12, 12, 16, 24].map((w) => ({ wch: w }));
+    XLSX.utils.book_append_sheet(wb, ws, "Air");
+  }
+  if (o.vt) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(o.vt.rows), "거래처코드");
+  for (const b of BUILD.inputs.filter((x) => x.kind === "bal" && x.slot)) if (!wb.SheetNames.includes(b.slot)) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(b.rows.map((r) => (r || []).slice(0, 12))), b.slot);
+  return wb;
+}
+const listBytes = () => new Uint8Array(XLSX.write(listWorkbook(BUILD.out), { type: "array", bookType: "xlsx" }));
+function listFileName() { const d = BUILD.out.etd[0] ? BUILD.out.etd[0].replace(/^ETD\s*/i, "").replace(/\s+/g, "-") : fmtDate(new Date()); return `선박 및 에어리스트_ETD ${d}.xlsx`; }
+
+// ---------------------------------------------------------------- 화면
+const KIND_KO = { sea: "선박 요청", air: "에어 리포트", bal: "전산 Balance/Stock", vendor: "거래처 표" };
+function renderBuild() {
+  const I = BUILD.inputs, saved = store.get(LS_VTBL, null);
+  $("bdList").innerHTML = I.length ? "<tr><th>파일</th><th>시트</th><th>종류</th><th>자리</th></tr>" + I.map((x, i) => `<tr><td>${esc(x.file)}</td><td>${esc(x.sheet)}</td><td>${KIND_KO[x.kind]}</td><td>${x.kind === "bal"
+    ? `<select data-b="${i}"><option value="">(골라 주세요)</option>${SLOTS.map((s) => `<option ${s === x.slot ? "selected" : ""}>${s}</option>`).join("")}</select>`
+    : x.kind === "sea" ? esc((x.facs || []).join(", ")) : ""}</td></tr>`).join("") : "";
+  const has = (k) => I.some((x) => x.kind === k), slots = I.filter((x) => x.kind === "bal" && x.slot).map((x) => x.slot);
+  const chip = (ok, t) => `<span class="chip ${ok ? "on" : ""}">${ok ? "✔" : "·"} ${t}</span>`;
+  const facs = uniq(I.filter((x) => x.kind === "sea").flatMap((x) => x.facs || []));
+  $("bdNeed").innerHTML = ["F1", "F2", "F5"].map((f) => chip(facs.includes(f), `${f} 선박 요청`)).join("") + chip(has("air"), "에어 리포트")
+    + ["F1", "F2", "F5"].map((f) => chip(slots.includes(`${f} Bal`), `${f} Balance`)).join("") + chip(slots.some((s) => s.includes("JST")), "JST Balance") + chip(slots.some((s) => s.endsWith("Sto")), "Stock")
+    + chip(has("vendor") || !!saved, has("vendor") ? "거래처 표" : saved ? `거래처 표 (지난번 것 · ${saved.at})` : "거래처 표");
+  $("btnBuild").disabled = !(has("sea") || has("air"));
+  const o = BUILD.out; $("bdResult").style.display = o ? "" : "none";
+  if (o) {
+    const byFac = (rows) => ["F1", "F2", "F5"].map((f) => `${f} ${rows.filter((r) => r.fac === f).length}`).join(" · ");
+    $("bdSummary").innerHTML = `<div><span class="ok">✅ 리스트를 만들었습니다.</span> 선박 <b>${o.ship.length}</b>줄 (${byFac(o.ship)})${o.etd.length ? ` · ETD ${o.etd.length}개 (${esc(o.etd[0].replace(/^ETD\s*/i, ""))} ~)` : ""} / 에어 <b>${o.air.length}</b>줄</div>`
+      + o.notes.map((n) => `<div class="warn">⚠ ${esc(n)}</div>`).join("")
+      + `<div class="hint">B-R이 음수(부족)인 품목: 선박 ${o.ship.filter((r) => r.br < 0).length}줄 / 에어 ${o.air.filter((r) => r.br < 0).length}줄 · BALANCE를 못 찾은 품목: 선박 ${o.ship.filter((r) => r.bal == null).length}줄</div>`;
+  }
+}
+function bindBuild() {
+  bindDrop("dropBuild", "bdFiles", "bdName");
+  $("bdFiles").addEventListener("change", () => addBuildFiles([...$("bdFiles").files]));
+  $("bdList").addEventListener("change", (e) => { const t = e.target; if (t.dataset.b == null) return; BUILD.inputs[+t.dataset.b].slot = t.value; BUILD.out = null; renderBuild(); });
+  $("btnBuildClear").onclick = () => { BUILD.inputs = []; BUILD.out = null; $("bdFiles").value = ""; $("bdName").textContent = "아직 없음"; $("dropBuild").classList.remove("has"); renderBuild(); };
+  $("btnBuild").onclick = () => { try { buildLists(); } catch (e) { console.error(e); toast(String(e.message || e)); BUILD.out = null; } renderBuild(); };
+  $("btnBuildDl").onclick = () => download(new Blob([listBytes()]), listFileName());
+  $("btnBuildUse").onclick = () => {   // 만든 리스트를 아래 "출하 요청 메일" 칸에 바로 넣는다
+    const dt = new DataTransfer(); dt.items.add(new File([listBytes()], listFileName())); $("ship").files = dt.files; $("ship").dispatchEvent(new Event("change"));
+    $("dropShip").scrollIntoView({ behavior: "smooth", block: "center" }); toast("아래 선박리스트 칸에 넣었습니다. 기준 주를 확인하고 ① 미리보기 · 메일 만들기를 누르세요.");
+  };
+  renderBuild();
+}

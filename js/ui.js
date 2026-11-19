@@ -224,7 +224,7 @@ window.addEventListener("DOMContentLoaded", () => {
   $("btnAssign").onclick = saveAssign;
   $("btnDlCfg").onclick = downloadConfig; $("btnDiscard").onclick = discardLocal;
   $("btnEdit").onclick = () => openEditor(false); $("btnEditNoMail").onclick = () => openEditor(true);
-  bindEditor();
+  bindEditor(); bindBuild();
   $("btnHelp").onclick = () => $("helpCard").scrollIntoView({ behavior: "smooth" });
   $("btnFirst").onclick = () => { $("firstCard").style.display = ""; fcShow(""); $("firstCard").scrollIntoView({ behavior: "smooth" }); };
   $("firstCard").addEventListener("click", onFirstCheck);

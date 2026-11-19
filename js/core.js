@@ -16,7 +16,7 @@ const NO_SET = ["N", "NO", "X", "0"];
 const norm = (s) => (s == null ? "" : String(s).replace(/\s+/g, "").toLowerCase());
 const clean = (v) => {
   if (v == null) return "";
-  if (v instanceof Date) return isNaN(v) ? "" : fmtCellDate(v);
+  if (v instanceof Date) return isNaN(v) ? "" : fmtCellDate(dayOf(v));
   const s = String(v).trim();
   return s.toLowerCase() === "nan" ? "" : s;
 };
@@ -40,6 +40,8 @@ const makerFromName = (name) => { const m = clean(name).match(/\(([^()]+)\)\s*$/
 const pad2 = (n) => String(n).padStart(2, "0");
 const fmtDate = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+// 엑셀 날짜 칸은 시간대에 따라 자정에서 몇 초 어긋나게 읽힐 수 있어, 날짜만 쓸 때는 1시간 더해 그날로 맞춘다
+const dayOf = (d) => new Date(d.getTime() + 3600000);
 const fmtCellDate = (d) => `${pad2(d.getDate())}-${MON[d.getMonth()]}-${String(d.getFullYear()).slice(2)}`;   // 엑셀에 보이는 형태
 const parseISO = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
 const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
@@ -62,7 +64,7 @@ function weekLabel(monday) {
 }
 // "02-Dec-26" 같은 글자 또는 날짜 셀 → Date (아니면 null)
 function toDate(v) {
-  if (v instanceof Date) return isNaN(v) ? null : v;
+  if (v instanceof Date) { if (isNaN(v)) return null; const d = dayOf(v); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
   const m = clean(v).match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2,4})$/);
   if (!m) return null;
   const mi = MON.findIndex((x) => x.toLowerCase() === m[2].toLowerCase());

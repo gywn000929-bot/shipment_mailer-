@@ -143,6 +143,16 @@ python make_drafts.py --ship sample/ship_sample.xlsx --air sample/air_sample.xls
 | KET 긴급 자재 메일 | 출하 요청과 함께 자동 | 설정 `긴급메일업체`(config_kim.xlsx = KET). 에어리스트의 그 업체 품목을 품목 코드별로 합쳐 NO·품목명·미납수량 합계(선박 SUM 열)·AIR 수량(Remain)·부족일정(Short Del.) 표를 만든다. 부족일정이 URGENT이거나 기준 주 안이면 붉은 음영 |
 | 중복 발송 방지 | 결과 목록 | 주문서는 PO 번호, 출하 요청·긴급 자재는 업체+기준 주로 기록. 이미 받은 메일은 빨간 테두리 + "포함" 꺼짐. "Outlook에서 보냈음" 체크 가능 |
 
+### 주간 리스트 만들기 (`js/build.js`)
+받은 파일을 그대로 넣으면 `선박 및 에어리스트` 엑셀을 만든다. 엑셀 매크로 `선박리스트_만들기`와 같은 규칙이며, 실제 한 주 치 파일로 완성본과 대조했다(선박 822줄 × 16열 일치).
+- 선박: 요청 파일의 `SUMMARY*` 시트에서 ITEM NM 바로 뒤 열들이 ETD 수량(F2처럼 머리글에 날짜가 없으면 시트 이름의 ETD 날짜 사용). SUM이 0인 줄은 제외
+- BALANCE/STOCK: `F1 Bal`, `F2 JST Bal`, `F2 Sto` 같은 이름의 시트(또는 파일 이름)에서 품목 코드로 조회. MAKER가 JST이고 비어 있으면 JST 시트에서 다시 조회
+- BALANCE 1 = BALANCE + STOCK, B-R = BALANCE 1 − SUM
+- 거래처: 예외표의 M코드가 같고 품목명이 예외 품목명으로 시작 → 품목명이 예외 품목명과 같음 → MAKER별 기본 거래처
+- 정렬: FAC → MAKER → 품목명(엑셀처럼 하이픈 무시)
+- 에어: 리포트의 `600>>2,100`은 2,100으로, `500>>0`은 제외
+- 거래처 표는 한 번 넣으면 브라우저가 기억한다. 틀 고정은 넣지 못했다(엑셀에서 직접)
+
 ### 설정 파일의 기준
 - 브라우저에서 고쳐 GitHub에 올린 `config*.xlsx` 가 기준이다. `make_config.py --force` 는 엑셀이 `VENDORS` 와 다르면 멈춘다(엑셀 내용을 `VENDORS` 로 먼저 옮기거나 `--discard-web-edits`).
 - `config.xlsx`(남효주)와 `config_kim.xlsx`(계장님)의 업체 시트는 따로 관리된다. 한쪽에서 고친 메일 주소는 다른 쪽에도 같이 고쳐야 한다.
