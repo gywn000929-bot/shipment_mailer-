@@ -1,0 +1,190 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>내 담당 업체 · 요일별 할 일</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css");
+:root{--navy:#1B3A6B;--navy2:#2E5C8A;--navy3:#4A7AAD;--bg:#f5f7fa;--card:#fff;--line:#D0DFF0;--txt:#141414;--mut:#5b5b62;--pri:#2E5C8A;--pri2:#1B3A6B;--ok:#2E7D32;
+ --font:'Aptos','Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,system-ui,'Segoe UI',Roboto,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:16px}
+body{margin:0;font-family:var(--font);background:var(--bg);color:var(--txt);font-size:15px;line-height:1.7;text-rendering:optimizeLegibility;letter-spacing:-0.01em;-webkit-font-smoothing:antialiased}
+header{background:linear-gradient(135deg,#16315C,#2E5C8A);color:#fff;padding:26px 28px}
+header h1{margin:0;font-size:25px;font-weight:700;line-height:1.25}header p{margin:8px 0 0;font-size:16px;opacity:.85}
+.wrap{max-width:1180px;margin:0 auto;padding:22px 16px 60px;display:grid;grid-template-columns:250px 1fr;gap:24px;align-items:start}
+nav{position:sticky;top:16px;background:linear-gradient(180deg,#16315C,#1B3A6B);border-radius:12px;padding:16px 12px 12px;font-size:15px}
+nav b{display:block;margin:0 8px 6px;color:rgba(255,255,255,.88);font-size:12px;letter-spacing:1px;font-weight:700}
+nav a{display:block;padding:8px 10px;border-radius:8px;color:rgba(255,255,255,.88);text-decoration:none;border-left:3px solid transparent}nav a:hover{background:rgba(255,255,255,.09);color:#fff}
+nav .tools{border-top:1px solid rgba(255,255,255,.15);margin-top:10px;padding-top:12px}nav .tools a{color:#fff;font-weight:600}
+@media(max-width:860px){.wrap{grid-template-columns:1fr}nav{position:static}}
+main{min-width:0}
+section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:24px 26px;margin-bottom:18px}
+h2{margin:0 0 6px;font-size:20px;font-weight:700;color:var(--navy);display:flex;gap:10px;align-items:center;line-height:1.3}
+h2 .n{display:inline-flex;width:32px;height:32px;border-radius:50%;background:var(--navy2);color:#fff;font-size:16px;font-weight:700;align-items:center;justify-content:center;flex:none;font-variant-numeric:tabular-nums}
+h3{margin:24px 0 6px;font-size:16px;font-weight:700;color:var(--navy)}
+p{margin:8px 0}.lead{color:var(--mut);margin-top:0;font-size:15px}
+ol,ul{margin:8px 0;padding-left:22px}li{margin:6px 0}
+ol.steps{list-style:none;padding:0;counter-reset:s}
+ol.steps>li{counter-increment:s;position:relative;padding:11px 14px 11px 56px;border:1px solid var(--line);border-radius:10px;margin:8px 0;background:#fafcff}
+ol.steps>li::before{content:counter(s);position:absolute;left:14px;top:11px;width:28px;height:28px;border-radius:50%;background:var(--navy2);color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+.btn{display:inline-block;border-radius:6px;padding:1px 9px;font-size:13.5px;background:#D4E4F7;color:var(--navy);white-space:nowrap;font-weight:700;line-height:1.6}
+.btn.pri{background:var(--navy2);color:#fff}.btn.ok{background:var(--ok);color:#fff}
+.box{border-radius:8px;padding:12px 16px;margin:12px 0;font-size:14.5px;line-height:1.65}
+.tip{background:#EEF3FA;border-left:3px solid var(--navy3)}.warn{background:#FFF8E1;border-left:3px solid #F9A825}.stop{background:#FFF3E0;border-left:3px solid #E65100}.good{background:#E8F5E9;border-left:3px solid #2E7D32}
+.box>b:first-child{display:block;margin-bottom:2px;color:var(--navy)}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:15px;font-variant-numeric:tabular-nums}
+th{background:var(--navy2);color:#fff;padding:10px 14px;text-align:left;font-weight:600;font-size:14px;white-space:nowrap}
+td{padding:9px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}
+.flow div{border:1px solid var(--line);border-radius:10px;padding:14px;background:#fafcff;font-size:14px;line-height:1.6;color:var(--mut)}
+.flow div b{display:block;font-size:16px;color:var(--navy);margin:2px 0}.flow div span{display:inline-block;background:var(--navy);color:#fff;border-radius:10px;padding:1px 10px;font-size:12px;font-weight:600}
+@media(max-width:860px){.flow{grid-template-columns:1fr 1fr}}
+.tool{display:block;border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:8px 0;text-decoration:none;color:var(--txt);background:#fff}
+.tool:hover{border-color:var(--navy3);background:#f6f9fe}.tool b{color:var(--navy);font-size:16px;font-weight:700}.tool small{display:block;color:var(--mut);font-size:14px;margin-top:2px}
+code{background:#EEF3FA;color:var(--navy);border-radius:4px;padding:1px 7px;font-family:var(--mono);font-size:13.5px}
+.q{font-weight:700;color:var(--navy);margin-top:18px}.a{margin:3px 0 0 0;color:var(--mut)}
+.muted{color:var(--mut);font-size:14px}
+.day{border:1px solid var(--line);border-radius:12px;margin:12px 0;overflow:hidden}
+.day>h3{margin:0;padding:11px 16px;background:var(--navy2);color:#fff;font-size:16px;display:flex;gap:10px;align-items:center}
+.day>h3 small{font-weight:400;opacity:.85;font-size:13.5px}.day.today>h3{background:#E65100}
+.day ul{list-style:none;margin:0;padding:8px 14px 12px}.day li{margin:0;padding:7px 4px;border-bottom:1px dashed var(--line);display:flex;gap:10px;align-items:flex-start}.day li:last-child{border-bottom:0}
+.day input{margin-top:5px;width:17px;height:17px;flex:none}.day li.done span{color:#9aa3b2;text-decoration:line-through}
+.est{display:inline-block;background:#FFF3E0;color:#E65100;border-radius:4px;padding:0 6px;font-size:12px;font-weight:700;margin-left:4px;white-space:nowrap}
+.tag{display:inline-block;border-radius:4px;padding:0 7px;font-size:12.5px;font-weight:700;white-space:nowrap}
+.t-x{background:#D4E4F7;color:var(--navy)}.t-b{background:#E8F5E9;color:#2E7D32}.t-n{background:#eceff3;color:#5b5b62}.t-new{background:#E65100;color:#fff}
+.vc{border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:12px 0;background:#fff}
+.vc h3{margin:0 0 4px;font-size:17px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.vc dl{display:grid;grid-template-columns:120px 1fr;gap:4px 12px;margin:8px 0 0;font-size:14.5px}.vc dt{color:var(--mut)}.vc dd{margin:0;word-break:break-all}
+.vc .care{margin-top:10px;background:#FFF8E1;border-left:3px solid #F9A825;border-radius:6px;padding:8px 12px;font-size:14.5px}
+@media(max-width:860px){.vc dl{grid-template-columns:1fr}.vc dt{font-weight:700;margin-top:4px}}
+a.go{display:inline-block;background:var(--navy2);color:#fff;border-radius:6px;padding:3px 12px;font-size:14px;font-weight:700;text-decoration:none;margin:2px 4px 2px 0}a.go:hover{background:var(--navy)}
+button.plain{border:1px solid var(--line);background:#fff;border-radius:6px;padding:4px 12px;font:inherit;font-size:14px;cursor:pointer}
+</style></head><body>
+<header><h1>내 담당 업체 · 요일별 할 일</h1><p>담당 12곳(기존 4 + 신규 8) — 요일마다 할 일과 업체별로 챙길 것</p></header>
+<div class="wrap">
+<nav><b>차례</b>
+ <a href="#sum">담당 업체 한눈에</a>
+ <a href="#week">요일별 할 일</a>
+ <a href="#any">요일과 상관없는 일</a>
+ <a href="#newv">신규 업체 관리법</a>
+ <a href="#old">기존 업체 4곳</a>
+ <a href="#new">신규 업체 8곳</a>
+ <a href="#note">알아 둘 것</a>
+ <div class="tools"><b>화면 바로 가기</b>
+  <a data-nav href="list.html">📋 주간 리스트 만들기</a>
+  <a data-nav href="index.html?only=필룩스,KET,태양기전,김해반도,대아산업,대일CST,번영하이테크,성우실업,위성단자,진영반도,태양단자">📮 내 업체만 메일 만들기</a>
+  <a data-nav href="inbound.html">📦 입고 파일 만들기</a>
+  <a data-nav href="guide.html">📖 사용 안내</a></div>
+</nav>
+<main>
+
+<section id="sum"><h2>담당 업체 한눈에</h2>
+ <p class="lead">업체 이름을 누르면 아래 자세한 설명으로 갑니다. 물량은 11월 3주 리스트 기준입니다.</p>
+ <table><tr><th>업체</th><th>출하 요청</th><th>주문서 메일</th><th>업체코드</th><th>물량</th></tr><tr><td><a href="#v-3840"><b>연호엠에스</b></a></td><td><span class="tag t-n">메일 없음</span></td><td>안 보냄</td><td>3840</td><td>선박 158줄 (이번 주 84줄) · 에어 7줄</td></tr><tr><td><a href="#v-2410"><b>필룩스</b></a></td><td><span class="tag t-b">본문 표</span></td><td>보냄</td><td>2410</td><td>선박 18줄 (이번 주 8줄)</td></tr><tr><td><a href="#v-2465"><b>KET</b></a></td><td><span class="tag t-b">본문 표</span></td><td>안 보냄</td><td>2465</td><td>선박 184줄 (이번 주 80줄) · 에어 4줄</td></tr><tr><td><a href="#v-4350"><b>태양기전</b></a></td><td><span class="tag t-x">엑셀 첨부</span></td><td>보냄</td><td>4350</td><td>선박 71줄 (이번 주 36줄) · 에어 3줄</td></tr><tr><td><a href="#v-2150"><b>김해반도</b></a> <span class='tag t-new'>신규</span></td><td><span class="tag t-x">엑셀 첨부</span></td><td>보냄</td><td>2150</td><td>선박 80줄 (이번 주 47줄) · 에어 12줄</td></tr><tr><td><a href="#v-4120"><b>대아산업</b></a> <span class='tag t-new'>신규</span></td><td><span class="tag t-b">본문 표</span></td><td>보냄</td><td>4120</td><td>선박 1줄</td></tr><tr><td><a href="#v-2090"><b>대일CST</b></a> <span class='tag t-new'>신규</span></td><td><span class="tag t-x">엑셀 첨부</span></td><td>보냄</td><td>2090</td><td>선박 24줄 (이번 주 16줄) · 에어 4줄</td></tr><tr><td><a href="#v-5440"><b>번영하이테크</b></a> <span class='tag t-new'>신규</span></td><td><span class="tag t-b">본문 표</span></td><td>보냄</td><td>5440</td><td>선박 13줄 (이번 주 1줄) · 에어 1줄</td></tr><tr><td><a href="#v-3470"><b>성우실업</b></a> <span class='tag t-new'>신규</span></td><td><span class="tag t-b">본문 표</span></td><td>보냄</td><td>3470</td><td>선박 1줄</td></tr><tr><td><a href="#v-2330"><b>위성단자</b></a> <span class='tag t-new'>신규</span></td><td><span class="tag t-b">본문 표</span></td><td>보냄</td><td>2330</td><td>선박 5줄 (이번 주 4줄)</td></tr><tr><td><a href="#v-2140"><b>진영반도</b></a> <span class='tag t-new'>신규</span></td><td><span class="tag t-x">엑셀 첨부</span></td><td>보냄</td><td>2140</td><td>선박 35줄 (이번 주 27줄) · 에어 3줄</td></tr><tr><td><a href="#v-2451"><b>태양단자</b></a> <span class='tag t-new'>신규</span></td><td><span class="tag t-b">본문 표</span></td><td>보냄</td><td>2451</td><td>선박 9줄 (이번 주 2줄)</td></tr></table>
+ <div class="box tip"><b>세 가지로 나뉩니다</b>
+  <ul><li><span class="tag t-x">엑셀 첨부</span> 김해반도, 대일CST, 진영반도, 태양기전 — 업체가 엑셀에 입고수량을 적어 회신합니다.</li>
+  <li><span class="tag t-b">본문 표</span> 필룩스, KET, 대아산업, 번영하이테크, 성우실업, 위성단자, 태양단자 — 메일 본문의 표로 보냅니다.</li>
+  <li><span class="tag t-n">메일 없음</span> 연호엠에스 — 메일은 없고 입고 처리만 합니다.</li></ul></div>
+</section>
+
+<section id="week"><h2>요일별 할 일</h2>
+ <p class="lead">끝낸 일은 체크하세요. 체크는 이 PC에 기억되고, 주가 바뀌면 자동으로 비워집니다. <button class="plain" id="btnReset">이번 주 체크 지우기</button></p>
+ <div class="box warn"><b>요일 배치 중 <span class="est">추정</span> 표시가 붙은 것은 확인이 필요합니다</b>받은 파일의 날짜와 시트 이름을 보고 짐작한 것입니다(에어 입고 요청일 = 화요일, 선박 입고 요청일 = 수요일 등). 실제 일정과 다르면 알려 주세요. 고쳐 두겠습니다.</div>
+ <div class="day" data-day="1"><h3>월요일 <small>리스트 만들고 메일 보내는 날</small></h3><ul><li><input type="checkbox" data-k="1-0"><span>전산에서 <b>미납수량 합계(Balance)</b>를 공장별(F1·F2·F5)로, JST 것도 따로 받습니다. JST 파일은 이름에 "JST"를 넣어 저장합니다.</span></li><li><input type="checkbox" data-k="1-1"><span>받은 요청 파일(F1·F2·F5, 에어 리포트)과 Balance를 넣어 <b>주간 리스트</b>를 만듭니다. <a class="go" data-nav href="list.html">주간 리스트 만들기</a></span></li><li><input type="checkbox" data-k="1-2"><span>리스트에서 내 업체의 <b>B-R이 빨간(부족) 품목</b>을 먼저 훑어봅니다. 부족한 품목은 메일을 보낼 때 따로 한 줄 적어 주면 좋습니다.</span></li><li><input type="checkbox" data-k="1-3"><span><b>출하 요청 메일</b>을 만듭니다. 아래 버튼으로 열면 내 업체 11곳만 만들어집니다(연호엠에스는 메일 없음). <a class="go" data-nav href="index.html?only=필룩스,KET,태양기전,김해반도,대아산업,대일CST,번영하이테크,성우실업,위성단자,진영반도,태양단자">내 업체만 메일 만들기</a></span></li><li><input type="checkbox" data-k="1-4"><span>엑셀 첨부 업체 4곳(김해반도, 대일CST, 진영반도, 태양기전)은 첨부가 붙었는지, 본문 표 업체는 표가 맞는지 "본문 보기"로 확인하고 보냅니다.</span></li><li><input type="checkbox" data-k="1-5"><span><b>대아산업</b> 메일에는 주문서 PDF를 직접 첨부하고, 맨 위 빨간 안내 줄을 지운 뒤 보냅니다.</span></li><li><input type="checkbox" data-k="1-6"><span>보낸 메일은 목록에서 "Outlook에서 보냈음"에 체크합니다.</span></li></ul></div><div class="day" data-day="2"><h3>화요일 <small>에어 입고 요청일 <span class="est">추정</span></small></h3><ul><li><input type="checkbox" data-k="2-0"><span>월요일 메일에 <b>회신이 없는 업체</b>를 확인합니다.</span></li><li><input type="checkbox" data-k="2-1"><span><b>에어 품목 입고</b>를 확인합니다. 내 업체 중 에어가 있는 곳: 김해반도, 대일CST, 진영반도, 태양기전, KET, 번영하이테크, 연호엠에스.</span></li><li><input type="checkbox" data-k="2-2"><span>공장 재고(Stock)가 새로 나오면 리스트에 반영합니다. <span class="est">추정</span></span></li></ul></div><div class="day" data-day="3"><h3>수요일 <small>선박 입고 요청일 <span class="est">추정</span></small></h3><ul><li><input type="checkbox" data-k="3-0"><span>엑셀 첨부 업체가 <b>입고수량을 적어 회신한 엑셀</b>을 입고 파일로 바꿉니다. <a class="go" data-nav href="inbound.html">입고 파일 만들기</a></span></li><li><input type="checkbox" data-k="3-1"><span>본문 표 업체(필룩스, 번영하이테크, 성우실업, 위성단자, 태양단자, 대아산업, KET)와 <b>연호엠에스</b>는 주간 리스트 엑셀을 입고 파일 만들기에 넣고, 해당 업체의 입고수량을 적습니다.</span></li><li><input type="checkbox" data-k="3-2"><span>만든 입고 파일을 <b>전산에 올립니다.</b> 파일 이름 앞 4자리가 입고 날짜인지 확인합니다.</span></li><li><input type="checkbox" data-k="3-3"><span>KET 입출고 관리 시트를 정리합니다(직접).</span></li></ul></div><div class="day" data-day="4"><h3>목요일 <small>빠진 것 챙기는 날 <span class="est">추정</span></small></h3><ul><li><input type="checkbox" data-k="4-0"><span>요청했는데 <b>안 들어온 품목, 수량이 다른 품목</b>을 업체에 확인합니다. 입고 파일 만들기에서 노란색으로 보였던 줄이 대상입니다.</span></li><li><input type="checkbox" data-k="4-1"><span>나온 <b>주문서 PDF</b>가 있으면 주문서 메일을 보냅니다. <a class="go" data-nav href="index.html">메일 작성기</a></span></li></ul></div><div class="day" data-day="5"><h3>금요일 <small>에어 컨펌하는 날</small></h3><ul><li><input type="checkbox" data-k="5-0"><span><b>에어 컨펌</b>을 합니다. <a class="go" href="https://gywn000929-bot.github.io/air-confirm/" target="_blank" rel="noopener">에어 컨펌 도우미</a></span></li><li><input type="checkbox" data-k="5-1"><span>컨펌 결과로 리스트의 <b>Air up 시트</b>를 정리합니다. 다음 월요일 메일의 에어 표는 이 시트에서 나옵니다.</span></li><li><input type="checkbox" data-k="5-2"><span>다음 주 요청 파일(F1·F2·F5, 에어 리포트)이 왔는지 확인합니다. <span class="est">추정</span></span></li></ul></div>
+</section>
+
+<section id="any"><h2>요일과 상관없는 일</h2>
+ <table><tr><th>언제</th><th>할 일</th></tr>
+  <tr><td>주문서 PDF가 나올 때</td><td>메일 작성기에 PDF를 넣어 주문서 메일을 만듭니다. 내 업체 중 <b>KET과 연호엠에스는 주문서 메일이 없습니다</b>(자동으로 건너뜁니다).</td></tr>
+  <tr><td>성우실업 주문서</td><td>부족 일정을 먼저 확인한 뒤에 보냅니다.</td></tr>
+  <tr><td>매달 15일 이후</td><td><b>대아산업</b> 다음 달 분 발주를 냅니다(선박리스트 참조).</td></tr>
+  <tr><td>담당자·메일이 바뀔 때</td><td>메일 작성기의 "⚙ 업체·설정 고치기"에서 고치고 설정 파일을 올립니다.</td></tr>
+ </table>
+</section>
+
+<section id="newv"><h2>신규 업체 관리법</h2>
+ <p class="lead">새로 맡는 8곳을 처음 몇 주 동안 이렇게 챙기면 됩니다.</p>
+ <h3>맡기 전에 한 번</h3>
+ <ol class="steps">
+  <li>메일 작성기를 <b>내 이름(남효주)</b>으로 엽니다. 오른쪽 위에 "보내는 사람: 남효주"가 보여야 합니다. 이 안내의 버튼으로 열면 그렇게 열립니다.</li>
+  <li>"⚙ 업체·설정 고치기"에서 8곳의 <b>받는 사람 메일과 참조</b>가 아래 표와 같은지 봅니다.</li>
+  <li>지난주 리스트를 넣고 <b>내 업체만 메일 만들기</b>를 해 봅니다. 보내지 말고 "본문 보기"로 인사말·호칭·표만 확인합니다.</li>
+  <li>업체에 <b>담당자가 바뀌었다는 안내</b>를 먼저 보냅니다. 이 문구는 자동으로 들어가지 않으니, 첫 메일의 Outlook 창에서 한 줄 직접 적으세요.</li>
+ </ol>
+ <h3>첫 주에 특히 볼 것</h3>
+ <ul>
+  <li><b>거래처가 맞게 나뉘는지.</b> 같은 MAKER가 두 업체로 나뉘는 경우가 있습니다: MOLEX(진영반도 / 뉴콘), KET(한국단자공업 / 태양단자), DONG-A BESTECH(태양기전 / 위성단자). 리스트의 거래처 칸이 기준이고, 메일은 그 칸대로 만들어집니다.</li>
+  <li><b>회신 방식.</b> 엑셀 첨부 업체가 엑셀에 입고수량을 적어 주는지, 메일 본문으로만 답하는지 봅니다. 본문으로만 답하면 입고 파일 만들기에 주간 리스트를 넣고 수량을 직접 적습니다.</li>
+  <li><b>회신 속도.</b> 화요일까지 답이 없는 업체는 적어 두었다가 다음 주부터 먼저 확인합니다.</li>
+ </ul>
+ <h3>매주 같은 방식으로</h3>
+ <table><tr><th>상황</th><th>이렇게 합니다</th></tr>
+  <tr><td>업체가 수량을 다르게 보냈다</td><td>입고 파일에는 실제 들어온 수량을 적습니다. 모자란 만큼은 다음 주 리스트에 다시 올라옵니다.</td></tr>
+  <tr><td>리스트에 처음 보는 거래처 이름이 나왔다</td><td>메일 작성기에 "업체를 모르는 품목"으로 뜹니다. 그 자리에서 어느 업체인지 골라 저장하면 다음부터 기억합니다.</td></tr>
+  <tr><td>새 MAKER가 생겼다</td><td>거래처 표(거래처코드 시트)에 MAKER와 거래처를 한 줄 추가하고, 리스트 만들기에 그 파일을 다시 넣습니다.</td></tr>
+  <tr><td>같은 메일을 두 번 만들었다</td><td>빨간 테두리로 알려 주고 "포함"이 꺼져 있습니다. Outlook 보낸 편지함을 확인하고 필요할 때만 켭니다.</td></tr>
+ </table>
+</section>
+
+<section id="old"><h2>기존 업체 4곳</h2><div class="vc" id="v-3840"><h3>연호엠에스  <span class="tag t-n">메일 없음</span> <span class="tag t-n">주문서 메일 없음</span></h3>
+ <dl><dt>리스트에 적히는 이름</dt><dd>연호엠에스</dd><dt>MAKER</dt><dd>YEONHO</dd><dt>받는 사람</dt><dd>(메일 안 보냄)</dd><dt>담당자</dt><dd>정영환 과장 · 정완복 책임</dd>
+ <dt>출하 요청 메일</dt><dd>보내지 않음</dd><dt>주문서 메일</dt><dd>보내지 않습니다</dd><dt>전산 업체코드</dt><dd>3840</dd><dt>물량 (11월 3주 기준)</dt><dd>선박 158줄 (이번 주 84줄) · 에어 7줄</dd></dl>
+ <div class="care">출하 요청 메일도 주문서 메일도 보내지 않습니다(전산 발주만). 메일 작성기에서는 '건너뜀'으로 나오는 것이 정상입니다. 할 일은 <b>입고분을 전산에 올리는 것</b>입니다. 물량이 가장 많은 업체입니다.</div></div><div class="vc" id="v-2410"><h3>필룩스  <span class="tag t-b">본문 표</span> </h3>
+ <dl><dt>리스트에 적히는 이름</dt><dd>필룩스</dd><dt>MAKER</dt><dd>FEELUX</dd><dt>받는 사람</dt><dd>vtrboy@feelux.com</dd><dt>이 업체만 참조</dt><dd>rhkdqja2801@feelux.com, gotn@feelux.com, ryu80@feelux.com</dd><dt>담당자</dt><dd>이선욱 부장</dd>
+ <dt>출하 요청 메일</dt><dd>본문 표 — 메일 본문에 표로 들어갑니다</dd><dt>주문서 메일</dt><dd>보냅니다</dd><dt>전산 업체코드</dt><dd>2410</dd><dt>물량 (11월 3주 기준)</dt><dd>선박 18줄 (이번 주 8줄)</dd></dl>
+ <div class="care">본문에 표가 들어갑니다. 이 업체에만 참조가 3명 더 붙습니다.</div></div><div class="vc" id="v-2465"><h3>KET  <span class="tag t-b">본문 표</span> <span class="tag t-n">주문서 메일 없음</span></h3>
+ <dl><dt>리스트에 적히는 이름</dt><dd>한국단자공업(KET)</dd><dt>MAKER</dt><dd>KET</dd><dt>받는 사람</dt><dd>kkh@ket.com</dd><dt>이 업체만 참조</dt><dd>hkko@ket.com, ksj95@ket.com, kim.js@ket.com, grace@ket.com, nsc@ket.com, ketsale@ket.com, tskim@ket.com</dd>
+ <dt>출하 요청 메일</dt><dd>본문 표 — 메일 본문에 표로 들어갑니다</dd><dt>주문서 메일</dt><dd>보내지 않습니다</dd><dt>전산 업체코드</dt><dd>2465</dd><dt>물량 (11월 3주 기준)</dt><dd>선박 184줄 (이번 주 80줄) · 에어 4줄</dd></dl>
+ <div class="care">주문서 메일은 보내지 않습니다. 출하 요청 메일은 본문 표로 나갑니다. <b>입출고 관리 시트(KET 1120 같은 시트)는 자동으로 만들어지지 않으니</b> 지금처럼 직접 정리합니다. 주간 "긴급 자재" 메일은 김민지 계장 설정에서만 만들어집니다. 이 메일도 맡게 되면 알려 주세요.</div></div><div class="vc" id="v-4350"><h3>태양기전  <span class="tag t-x">엑셀 첨부</span> </h3>
+ <dl><dt>리스트에 적히는 이름</dt><dd>태양기전</dd><dt>MAKER</dt><dd>DAEMYUNG, TAEYOUNG, DONG-A, DONG-A BESTECH, DUCKSUNG, TAEYANG, BAEG SAN, KDK</dd><dt>받는 사람</dt><dd>kyc8391@hanmail.net, hanyang78@hanmail.net, hoongidance@gmail.com</dd><dt>담당자</dt><dd>구영철 부장</dd>
+ <dt>출하 요청 메일</dt><dd>엑셀 첨부 — 선박 리스트를 엑셀로 붙여 보냅니다</dd><dt>주문서 메일</dt><dd>보냅니다</dd><dt>전산 업체코드</dt><dd>4350</dd><dt>물량 (11월 3주 기준)</dt><dd>선박 71줄 (이번 주 36줄) · 에어 3줄</dd></dl>
+ <div class="care">선박 리스트가 엑셀로 첨부됩니다. 업체가 입고수량을 적어 회신하면 입고 파일 만들기에 그대로 넣습니다. DONG-A · DONG-A BESTECH 품목은 일부만 태양기전이고 나머지는 위성단자입니다(거래처 표의 예외 품목으로 나뉩니다).</div></div></section>
+<section id="new"><h2>신규 업체 8곳</h2><div class="vc" id="v-2150"><h3>김해반도 <span class="tag t-new">신규</span> <span class="tag t-x">엑셀 첨부</span> </h3>
+ <dl><dt>리스트에 적히는 이름</dt><dd>반도기전(김해)</dd><dt>MAKER</dt><dd>AMP</dd><dt>받는 사람</dt><dd>sclee@bandoamp.com, kjkim@bandoamp.com</dd><dt>담당자</dt><dd>이승철 사원</dd>
+ <dt>출하 요청 메일</dt><dd>엑셀 첨부 — 선박 리스트를 엑셀로 붙여 보냅니다</dd><dt>주문서 메일</dt><dd>보냅니다</dd><dt>전산 업체코드</dt><dd>2150</dd><dt>물량 (11월 3주 기준)</dt><dd>선박 80줄 (이번 주 47줄) · 에어 12줄</dd></dl>
+ <div class="care">신규 업체 중 물량이 가장 많습니다. 엑셀 첨부 업체입니다. 에어 품목도 가장 많으니 화요일 에어 입고를 챙기세요. TYTON 품목은 거래처 표에 '경신 or 반도기전김해'로 되어 있어, 표에서 나눠 둔 대로 들어옵니다.</div></div><div class="vc" id="v-4120"><h3>대아산업 <span class="tag t-new">신규</span> <span class="tag t-b">본문 표</span> </h3>
+ <dl><dt>리스트에 적히는 이름</dt><dd>대아산업</dd><dt>MAKER</dt><dd>DAE-A INDUSTRIAL</dd><dt>받는 사람</dt><dd>sale@daeatube.com, songdh40@daeatube.com</dd><dt>담당자</dt><dd>조정화 대리 (부재 시 송대호 과장)</dd>
+ <dt>출하 요청 메일</dt><dd>본문 표 — 메일 본문에 표로 들어갑니다</dd><dt>주문서 메일</dt><dd>보냅니다</dd><dt>전산 업체코드</dt><dd>4120</dd><dt>물량 (11월 3주 기준)</dt><dd>선박 1줄</dd></dl>
+ <div class="care"><b>매달 15일 이후에 다음 달 분 발주</b>를 냅니다(선박리스트 참조). 출하 요청 메일에 <b>주문서 PDF를 직접 첨부</b>해야 합니다. 자동으로 붙지 않으니 Outlook 창에서 끌어다 놓으세요. 메일 맨 위에 이 내용이 빨간 줄로 나오는데, 보내기 전에 그 줄은 지웁니다.</div></div><div class="vc" id="v-2090"><h3>대일CST <span class="tag t-new">신규</span> <span class="tag t-x">엑셀 첨부</span> </h3>
+ <dl><dt>리스트에 적히는 이름</dt><dd>대일 CST</dd><dt>MAKER</dt><dd>DAEIL CST</dd><dt>받는 사람</dt><dd>skim@daeilcst.co.kr</dd><dt>담당자</dt><dd>임수경 계장</dd>
+ <dt>출하 요청 메일</dt><dd>엑셀 첨부 — 선박 리스트를 엑셀로 붙여 보냅니다</dd><dt>주문서 메일</dt><dd>보냅니다</dd><dt>전산 업체코드</dt><dd>2090</dd><dt>물량 (11월 3주 기준)</dt><dd>선박 24줄 (이번 주 16줄) · 에어 4줄</dd></dl>
+ <div class="care">엑셀 첨부 업체입니다. 리스트에는 '대일 CST'로 띄어 적혀 나오지만 같은 업체로 찾습니다.</div></div><div class="vc" id="v-5440"><h3>번영하이테크 <span class="tag t-new">신규</span> <span class="tag t-b">본문 표</span> </h3>
+ <dl><dt>리스트에 적히는 이름</dt><dd>주식회사 번영하이테크</dd><dt>MAKER</dt><dd>BUNYOUNG</dd><dt>받는 사람</dt><dd>by_hitech@naver.com</dd><dt>담당자</dt><dd>이미경 실장</dd>
+ <dt>출하 요청 메일</dt><dd>본문 표 — 메일 본문에 표로 들어갑니다</dd><dt>주문서 메일</dt><dd>보냅니다</dd><dt>전산 업체코드</dt><dd>5440</dd><dt>물량 (11월 3주 기준)</dt><dd>선박 13줄 (이번 주 1줄) · 에어 1줄</dd></dl>
+ <div class="care">본문 첫 줄에 '수신: 이미경 실장님'이 들어갑니다. 에어 요청이 자주 있는 튜브 품목입니다.</div></div><div class="vc" id="v-3470"><h3>성우실업 <span class="tag t-new">신규</span> <span class="tag t-b">본문 표</span> </h3>
+ <dl><dt>리스트에 적히는 이름</dt><dd>성우실업</dd><dt>MAKER</dt><dd>SUNG WOO</dd><dt>받는 사람</dt><dd>swcfuse@thermalcutoff.com</dd><dt>담당자</dt><dd>김영민 과장</dd>
+ <dt>출하 요청 메일</dt><dd>본문 표 — 메일 본문에 표로 들어갑니다</dd><dt>주문서 메일</dt><dd>보냅니다</dd><dt>전산 업체코드</dt><dd>3470</dd><dt>물량 (11월 3주 기준)</dt><dd>선박 1줄</dd></dl>
+ <div class="care"><b>주문서는 부족 일정을 먼저 확인한 뒤에 보냅니다.</b> 주문서 PDF가 나왔다고 바로 보내지 마세요.</div></div><div class="vc" id="v-2330"><h3>위성단자 <span class="tag t-new">신규</span> <span class="tag t-b">본문 표</span> </h3>
+ <dl><dt>리스트에 적히는 이름</dt><dd>위성단자</dd><dt>MAKER</dt><dd>CAIS ELECTRONICS, JIN, JEONO, WESUNG, DONG-A BESTECH 일부</dd><dt>받는 사람</dt><dd>wesung-1989@daum.net</dd><dt>담당자</dt><dd>조현창 과장</dd>
+ <dt>출하 요청 메일</dt><dd>본문 표 — 메일 본문에 표로 들어갑니다</dd><dt>주문서 메일</dt><dd>보냅니다</dd><dt>전산 업체코드</dt><dd>2330</dd><dt>물량 (11월 3주 기준)</dt><dd>선박 5줄 (이번 주 4줄)</dd></dl>
+ <div class="care">DONG-A BESTECH 품목 중 일부가 위성단자로 옵니다(나머지는 태양기전). 어느 쪽인지는 거래처 표의 예외 품목이 정합니다.</div></div><div class="vc" id="v-2140"><h3>진영반도 <span class="tag t-new">신규</span> <span class="tag t-x">엑셀 첨부</span> </h3>
+ <dl><dt>리스트에 적히는 이름</dt><dd>반도기전(진영)</dd><dt>MAKER</dt><dd>MOLEX</dd><dt>받는 사람</dt><dd>sales4@bandomk.com, sales1@bandomk.com</dd><dt>이 업체만 참조</dt><dd>jongho.lee@bandomk.com</dd><dt>담당자</dt><dd>김승훈 선임</dd>
+ <dt>출하 요청 메일</dt><dd>엑셀 첨부 — 선박 리스트를 엑셀로 붙여 보냅니다</dd><dt>주문서 메일</dt><dd>보냅니다</dd><dt>전산 업체코드</dt><dd>2140</dd><dt>물량 (11월 3주 기준)</dt><dd>선박 35줄 (이번 주 27줄) · 에어 3줄</dd></dl>
+ <div class="care">엑셀 첨부 업체입니다. MOLEX 품목은 대부분 진영반도지만 일부(거래처 표의 예외 4품목)는 뉴콘으로 갑니다. 리스트의 거래처 칸을 믿으면 됩니다.</div></div><div class="vc" id="v-2451"><h3>태양단자 <span class="tag t-new">신규</span> <span class="tag t-b">본문 표</span> </h3>
+ <dl><dt>리스트에 적히는 이름</dt><dd>태양단자</dd><dt>MAKER</dt><dd>KET (일부 품목만)</dd><dt>받는 사람</dt><dd>kwak@tae-yang.co.kr</dd><dt>담당자</dt><dd>곽민건 대리</dd>
+ <dt>출하 요청 메일</dt><dd>본문 표 — 메일 본문에 표로 들어갑니다</dd><dt>주문서 메일</dt><dd>보냅니다</dd><dt>전산 업체코드</dt><dd>2451</dd><dt>물량 (11월 3주 기준)</dt><dd>선박 9줄 (이번 주 2줄)</dd></dl>
+ <div class="care">MAKER가 KET인 품목 중 일부만 태양단자로 옵니다(거래처 표의 예외 26품목). 나머지 KET 품목은 전부 한국단자공업입니다. 헷갈리면 리스트의 거래처 칸을 보세요.</div></div></section>
+
+<section id="note"><h2>알아 둘 것</h2>
+ <ul>
+  <li>모든 메일에는 공통 참조(ejkim@kdaea.com, minji3907@kdaea.com)가 자동으로 들어갑니다.</li>
+  <li>업체 정보는 지금 설정과 받은 담당자 표를 옮긴 것입니다. 담당자가 바뀌면 이 안내는 저절로 바뀌지 않으니 알려 주세요.</li>
+  <li>이 화면은 누구나 열 수 있는 주소라서 <b>담당자 전화번호는 넣지 않았습니다.</b></li>
+  <li>KET 입출고 관리 시트, Air up 시트, 대아산업 주문서 첨부는 자동이 아닙니다.</li>
+  <li>KET 주간 긴급 자재 메일은 남효주 설정에서는 만들어지지 않습니다(김민지 계장 설정에만 있음).</li>
+ </ul>
+</section>
+
+</main></div>
+<script>
+document.querySelectorAll("a[data-nav]").forEach((a) => { const u = new URL(a.href); if (!u.searchParams.get("who")) u.searchParams.set("who", new URLSearchParams(location.search).get("who") || "nam"); a.href = u.toString(); });
+(function () {
+  const d = new Date(), mon = new Date(d); mon.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  const wk = mon.getFullYear() + "-" + (mon.getMonth() + 1) + "-" + mon.getDate(), KEY = "mailmaker_mytodo";
+  let st = {}; try { st = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) {}
+  if (st.week !== wk) st = { week: wk, done: {} };
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} };
+  document.querySelectorAll(".day input").forEach((c) => { c.checked = !!st.done[c.dataset.k]; c.closest("li").classList.toggle("done", c.checked);
+    c.addEventListener("change", () => { st.done[c.dataset.k] = c.checked; c.closest("li").classList.toggle("done", c.checked); save(); }); });
+  document.getElementById("btnReset").onclick = () => { st.done = {}; save(); document.querySelectorAll(".day input").forEach((c) => { c.checked = false; c.closest("li").classList.remove("done"); }); };
+  const t = document.querySelector('.day[data-day="' + d.getDay() + '"]'); if (t) { t.classList.add("today"); t.querySelector("h3").insertAdjacentHTML("beforeend", " <small>· 오늘</small>"); }
+})();
+</script>
+</body></html>
