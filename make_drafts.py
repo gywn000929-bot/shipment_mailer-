@@ -151,7 +151,7 @@ def load_config(path):
     maker_map = {}
     for _, r in vendors.iterrows():
         name = clean(r.get("업체"))
-        if not name or clean(r.get("활성", "Y")).upper() in ("N", "NO", "X", "0"):
+        if not name or name.startswith("※") or clean(r.get("활성", "Y")).upper() in ("N", "NO", "X", "0"):
             continue
         v = {
             "name": name,
@@ -162,6 +162,7 @@ def load_config(path):
             "makers": [m.upper() for m in split_list(r.get("MAKER"))],
             "attach": clean(r.get("엑셀첨부", "Y")).upper() not in ("N", "NO", "X", "0"),
             "memo": clean(r.get("메모")),
+            "send_ship": clean(r.get("출하요청발송", "Y")).upper() not in ("N", "NO", "X", "0"),
         }
         vend[name] = v
         for m in v["makers"]:
@@ -597,6 +598,10 @@ def main():
         if v is None:
             problems.append(f"'{n}' : 리스트의 업체 열 값이 config 업체 시트에 없습니다 (선박 {len(s)} / 에어 {len(a)}) → ③ 미지정 업체 지정하기로 연결하세요")
             unknown_vendor_names.append((n, len(s) + len(a)))
+            continue
+        if not v.get("send_ship", True):
+            if (int(s["_has_qty"].sum()) if len(s) else 0) or len(a):
+                print(f"[건너뜀] {n} : 출하 요청 메일을 보내지 않는 업체 (출하요청발송=N)")
             continue
         if not v["to"]:
             problems.append(f"'{n}' : 받는 사람이 비어 있습니다 (선박 {len(s)} / 에어 {len(a)}) → 초안 생성 안 함")

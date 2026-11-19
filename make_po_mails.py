@@ -48,7 +48,7 @@ def load_config(path):
     vendors = []
     for _, r in df.iterrows():
         name = clean(r.get("업체"))
-        if not name:
+        if not name or name.startswith("※"):
             continue
         vendors.append({
             "name": name,

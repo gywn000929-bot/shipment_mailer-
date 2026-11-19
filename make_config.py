@@ -5,66 +5,79 @@
   config_kim.xlsx : 김민지 계장 기준 (주문서 전 업체 + 출하 요청)
 업체 시트는 둘 다 같고, 설정 시트(이름/서명/제목형식/본문)만 다르다.
 실행: python make_config.py --force
+
+주의: 브라우저 화면의 "업체·설정 고치기"로 고쳐서 GitHub에 올린 config*.xlsx 가 있으면 그 파일이 기준이다.
+      이 스크립트로 다시 만들면 그 수정이 사라지므로, 엑셀과 VENDORS 가 다르면 멈춘다.
+      (엑셀 쪽 수정을 버리고 다시 만들려면 --discard-web-edits 를 함께 준다. 보통은 엑셀 내용을 VENDORS 에 먼저 옮긴다.)
 """
 import os, sys
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-HDR = ["업체", "받는사람", "추가참조", "수신줄", "호칭", "MAKER", "엑셀첨부", "메모", "활성", "거래처명(주문서)", "발주서발송", "주문서약칭", "주문서추가문구"]
+HDR = ["업체", "받는사람", "추가참조", "수신줄", "호칭", "MAKER", "엑셀첨부", "메모", "활성", "거래처명(주문서)", "발주서발송", "주문서약칭", "주문서추가문구", "출하요청발송"]
 
-# 업체, 받는사람, 추가참조, 수신줄, 호칭, MAKER, 엑셀첨부, 메모, 활성, 거래처명(주문서), 발주서발송, 주문서약칭, 주문서추가문구
+# 업체, 받는사람, 추가참조, 수신줄, 호칭, MAKER, 엑셀첨부, 메모, 활성, 거래처명(주문서), 발주서발송, 주문서약칭, 주문서추가문구, 출하요청발송
 VENDORS = [
- # ---- 출하 요청 메일 주 대상 (기존 발송 메일 기준) ----
- ["대일CST",      "skim@daeilcst.co.kr", "", "", "계장님", "DAEIL CST", "Y", "", "Y", "대일CST, 대일", "Y", "대일CST", ""],
- ["반도기전 김해", "sclee@bandoamp.com, kjkim@bandoamp.com", "", "", "", "AMP, TE", "Y", "", "Y", "반도기전 김해, 반도기전(김해)", "Y", "반도김해", ""],
- ["반도기전 진영", "sales4@bandomk.com, sales1@bandomk.com", "jongho.lee@bandomk.com", "", "선임님", "MOLEX", "Y", "", "Y", "반도기전, 반도기전 진영", "Y", "반도진영", ""],
- ["엠이시시스텍",  "smlee@mec.co.kr, yuk7400@mec.co.kr", "", "", "차장님", "MEC", "N", "", "Y", "엠이시시스텍, MEC", "Y", "MEC", ""],
- ["위성단자",     "wesung-1989@daum.net", "", "", "과장님", "CAIS ELECTRONICS, JIN", "N", "", "Y", "위성단자", "Y", "위성", ""],
- ["정우 RTI",     "jungwoo4050@hanmail.net", "", "", "대표님", "JUNGWOO", "N", "", "Y", "정우 RTI, 정우", "Y", "정우", ""],
- ["태양기전",     "kyc8391@hanmail.net, hanyang78@hanmail.net, hoongidance@gmail.com", "", "", "",
-  "DAEMYUNG, DUCKSUNG, TAEYOUNG, TAEYANG, DONG-A, DONG-A BESTECH, BAEG SAN, KDK", "Y", "", "Y", "태양기전", "Y", "태양기전", ""],
- ["태양단자",     "kwak@tae-yang.co.kr", "", "", "대리님", "KET", "N", "KET 품목 중 태양단자 경유분. 품목지정 시트로 나눌 수 있음", "Y", "태양단자", "Y", "태양단자", ""],
- ["성우실업",     "swcfuse@thermalcutoff.com", "", "", "과장님", "SUNG WOO", "N", "", "Y", "성우실업, 성우", "Y", "성우", ""],
- ["연호",        "yh0511@yeonho.com", "", "", "", "YEONHO", "N", "주문서 메일 안 보냄", "Y", "연호전자, 연호", "N", "연호", ""],
- ["보성",        "sales@bosungsilitech.co.kr", "", "수신: 김진수 이사님", "이사님", "", "N", "", "Y", "보성실리텍, 보성", "Y", "보성", ""],
- ["삼풍",        "", "", "", "", "", "N", "메일 주소 확인 필요", "Y", "삼풍", "Y", "삼풍", ""],
- ["번영하이테크",  "by_hitech@naver.com", "", "수신: 이미경 실장님", "실장님", "BUNYOUNG", "N", "", "Y", "번영하이테크, 번영", "Y", "번영", ""],
- ["대아산업",     "sale@daeatube.com, songdh40@daeatube.com", "", "수신: 송대호 과장님, 조정화 대리님", "대리님", "", "N", "출하 요청 메일에 주문서(PDF) 첨부 필요", "Y", "대아산업", "Y", "대아산업", ""],
- ["뉴콘",        "", "", "", "", "", "N", "메일 주소 확인 필요", "Y", "뉴콘", "Y", "뉴콘", ""],
- ["대성테크",     "daesung3570@naver.com", "", "", "대표님", "", "N", "최석주 대표 (계장님 메일 기준)", "Y", "대성테크", "Y", "대성테크", ""],
- # ---- 계장님 주문서 대상 (하단 업체) ----
- ["KET",         "kkh@ket.com", "hkko@ket.com, ksj95@ket.com, kim.js@ket.com, grace@ket.com, nsc@ket.com, ketsale@ket.com, tskim@ket.com", "", "", "KET", "N",
-  "주문서 메일 안 보냄 (주간 긴급 자재 메일은 별도)", "Y", "한국단자공업, 한국단자, KET", "N", "KET", ""],
- ["BIT",         "gb0831@nate.com, aaa0802@nate.com", "", "", "대리님", "BIT", "N", "", "Y", "비아이티 이앤엠, 비아이티, BIT, 비아이티이엔엠, BITENM", "Y", "BIT", ""],
- ["경신",        "hdlee@kyungshin.co.kr, hksong@kyungshin.co.kr", "", "", "매니저님", "KYUNG SHIN", "N", "주문서 메일 안 보냄(엑셀 발주서 별도). 이헌동 선임매니저·송현경 매니저", "Y", "경신전선, 경신", "N", "경신", ""],
- ["필룩스",       "vtrboy@feelux.com", "rhkdqja2801@feelux.com, gotn@feelux.com, ryu80@feelux.com", "", "부장님", "FEELUX", "N", "", "Y", "필룩스, KH필룩스, 케이에이치필룩스", "Y", "필룩스", ""],
- ["TSE",         "tse2023@naver.com", "", "", "대표님", "TSE", "N", "", "Y", "티에스이, TSE, 태성일렉트론", "Y", "TSE", ""],
- ["한림",        "hanlimsale@daum.net", "", "", "", "HANLIM", "N", "", "Y", "한림전자, 한림", "Y", "한림", ""],
- ["JST",         "theconn@theconnintl.co.kr", "", "수신: 유진서 주임님", "주임님", "JST", "N", "더콘INTL 경유 (더콘과 같은 주소). 거래처명 확인 필요", "Y", "JST, 한국제이에스티", "Y", "JST", ""],
- ["SL",          "", "", "", "", "SL", "N", "메일 주소 확인 필요", "Y", "SL, 에스엘", "Y", "SL", ""],
- ["더콘",        "theconn@theconnintl.co.kr", "", "수신: 유진서 주임님", "주임님", "", "N", "AMPHENOL 품목은 텔콤 업체로 분리함", "Y", "더콘, 더콘INTL", "Y", "더콘", ""],
- ["텔콤",        "cslim@telcom.kr", "chlee@telcom.kr, seunghwan.lee@telcom.kr, kslee@telcom.kr", "", "", "AMPHENOL", "N", "임충신 담당(미납잔량 메일 기준). 더콘과 같은 회사인지 확인 필요", "Y", "텔콤, 텔콤씨앤에스", "Y", "텔콤", ""],
- ["태진",        "taejin@taejin2.com", "", "", "", "TAEJIN", "N", "", "Y", "태진아이엔티, 태진", "Y", "태진", ""],
- ["삼화전자공업",  "cbc2728@samwha.com, hms@samwha.com", "", "", "", "SAMWHA", "N", "", "Y", "삼화전자공업, 삼화", "Y", "삼화", ""],
- ["행성사",       "runnertec@runnertec.com", "", "수신: 최성호 팀장님", "팀장님", "", "N", "런너테크 경유 (행성사 리드타임 5~6주)", "Y", "행성사, 런너테크", "Y", "행성사", ""],
- ["이테크",       "etech67@korea.com", "", "", "", "ETECH", "N", "", "Y", "이테크전자, 이테크", "Y", "이테크", ""],
- ["기성전선",     "ygje@kiseong.co.kr", "", "", "", "KISEONG", "N", "", "Y", "기성전선, 기성", "Y", "기성", ""],
- ["명보케이블",    "pkk@mbcable.co.kr, kch@mbcable.co.kr", "", "", "", "MYUNGBO", "N", "", "Y", "명보케이블, 명보", "Y", "명보", ""],
- ["엔에이치티",    "jhl@nhtco.kr", "", "", "", "NHT", "N", "담당자 변경(2026.10~ 이지현)", "Y", "엔에이치티, 뉴한테크, NHT", "Y", "NHT", ""],
- ["부천공업",     "", "", "", "", "", "N", "메일 주소 확인 필요", "Y", "부천공업, 부천", "Y", "부천", ""],
- ["에코로아",     "ecoroa05@ecoroakorea.com", "", "", "책임님", "ECOROA", "N", "", "Y", "에코로아, 주식회사 에코로아 (UJU)", "Y", "에코로아", ""],
- ["상아 TRADING", "ls9783@naver.com", "", "", "", "LITTEL FUSE", "N", "", "Y", "상아 TRADING, 상아트레이딩, 상아", "Y", "상아", ""],
- ["세일테크",     "seilcom3@hanmail.net", "", "", "", "SEIL", "N", "", "Y", "세일테크, 세일", "Y", "세일", "해당 납기일에 입고 부탁드립니다."],
- ["하이테크",     "jhg@ihitech.co.kr, lgy@ihitech.co.kr", "", "", "계장님", "HITECH", "N", "", "Y", "하이테크전자부품, 하이테크", "Y", "하이테크", ""],
- ["ASIREL",      "", "", "", "", "ASIREL", "N", "메일 주소 확인 필요", "Y", "ASIREL", "Y", "ASIREL", ""],
- ["엠이",        "", "", "", "", "", "N", "엠이시시스텍과 다른 업체인지 확인 필요", "Y", "엠이", "Y", "엠이", ""],
+ # 기준: '업체별 담당자 E-Mail 주소(주문서 송부)' 정리본의 업체명. 예전 이름은 거래처명(주문서) 칸에 별칭으로 남김.
+ ["대일CST", "skim@daeilcst.co.kr", "", "", "계장님", "DAEIL CST", "Y", "", "Y", "대일CST, 대일", "Y", "대일CST", "", "Y"],
+ ["김해반도", "sclee@bandoamp.com, kjkim@bandoamp.com", "", "", "", "AMP, TE", "Y", "", "Y", "반도기전 김해, 반도기전(김해), 김해반도", "Y", "반도김해", "", "Y"],
+ ["진영반도", "sales4@bandomk.com, sales1@bandomk.com", "jongho.lee@bandomk.com", "", "선임님", "MOLEX", "Y", "", "Y", "반도기전, 반도기전 진영, 진영반도", "Y", "반도진영", "", "Y"],
+ ["멕텍(MEC)", "smlee@mec.co.kr, yuk7400@mec.co.kr", "", "", "차장님", "MEC", "N", "", "Y", "엠이시시스텍, MEC, 멕텍(MEC), 멕텍", "Y", "MEC", "", "Y"],
+ ["위성단자", "wesung-1989@daum.net", "", "", "과장님", "CAIS ELECTRONICS, JIN", "N", "", "Y", "위성단자", "Y", "위성", "", "Y"],
+ ["정우 RTI", "jungwoo4050@hanmail.net", "", "", "대표님", "JUNGWOO", "N", "", "Y", "정우 RTI, 정우", "N", "정우", "", "Y"],
+ ["태양기전", "kyc8391@hanmail.net, hanyang78@hanmail.net, hoongidance@gmail.com", "", "", "", "DAEMYUNG, DUCKSUNG, TAEYOUNG, TAEYANG, DONG-A, DONG-A BESTECH, BAEG SAN, KDK", "Y", "", "Y", "태양기전", "Y", "태양기전", "", "Y"],
+ ["태양단자", "kwak@tae-yang.co.kr", "", "", "대리님", "KET", "N", "KET 품목 중 태양단자 경유분. 품목지정 시트로 나눌 수 있음", "Y", "태양단자", "Y", "태양단자", "", "Y"],
+ ["성우실업", "swcfuse@thermalcutoff.com", "", "", "과장님", "SUNG WOO", "N", "", "Y", "성우실업, 성우", "Y", "성우", "", "Y"],
+ ["연호엠에스", "yh0511@yeonho.com", "", "", "", "YEONHO", "N", "주문서·출하 요청 메일 모두 안 보냄", "Y", "연호전자, 연호, 연호엠에스", "N", "연호", "", "N"],
+ ["보성실리텍", "sales@bosungsilitech.co.kr", "", "수신: 김진수 이사님", "이사님", "", "N", "", "Y", "보성실리텍, 보성", "Y", "보성", "", "Y"],
+ ["삼풍전선공업", "", "", "", "", "", "N", "주문서 메일 안 보냄. 출하 요청용 메일 주소 없음", "Y", "삼풍, 삼풍전선공업", "N", "삼풍", "", "Y"],
+ ["번영하이테크", "by_hitech@naver.com", "", "수신: 이미경 실장님", "실장님", "BUNYOUNG", "N", "", "Y", "번영하이테크, 번영", "Y", "번영", "", "Y"],
+ ["대아산업", "sale@daeatube.com, songdh40@daeatube.com", "", "수신: 송대호 과장님, 조정화 대리님", "대리님", "", "N", "출하 요청 메일에 주문서(PDF) 첨부 필요", "Y", "대아산업", "Y", "대아산업", "", "Y"],
+ ["뉴콘", "k8048k@naver.com", "", "", "", "", "N", "", "Y", "뉴콘", "Y", "뉴콘", "", "Y"],
+ ["대성테크", "daesung3570@naver.com", "", "", "대표님", "", "N", "최석주 대표 (계장님 메일 기준)", "Y", "대성테크", "Y", "대성테크", "", "Y"],
+ ["KET", "kkh@ket.com", "hkko@ket.com, ksj95@ket.com, kim.js@ket.com, grace@ket.com, nsc@ket.com, ketsale@ket.com, tskim@ket.com", "", "", "KET", "N", "주문서 메일 안 보냄 (주간 긴급 자재 메일은 별도)", "Y", "한국단자공업, 한국단자, KET", "N", "KET", "", "Y"],
+ ["BIT 이엔엠", "gb0831@nate.com, aaa0802@nate.com", "", "", "대리님", "BIT", "N", "", "Y", "비아이티 이앤엠, 비아이티, BIT, 비아이티이엔엠, BITENM, BIT 이엔엠", "Y", "BIT", "", "Y"],
+ ["경신", "hdlee@kyungshin.co.kr, hksong@kyungshin.co.kr", "", "", "매니저님", "KYUNG SHIN", "N", "주문서 메일 안 보냄(엑셀 발주서 별도). 이헌동 선임매니저·송현경 매니저", "Y", "경신전선, 경신", "N", "경신", "", "Y"],
+ ["필룩스", "vtrboy@feelux.com", "rhkdqja2801@feelux.com, gotn@feelux.com, ryu80@feelux.com", "", "부장님", "FEELUX", "N", "", "Y", "필룩스, KH필룩스, 케이에이치필룩스", "Y", "필룩스", "", "Y"],
+ ["TSE", "tse2023@naver.com", "", "", "대표님", "TSE", "N", "", "Y", "티에스이, TSE, 태성일렉트론", "Y", "TSE", "", "Y"],
+ ["한림전자", "hanlimsale@daum.net", "", "", "", "HANLIM", "N", "", "Y", "한림전자, 한림", "Y", "한림", "", "Y"],
+ ["JST", "theconn@theconnintl.co.kr", "", "수신: 유진서 주임님", "주임님", "JST", "N", "주문서는 더콘으로만 보냄", "Y", "JST, 한국제이에스티", "N", "JST", "", "Y"],
+ ["SL", "", "", "", "", "SL", "N", "주문서 메일 안 보냄. 출하 요청용 메일 주소 없음", "Y", "SL, 에스엘, 에스엘전자", "N", "SL", "", "Y"],
+ ["더콘", "theconn@theconnintl.co.kr", "", "수신: 유진서 주임님", "주임님", "", "N", "AMPHENOL 품목은 텔콤 업체로 분리함", "Y", "더콘, 더콘INTL, 더콘아이엔티엘", "Y", "더콘", "", "Y"],
+ ["텔콤씨앤에스", "cslim@telcom.kr", "chlee@telcom.kr, seunghwan.lee@telcom.kr, kslee@telcom.kr", "", "", "AMPHENOL", "N", "임충신 담당(미납잔량 메일 기준). 더콘과 같은 회사인지 확인 필요", "Y", "텔콤, 텔콤씨앤에스", "Y", "텔콤", "", "Y"],
+ ["태진아이엔티", "taejin@taejin2.com", "", "", "", "TAEJIN", "N", "", "Y", "태진아이엔티, 태진, 태진코아", "Y", "태진", "", "Y"],
+ ["삼화전자공업", "cbc2728@samwha.com, hms@samwha.com", "", "", "", "SAMWHA", "N", "", "Y", "삼화전자공업, 삼화", "Y", "삼화", "", "Y"],
+ ["런너테크", "runnertec@runnertec.com", "", "수신: 최성호 팀장님", "팀장님", "", "N", "런너테크 경유 (행성사 리드타임 5~6주)", "Y", "행성사, 런너테크", "Y", "행성사", "", "Y"],
+ ["이테크전자", "etech67@korea.com", "", "", "", "ETECH", "N", "", "Y", "이테크전자, 이테크", "Y", "이테크", "", "Y"],
+ ["기성전선", "ygje@kiseong.co.kr", "", "", "", "KISEONG", "N", "", "Y", "기성전선, 기성", "Y", "기성", "", "Y"],
+ ["명보케이블", "pkk@mbcable.co.kr, kch@mbcable.co.kr", "", "", "", "MYUNGBO", "N", "", "Y", "명보케이블, 명보", "Y", "명보", "", "Y"],
+ ["NHT", "jhl@nhtco.kr", "kmh4728@nht.co.kr, lucia@nhtco.kr", "", "", "NHT", "N", "담당자 변경(2026.10~ 이지현)", "Y", "엔에이치티, 뉴한테크, NHT", "Y", "NHT", "", "Y"],
+ ["부천공업", "", "", "", "", "", "N", "주문서 메일 안 보냄. 출하 요청용 메일 주소 없음", "Y", "부천공업, 부천", "N", "부천", "", "Y"],
+ ["에코로아", "ecoroa05@ecoroakorea.com", "", "", "책임님", "ECOROA", "N", "", "Y", "에코로아, 주식회사 에코로아 (UJU)", "Y", "에코로아", "", "Y"],
+ ["상아 TRADING", "ls9783@naver.com", "", "", "", "LITTEL FUSE", "N", "", "Y", "상아 TRADING, 상아트레이딩, 상아", "Y", "상아", "", "Y"],
+ ["세일테크", "seilcom3@hanmail.net", "", "", "", "SEIL", "N", "", "Y", "세일테크, 세일, 세일산업", "Y", "세일", "해당 납기일에 입고 부탁드립니다.", "Y"],
+ ["하이테크전자부품", "jhg@ihitech.co.kr, lgy@ihitech.co.kr", "", "", "계장님", "HITECH", "N", "", "Y", "하이테크전자부품, 하이테크", "Y", "하이테크", "", "Y"],
+ ["아스리엘전자", "eunbi0312@naver.com", "", "", "", "ASIREL", "N", "", "Y", "ASIREL, 아스리엘전자, ASRIEL ELECTRON, ASRIEL", "Y", "ASIREL", "", "Y"],
+ ["엠이", "", "", "", "", "", "N", "엠이시시스텍과 다른 업체인지 확인 필요", "N", "엠이", "Y", "엠이", "", "Y"],
+ ["러버원", "rubberone@naver.com", "", "", "", "", "N", "", "Y", "러버원", "Y", "러버원", "", "Y"],
+ ["선진에스티", "sunjinkch@naver.com", "sunjinst01@naver.com, ypjoo@sunjinst.co.kr", "", "", "", "N", "", "Y", "선진에스티", "Y", "선진", "", "Y"],
+ ["성진종합상사", "sjw7334@hanmail.net", "", "", "", "", "N", "", "Y", "성진종합상사", "Y", "성진", "", "Y"],
+ ["승일테크", "hhh3a@hanmail.net", "", "", "", "", "N", "", "Y", "승일테크", "Y", "승일", "", "Y"],
+ ["씨디에이", "cdakmj@cda-korea.com", "cdajjw@cda-korea.com, cdaerc@cda-korea.com", "", "", "", "N", "", "Y", "씨디에이", "Y", "씨디에이", "", "Y"],
+ ["에스엠이코리아", "smekr@smekorea.co.kr", "", "", "", "", "N", "", "Y", "에스엠이코리아", "Y", "에스엠이", "", "Y"],
+ ["조은전자", "joeun@joeunelectro.co.kr", "", "", "", "", "N", "", "Y", "조은전자", "Y", "조은", "", "Y"],
+ ["피엘상사", "qkrwlg123@naver.com", "", "", "", "", "N", "", "Y", "피엘상사", "Y", "피엘", "", "Y"],
+ ["고려엔티씨", "", "", "", "", "", "N", "주문서 메일 안 보냄. 출하 요청용 메일 주소 없음", "Y", "고려엔티씨", "N", "고려엔티씨", "", "Y"],
+ ["동성폴리머", "", "", "", "", "", "N", "주문서 메일 안 보냄. 출하 요청용 메일 주소 없음", "Y", "동성폴리머", "N", "동성폴리머", "", "Y"],
+ ["YC TRADE", "", "", "", "", "", "N", "주문서 메일 안 보냄. 출하 요청용 메일 주소 없음", "Y", "YC TRADE, YC TRADE(HONGKONG)CO.,LIMITED", "N", "YC TRADE", "", "Y"],
 ]
 
 NOTES = [
  "※ MAKER: 선박/에어리스트의 MAKER 칸 값(쉼표로 여러 개). 비어 있으면 그 업체 품목은 '미지정'으로 나옴. 받는사람/참조도 쉼표 구분.",
  "※ 엑셀첨부=Y: 출하 요청 메일에 선박 표 대신 엑셀 첨부. 메모: 출하 요청 본문 맨 위 빨간 글씨(보내기 전 삭제). 활성=N: 무시.",
  "※ 거래처명(주문서): 주문서 PDF 거래처명 칸의 이름(쉼표로 여러 개). 발주서발송=N: 주문서 메일 안 만듦. 주문서약칭: 제목/첨부 파일명. 주문서추가문구: 본문 '감사합니다' 앞 한 줄.",
+ "※ 출하요청발송=N: 선박/에어리스트에 품목이 있어도 출하 요청 메일을 만들지 않음(조용히 건너뜀).",
  "※ 선박리스트에 '업체' 열이 있으면 MAKER보다 그 값을 먼저 씀. 값은 이 시트의 '업체' 이름과 같아야 함.",
 ]
 
@@ -128,13 +141,43 @@ KIM = [
  ["서명", "D.E.TECH / DAE-A HOLDINGS CO.,LTD\nMIN JI KIM(金 敏 智)\nTEL : 055-296-1677~8\nFAX : 055-296-1679\nMOBILE : 010-2992-3907\nMAIL : minji3907@kdaea.com", "Outlook 기본 서명이 없을 때만 사용"],
  ["본문굵게", "Y", "Y: 본문 전체 굵게 (계장님 기존 메일 스타일)"],
  ["본문크기", "11", "본문 글자 크기(pt). 계장님 기존 메일 11pt"],
+ ["긴급메일업체", "KET", "주간 '긴급 자재의 건' 메일을 만들 업체(업체 시트의 이름). 비우면 만들지 않음. 브라우저 버전 전용"],
+ ["긴급제목형식", "대아홀딩스 {월}월 {주}주 긴급 자재의 건", "긴급 자재 메일 제목. {월}, {주}가 숫자로 바뀜"],
+ ["긴급본문", "수고많으십니다. 대아홀딩스 김민지 계장입니다.\n\n하기 긴급 자재 건 납기 확인 후 회신 부탁드립니다.\n\n{표}\n\n감사합니다.",
+  "긴급 자재 메일 본문. {표} 자리에 NO·품목명·미납수량 합계·AIR 수량·부족일정 표가 들어감"],
 ]
 
 OVR = [["(예) KET-12345", "태양단자", "KET 품목 중 태양단자 경유 건. 품목 코드로 업체를 직접 지정 (MAKER보다 우선)"]]
+
+def web_edits(path, strip_greeting):
+    """이미 있는 엑셀의 업체 시트가 VENDORS 와 다른 업체 이름 목록 (브라우저에서 고쳐 올린 흔적)"""
+    from openpyxl import load_workbook
+    ws = load_workbook(path)["업체"]
+    rows = list(ws.iter_rows(values_only=True)); hdr = [str(c or "").strip() for c in rows[0]]
+    cur = {}
+    for r in rows[1:]:
+        name = str(r[0] or "").strip()
+        if name and not name.startswith("※"):
+            cur[name] = {h: str(v or "").strip() for h, v in zip(hdr, r)}
+    diff = []
+    for v in VENDORS:
+        v = list(v)
+        if strip_greeting:
+            v[3] = ""; v[4] = ""
+        c = cur.pop(v[0], None)
+        if c is None or any(c.get(h, "") != str(x).strip() for h, x in zip(HDR, v)):
+            diff.append(v[0])
+    return diff + list(cur)
+
 
 if __name__ == "__main__":
     for name, st in (("config.xlsx", NAM), ("config_kim.xlsx", KIM)):
         p = os.path.join(HERE, name)
         if os.path.exists(p) and "--force" not in sys.argv:
             print(f"{p} 가 이미 있습니다. 다시 만들려면 --force"); continue
+        if os.path.exists(p) and "--discard-web-edits" not in sys.argv:
+            d = web_edits(p, name == "config_kim.xlsx")
+            if d:
+                print(f"{p}: 엑셀의 업체 시트가 VENDORS 와 다릅니다 → 만들지 않음. 다른 업체: {', '.join(d)}")
+                print("   (브라우저에서 고쳐 올린 내용으로 보입니다. VENDORS 에 옮긴 뒤 다시 실행하거나, 버리려면 --discard-web-edits)"); continue
         build(p, st, OVR, strip_greeting=(name == "config_kim.xlsx"))
