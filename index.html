@@ -4,12 +4,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-<script src="js/core.js?v=5" defer></script>
-<script src="js/config.js?v=5" defer></script>
-<script src="js/lists.js?v=5" defer></script>
-<script src="js/mail.js?v=5" defer></script>
-<script src="js/run.js?v=5" defer></script>
-<script src="js/ui.js?v=5" defer></script>
+<script src="js/core.js?v=6" defer></script>
+<script src="js/config.js?v=6" defer></script>
+<script src="js/lists.js?v=6" defer></script>
+<script src="js/mail.js?v=6" defer></script>
+<script src="js/run.js?v=6" defer></script>
+<script src="js/ui.js?v=6" defer></script>
 <style>
 :root{--bg:#f4f6fa;--card:#fff;--line:#e3e7ee;--txt:#1f2937;--mut:#6b7280;--pri:#2563eb;--pri2:#1d4ed8;--ok:#16a34a;--warn:#d97706;--err:#dc2626;--chip:#eef2ff}
 *{box-sizing:border-box}body{margin:0;font-family:"Malgun Gothic","맑은 고딕",system-ui,sans-serif;background:var(--bg);color:var(--txt);font-size:14px}
@@ -72,7 +72,7 @@ a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;ba
 <span class="hint" id="cfgInfo">설정 불러오는 중…</span>
 <button id="btnEdit" class="sm" title="업체 메일 주소, 본문 문구 등을 표에서 고칩니다">⚙ 업체·설정 고치기</button>
 <button id="btnFirst" class="sm">🔰 처음 확인</button>
-<button id="btnHelp" class="sm">사용법</button></header>
+<button id="btnHelp" class="sm">사용법</button><a class="btn sm" id="lnkGuide" href="guide.html" target="_blank" rel="noopener">📖 자세한 안내</a></header>
 <main>
 <div class="full" id="pendingBar" style="display:none"><span id="pendingText"></span>
  <button class="pri sm" id="btnDlCfg">설정 파일 받아서 올리기</button><button class="sm" id="btnDiscard">이 PC 변경 버리기</button></div>

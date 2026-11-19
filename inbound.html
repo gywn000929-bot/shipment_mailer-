@@ -2,9 +2,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="js/core.js?v=5" defer></script>
-<script src="js/config.js?v=5" defer></script>
-<script src="js/inbound.js?v=5" defer></script>
+<script src="js/core.js?v=6" defer></script>
+<script src="js/config.js?v=6" defer></script>
+<script src="js/inbound.js?v=6" defer></script>
 <style>
 :root{--bg:#f4f6fa;--card:#fff;--line:#e3e7ee;--txt:#1f2937;--mut:#6b7280;--pri:#2563eb;--pri2:#1d4ed8;--ok:#16a34a;--warn:#d97706;--err:#dc2626;--chip:#eef2ff}
 *{box-sizing:border-box}body{margin:0;font-family:"Malgun Gothic","맑은 고딕",system-ui,sans-serif;background:var(--bg);color:var(--txt);font-size:14px}
@@ -63,7 +63,7 @@ a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;ba
 </style></head><body>
 <header><h1>📦 입고 파일 만들기</h1><span class="hint">업체가 입고수량을 적어 보낸 엑셀 → 전산에 올리는 엑셀</span><span class="sp"></span>
 <span class="hint" id="inCfg">설정 불러오는 중…</span>
-<a class="btn" data-nav href="list.html">📋 주간 리스트 만들기</a><a class="btn" data-nav href="index.html">📮 메일 작성기</a></header>
+<a class="btn" href="guide.html#inbound" target="_blank" rel="noopener">📖 사용 안내</a><a class="btn" data-nav href="list.html">📋 주간 리스트 만들기</a><a class="btn" data-nav href="index.html">📮 메일 작성기</a></header>
 <main>
 <div class="full"><div class="steps"><span>① 업체가 보낸 엑셀(또는 주간 리스트) 끌어다 놓기</span><span>② 업체·입고수량 확인</span><span>③ 받기 → 전산에 올리기</span></div></div>
 <section class="card full"><h2><span class="step">1</span> 파일 넣기 <span class="status" id="inCount"></span></h2>

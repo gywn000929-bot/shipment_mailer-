@@ -224,6 +224,7 @@ window.addEventListener("DOMContentLoaded", () => {
   $("btnDlCfg").onclick = downloadConfig; $("btnDiscard").onclick = discardLocal;
   $("btnEdit").onclick = () => openEditor(false); $("btnEditNoMail").onclick = () => openEditor(true);
   bindEditor(); takeHandoff();
+  $("lnkGuide").href = "guide.html" + location.search;
   $("btnHelp").onclick = () => $("helpCard").scrollIntoView({ behavior: "smooth" });
   $("btnFirst").onclick = () => { $("firstCard").style.display = ""; fcShow(""); $("firstCard").scrollIntoView({ behavior: "smooth" }); };
   $("firstCard").addEventListener("click", onFirstCheck);

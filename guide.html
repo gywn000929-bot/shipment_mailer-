@@ -1,0 +1,266 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>사용 안내 - 대아홀딩스 메일 작성기</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--line:#e3e7ee;--txt:#1f2937;--mut:#6b7280;--pri:#2563eb;--pri2:#1d4ed8;--ok:#16a34a;--warn:#b45309;--err:#dc2626}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:16px}
+body{margin:0;font-family:"Malgun Gothic","맑은 고딕",system-ui,sans-serif;background:var(--bg);color:var(--txt);font-size:16px;line-height:1.75}
+header{background:#fff;border-bottom:1px solid var(--line);padding:18px 24px}
+header h1{margin:0;font-size:22px}header p{margin:4px 0 0;color:var(--mut);font-size:14px}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 16px 60px;display:grid;grid-template-columns:240px 1fr;gap:24px;align-items:start}
+nav{position:sticky;top:16px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 14px 10px;font-size:14px}
+nav b{display:block;margin-bottom:6px}nav a{display:block;padding:5px 8px;border-radius:8px;color:var(--txt);text-decoration:none}nav a:hover{background:#eef2ff;color:var(--pri2)}
+nav .tools{border-top:1px solid var(--line);margin-top:8px;padding-top:8px}nav .tools a{color:var(--pri2);font-weight:bold}
+@media(max-width:860px){.wrap{grid-template-columns:1fr}nav{position:static}}
+main{min-width:0}
+section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-bottom:18px}
+h2{margin:0 0 6px;font-size:20px;display:flex;gap:10px;align-items:center}
+h2 .n{display:inline-flex;min-width:30px;height:30px;padding:0 8px;border-radius:999px;background:var(--pri);color:#fff;font-size:15px;align-items:center;justify-content:center;flex:none}
+h3{margin:22px 0 6px;font-size:17px}
+p{margin:8px 0}.lead{color:var(--mut);margin-top:0}
+ol,ul{margin:8px 0;padding-left:24px}li{margin:6px 0}
+ol.steps{list-style:none;padding:0;counter-reset:s}
+ol.steps>li{counter-increment:s;position:relative;padding:10px 12px 10px 52px;border:1px solid var(--line);border-radius:12px;margin:8px 0;background:#fafbfe}
+ol.steps>li::before{content:counter(s);position:absolute;left:12px;top:10px;width:28px;height:28px;border-radius:50%;background:#dbeafe;color:var(--pri2);font-weight:bold;display:flex;align-items:center;justify-content:center}
+.btn{display:inline-block;border-radius:8px;padding:1px 9px;font-size:14px;background:#e5e7eb;color:var(--txt);white-space:nowrap;font-weight:bold}
+.btn.pri{background:var(--pri);color:#fff}.btn.ok{background:var(--ok);color:#fff}
+.box{border-radius:12px;padding:12px 16px;margin:12px 0}
+.tip{background:#eff6ff;border:1px solid #bfdbfe}.warn{background:#fffbeb;border:1px solid #fcd34d}.stop{background:#fef2f2;border:1px solid #fca5a5}.good{background:#f0fdf4;border:1px solid #86efac}
+.box b:first-child{display:block;margin-bottom:2px}
+table{width:100%;border-collapse:collapse;margin:10px 0;font-size:15px}th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}th{background:#f8fafc;white-space:nowrap}
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}
+.flow div{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fafbfe;font-size:14px;line-height:1.6}
+.flow div b{display:block;font-size:15px}.flow div span{display:inline-block;background:#dbeafe;color:var(--pri2);border-radius:999px;padding:0 10px;font-size:13px;font-weight:bold;margin-bottom:4px}
+@media(max-width:860px){.flow{grid-template-columns:1fr 1fr}}
+.tool{display:block;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:8px 0;text-decoration:none;color:var(--txt);background:#fff}
+.tool:hover{border-color:var(--pri);background:#f8fbff}.tool b{color:var(--pri2);font-size:17px}.tool small{display:block;color:var(--mut);font-size:14px}
+code{background:#f1f5f9;border-radius:6px;padding:1px 6px;font-family:Consolas,"D2Coding",monospace;font-size:14px}
+.q{font-weight:bold;margin-top:16px}.a{margin:2px 0 0 0}
+.muted{color:var(--mut);font-size:14px}
+</style></head><body>
+<header><h1>📖 사용 안내</h1><p>대아홀딩스 주간 리스트 · 메일 작성기 · 입고 파일 — 처음 쓰는 분도 이 순서대로 따라 하면 됩니다</p></header>
+<div class="wrap">
+<nav><b>차례</b>
+ <a href="#start">먼저 알아 둘 것</a>
+ <a href="#week">한 주 순서 한눈에</a>
+ <a href="#first">① 처음 한 번만 하는 확인</a>
+ <a href="#list">② 주간 리스트 만들기</a>
+ <a href="#ship">③ 출하 요청 메일</a>
+ <a href="#ket">④ KET 긴급 자재 메일</a>
+ <a href="#po">⑤ 주문서 메일</a>
+ <a href="#inbound">⑥ 입고 파일 만들기</a>
+ <a href="#vendor">⑦ 업체 정보 고치기</a>
+ <a href="#faq">막힐 때 보는 곳</a>
+ <a href="#limits">꼭 직접 확인할 것</a>
+ <div class="tools"><b>화면 바로 가기</b>
+  <a data-nav href="list.html">📋 주간 리스트 만들기</a>
+  <a data-nav href="index.html">📮 메일 작성기</a>
+  <a data-nav href="inbound.html">📦 입고 파일 만들기</a></div>
+</nav>
+<main>
+
+<section id="start"><h2>먼저 알아 둘 것</h2>
+ <p class="lead">화면은 세 개입니다. 인터넷 주소로 열기만 하면 되고, 따로 설치할 것은 없습니다.</p>
+ <a class="tool" data-nav href="list.html"><b>📋 주간 리스트 만들기</b><small>받은 요청 파일과 전산 Balance를 넣으면 "선박 및 에어리스트" 엑셀이 나옵니다</small></a>
+ <a class="tool" data-nav href="index.html"><b>📮 메일 작성기</b><small>리스트 엑셀이나 주문서 PDF를 넣으면 업체별 메일이 만들어집니다</small></a>
+ <a class="tool" data-nav href="inbound.html"><b>📦 입고 파일 만들기</b><small>업체가 입고수량을 적어 보낸 엑셀을 전산에 올리는 엑셀로 바꿉니다</small></a>
+ <div class="box good"><b>안심하고 쓰세요</b>
+  <ul><li><b>메일이 저절로 나가지 않습니다.</b> 이 화면은 메일을 "만들어" 주기만 하고, 보내는 것은 Outlook에서 직접 "보내기"를 눌러야 합니다.</li>
+  <li><b>넣은 파일은 내 PC 밖으로 나가지 않습니다.</b> 엑셀과 PDF는 이 브라우저 안에서만 읽습니다.</li>
+  <li>잘못 눌러도 원본 파일은 바뀌지 않습니다. 다시 넣고 다시 누르면 됩니다.</li></ul></div>
+ <div class="box tip"><b>준비물</b>크롬이나 엣지 브라우저, 그리고 Outlook. 세 화면 주소는 즐겨찾기에 넣어 두세요.</div>
+</section>
+
+<section id="week"><h2>한 주 순서 한눈에</h2>
+ <div class="flow">
+  <div><span>파일 받은 날</span><b>리스트 만들기</b>요청 파일 + 전산 Balance → 선박 및 에어리스트 엑셀</div>
+  <div><span>금요일</span><b>에어 컨펌</b>에어 컨펌 도우미로 컨펌하고, 리스트의 Air up 시트 정리</div>
+  <div><span>월요일</span><b>메일 보내기</b>출하 요청 메일, KET 긴급 자재 메일</div>
+  <div><span>업체 회신 후</span><b>입고 파일</b>입고수량이 적힌 엑셀 → 전산에 올리는 엑셀</div>
+ </div>
+ <p>주문서 메일은 요일과 상관없이, 주문서 PDF가 나올 때마다 메일 작성기에서 만듭니다.</p>
+</section>
+
+<section id="first"><h2><span class="n">①</span>처음 한 번만 하는 확인</h2>
+ <p class="lead">내 PC의 Outlook에서 메일 파일이 제대로 열리는지 딱 한 번 확인합니다. 5분이면 됩니다.</p>
+ <ol class="steps">
+  <li><b>메일 작성기</b>를 엽니다. 위쪽에 "처음 한 번만" 상자가 보입니다. 안 보이면 오른쪽 위 <span class="btn">🔰 처음 확인</span>을 누릅니다.</li>
+  <li><span class="btn pri">시험 메일 파일 받기</span>를 누릅니다. <code>시험메일.eml</code> 파일이 내려받아집니다. 받는 사람이 내 주소라서 실수로 보내도 괜찮습니다.</li>
+  <li>받은 파일을 <b>더블클릭</b>합니다. 브라우저의 다운로드 목록에서 파일 이름을 눌러도 됩니다.</li>
+  <li>어떻게 열렸는지 화면에서 <b>맞는 버튼 하나</b>를 누릅니다. 그다음은 화면이 알려 주는 대로 하면 됩니다.</li>
+ </ol>
+ <table>
+  <tr><th>이렇게 열렸으면</th><th>뜻</th><th>할 일</th></tr>
+  <tr><td>새 메일 창이 열리고 <b>"보내기" 버튼이 있다</b></td><td>정상입니다</td><td>서명이 몇 번 보이는지만 골라 주면 끝</td></tr>
+  <tr><td>열렸지만 <b>"보내기"가 없다</b> (받은 메일처럼 보인다)</td><td>"새 Outlook"을 쓰고 있을 가능성이 큽니다</td><td>Outlook 오른쪽 위 "새 Outlook" 스위치를 끄고 다시 해 보거나, "복사해서 보내기 방식"을 고릅니다</td></tr>
+  <tr><td><b>다른 프로그램</b>이 열리거나 아무 일도 없다</td><td>메일 파일을 여는 프로그램이 Outlook으로 정해져 있지 않습니다</td><td>파일을 마우스 오른쪽 버튼 → 연결 프로그램 → Outlook → "항상"</td></tr>
+ </table>
+ <div class="box tip"><b>서명이 두 번 보이면</b>"두 번 보인다"를 누르세요. 다음부터 이 화면이 서명을 넣지 않습니다. 나중에 바꾸려면 메일 작성기의 "고급 설정"에서 "본문 끝에 서명 넣기"를 켜고 끄면 됩니다.</div>
+ <div class="box warn"><b>이 확인은 PC마다 한 번씩</b>PC를 바꾸거나 다른 브라우저를 쓰면 한 번 더 해야 합니다.</div>
+</section>
+
+<section id="list"><h2><span class="n">②</span>주간 리스트 만들기</h2>
+ <p class="lead">받은 파일을 옮겨 붙이거나 엑셀 매크로를 돌릴 필요 없이, 파일을 넣으면 리스트가 나옵니다.</p>
+ <h3>넣을 파일</h3>
+ <table>
+  <tr><th>파일</th><th>설명</th></tr>
+  <tr><td>선박 요청 파일 3개</td><td>F1, F2, F5 요청 파일. 받은 그대로 넣습니다.</td></tr>
+  <tr><td>에어 리포트</td><td>F1·F2 에어 요청 리포트.</td></tr>
+  <tr><td>전산 Balance</td><td>전산에서 받은 미납수량 합계 파일. 공장별로 하나씩, JST 것도 따로.</td></tr>
+  <tr><td>Stock</td><td>재고 파일이 있으면 같이 넣습니다.</td></tr>
+  <tr><td>거래처 표</td><td>"거래처코드" 시트가 들어 있는 엑셀. <b>한 번 넣으면 이 PC가 기억</b>하므로, 거래처가 바뀌었을 때만 다시 넣으면 됩니다.</td></tr>
+ </table>
+ <div class="box warn"><b>JST Balance 파일은 이름에 "JST"가 꼭 들어가야 합니다</b>예: <code>F2_JST_Bal.xls</code>. 파일 안에는 JST인지 구분할 표시가 없어서 이름으로 알아봅니다. 잘못 잡혔으면 표의 "자리" 칸에서 바꿀 수 있습니다.</div>
+ <h3>순서</h3>
+ <ol class="steps">
+  <li><b>주간 리스트 만들기</b> 화면을 엽니다.</li>
+  <li>위 파일들을 <b>한꺼번에</b> 점선 칸에 끌어다 놓습니다. 폴더에서 여러 개를 골라 한 번에 끌면 됩니다.</li>
+  <li>칸 아래에 <b>초록 표시</b>가 생깁니다. "✔ F1 선박 요청", "✔ F2 Balance"처럼 들어온 파일이 초록이 됩니다. 회색으로 남은 것은 아직 안 들어온 파일입니다.</li>
+  <li><span class="btn pri">리스트 만들기</span>를 누릅니다.</li>
+  <li>결과 요약을 읽습니다. 주황색 ⚠ 줄이 있으면 아래 표를 보세요.</li>
+  <li><span class="btn ok">📥 리스트 엑셀 받기</span>를 누르면 <code>선박 및 에어리스트_ETD ….xlsx</code>가 받아집니다.</li>
+ </ol>
+ <table>
+  <tr><th>주황색 ⚠ 내용</th><th>뜻과 할 일</th></tr>
+  <tr><td>"F1 Balance 파일이 없어 …"</td><td>그 공장 Balance 파일이 안 들어왔습니다. 파일을 더 끌어다 놓고 다시 "리스트 만들기"를 누릅니다.</td></tr>
+  <tr><td>"거래처를 못 붙인 MAKER: …"</td><td>거래처 표에 그 MAKER가 없습니다. 거래처 표 엑셀에 한 줄 추가한 뒤 그 파일을 다시 넣습니다.</td></tr>
+  <tr><td>"어느 공장의 Balance인지 몰라 …"</td><td>표의 "자리" 칸에서 공장을 골라 줍니다.</td></tr>
+ </table>
+ <div class="box tip"><b>받은 엑셀에서 계속 작업하세요</b>출고수량, 컨펌, Air up 시트처럼 손으로 적는 부분은 받은 엑셀에서 평소처럼 하면 됩니다. 틀 고정은 엑셀에서 직접 걸어 주세요.</div>
+ <p>리스트를 고치지 않고 바로 메일을 만들 거라면 <span class="btn pri">이 리스트로 메일 만들기 →</span>를 누르세요. 메일 작성기로 넘어가면서 리스트가 자동으로 들어갑니다.</p>
+</section>
+
+<section id="ship"><h2><span class="n">③</span>출하 요청 메일</h2>
+ <p class="lead">리스트 엑셀 하나로 업체별 메일이 한꺼번에 만들어집니다.</p>
+ <ol class="steps">
+  <li><b>메일 작성기</b>를 엽니다. 오른쪽 위에 "보내는 사람: 김민지 계장"이 맞는지 봅니다.</li>
+  <li>왼쪽 "출하 요청 메일" 칸의 <b>선박리스트</b> 자리에 리스트 엑셀을 끌어다 놓습니다. 에어 표가 같은 파일에 있으면 에어 칸은 비워 두어도 됩니다.</li>
+  <li><b>기준 주 월요일</b> 날짜를 확인합니다. 이 날짜로 제목의 "○월 ○주"와 입고 요청 날짜가 정해집니다.</li>
+  <li><span class="btn pri">① 미리보기 · 메일 만들기</span>를 누릅니다.</li>
+  <li>아래에 업체별 메일 목록이 나옵니다. <span class="btn">본문 보기</span>로 몇 개 열어 내용을 확인합니다.</li>
+  <li><span class="btn ok">📦 전부 받기 (ZIP)</span>을 누릅니다.</li>
+  <li>받은 ZIP 파일을 마우스 오른쪽 버튼 → "압축 풀기".</li>
+  <li>폴더 안의 메일 파일을 <b>하나씩 더블클릭</b>합니다. Outlook 새 메일 창이 열리면 받는 사람과 첨부를 확인하고 <b>보내기</b>를 누릅니다.</li>
+  <li>보낸 메일은 화면 목록에서 <b>"Outlook에서 보냈음"</b>에 체크해 둡니다.</li>
+ </ol>
+ <div class="box warn"><b>월요일에 열면 날짜를 꼭 확인하세요</b>기준 주는 항상 "다음 월요일"로 잡혀 있습니다. 월요일에 이번 주 것을 만들 때는 화면에 나오는 <span class="btn">이번 주(오늘)로 바꾸기</span>를 누르세요.</div>
+ <h3>결과 화면 읽는 법</h3>
+ <table>
+  <tr><th>보이는 것</th><th>뜻</th><th>할 일</th></tr>
+  <tr><td>✅ 메일 ○통 준비됨</td><td>정상으로 만들어졌습니다</td><td>전부 받기 → 보내기</td></tr>
+  <tr><td>⚠ 받는 사람이 없는 업체</td><td>그 업체의 메일 주소가 설정에 없습니다</td><td>그 업체 줄의 빈칸에 메일 주소를 적고 "저장"</td></tr>
+  <tr><td>⚠ 업체를 모르는 품목</td><td>리스트의 거래처 이름을 설정에서 못 찾았습니다</td><td>아래 "③ 미지정 업체 지정하기"에서 업체를 고르고 저장한 뒤, 다시 ①</td></tr>
+  <tr><td>⚠ 이미 만든 적이 있는 메일 (빨간 테두리)</td><td>같은 주에 같은 업체로 이미 메일 파일을 받았습니다</td><td>두 번 보내지 않도록 "포함"이 꺼져 있습니다. 정말 다시 보내야 할 때만 Outlook 보낸 편지함을 확인하고 "포함"을 켭니다</td></tr>
+  <tr><td>건너뜀(메일을 보내지 않는 업체)</td><td>출하 요청을 보내지 않기로 한 업체입니다 (예: 연호엠에스)</td><td>할 일 없음</td></tr>
+ </table>
+ <div class="box tip"><b>보내지 않을 업체가 있으면</b>그 메일 줄 왼쪽의 "포함" 체크를 끄면 ZIP에서 빠집니다. 한 통만 받고 싶으면 그 줄의 <span class="btn pri">📩 메일 파일 받기</span>를 누르세요.</div>
+ <div class="box tip"><b>업체에 엑셀이 첨부되는 경우</b>일부 업체는 본문 표 대신 선박 리스트 엑셀이 첨부됩니다. 업체가 그 엑셀의 "입고수량" 칸을 채워 회신하면, ⑥에서 그대로 쓸 수 있습니다.</div>
+</section>
+
+<section id="ket"><h2><span class="n">④</span>KET 긴급 자재 메일</h2>
+ <p class="lead">따로 누를 것은 없습니다. 출하 요청 메일을 만들 때 함께 만들어집니다.</p>
+ <ul>
+  <li>에어리스트에 KET 품목이 있으면, 목록에 빨간 <b>"긴급 자재"</b> 표시가 붙은 메일이 하나 더 나옵니다.</li>
+  <li>본문에는 NO · 품목명 · 미납수량 합계 · AIR 수량 · 부족일정 표가 들어갑니다. 부족일정이 URGENT이거나 기준 주 안이면 그 줄이 붉게 칠해집니다.</li>
+ </ul>
+ <div class="box stop"><b>보내기 전에 표를 꼭 확인하세요</b>이 메일의 표 모양과 숫자 기준은 실제로 보내던 메일과 아직 맞춰 보지 못했습니다. 특히 "미납수량 합계" 숫자가 맞는지 확인하고, 다르면 Outlook 창에서 고친 뒤 보내세요.</div>
+</section>
+
+<section id="po"><h2><span class="n">⑤</span>주문서 메일</h2>
+ <p class="lead">전산에서 뽑은 주문서 PDF를 넣으면 업체별로 잘라서 메일을 만듭니다.</p>
+ <ol class="steps">
+  <li>메일 작성기 오른쪽 "주문서(발주서) 메일" 칸에 <b>주문서 PDF</b>를 끌어다 놓습니다. 한 파일에 여러 업체, 여러 주문서가 섞여 있어도 되고, 파일을 여러 개 넣어도 됩니다.</li>
+  <li><span class="btn pri">① 미리보기 · 메일 만들기</span>를 누릅니다.</li>
+  <li>"PDF에서 읽은 주문서 ○건 보기"를 눌러 PO 번호와 업체가 맞게 읽혔는지 봅니다.</li>
+  <li>그다음은 출하 요청 메일과 같습니다. 전부 받기 → 압축 풀기 → 더블클릭 → 보내기.</li>
+ </ol>
+ <ul>
+  <li>제목은 <code>업체-PO번호</code> (예: 기성-48015), 첨부 파일 이름도 같습니다.</li>
+  <li>주문서를 보내지 않는 업체(KET, 경신, JST, 연호엠에스, 정우 RTI 등)는 자동으로 건너뜁니다.</li>
+  <li>같은 PO 번호로 이미 메일을 만든 적이 있으면 빨간 테두리로 알려 줍니다.</li>
+ </ul>
+ <div class="box warn"><b>스캔한 PDF는 읽지 못합니다</b>종이를 스캔한 그림 PDF에는 글자가 없어서 PO 번호를 읽을 수 없습니다. 전산에서 바로 저장한 PDF를 넣어 주세요.</div>
+</section>
+
+<section id="inbound"><h2><span class="n">⑥</span>입고 파일 만들기</h2>
+ <p class="lead">업체가 입고수량을 적어 보낸 엑셀을, 전산에 올리는 엑셀(<code>1118 태양기전.xlsx</code> 모양)로 바꿉니다.</p>
+ <ol class="steps">
+  <li><b>입고 파일 만들기</b> 화면을 엽니다.</li>
+  <li>업체가 회신한 엑셀을 끌어다 놓습니다. 여러 업체 것을 한꺼번에 넣어도 됩니다.</li>
+  <li>업체 이름과 <b>업체코드</b>가 자동으로 채워졌는지 봅니다. 파일 이름에 업체 이름이 들어 있으면 알아서 고릅니다. 틀리면 고르는 칸에서 바꿉니다.</li>
+  <li><b>입고 날짜</b>를 고릅니다. 파일 이름 앞 4자리(예: 1118)가 됩니다.</li>
+  <li><span class="btn">수량 보기·고치기</span>를 눌러 입고수량을 확인합니다. 요청 수량과 다른 줄은 노란색으로 보입니다.</li>
+  <li><span class="btn pri">📥 받기</span>를 누릅니다. 여러 업체면 <span class="btn ok">📦 전부 받기 (ZIP)</span>.</li>
+  <li>받은 엑셀을 전산에 올립니다. (올리는 것은 직접 하셔야 합니다)</li>
+ </ol>
+ <h3>이 화면이 해 주는 일</h3>
+ <ul>
+  <li>이번 주(첫 ETD) 요청 수량이 있는 줄만 남깁니다.</li>
+  <li>공장을 전산 코드로 바꿉니다: F1 → 1010, F2 → 1060, F5 → 1150.</li>
+  <li>업체코드 칸을 넣습니다 (예: 태양기전 4350).</li>
+ </ul>
+ <div class="box tip"><b>업체가 수량을 안 적고 "요청대로 보냈습니다"라고만 했다면</b><span class="btn">빈칸을 요청 수량대로</span>를 누르면 전부 요청 수량으로 채워집니다. 그다음 다른 줄만 고치세요. <b>안 들어온 품목은 칸을 지워 비워 둡니다.</b></div>
+ <div class="box tip"><b>업체가 엑셀 없이 메일 본문으로만 답했다면</b>주간 리스트 엑셀을 넣으세요. 업체별로 나눠서 보여 주니, 해당 업체의 입고수량만 적으면 됩니다.</div>
+ <div class="box warn"><b>"업체코드가 없습니다"라고 나오면</b>기성전선, 명보케이블, 동성폴리머는 아직 코드가 들어 있지 않습니다. 그 칸에 코드를 직접 적으면 이 PC가 기억합니다.</div>
+</section>
+
+<section id="vendor"><h2><span class="n">⑦</span>업체 정보 고치기</h2>
+ <p class="lead">담당자 메일이 바뀌거나 새 업체가 생겼을 때 합니다.</p>
+ <h3>급할 때: 그 자리에서 메일 주소만 넣기</h3>
+ <p>메일 목록에 "받는 사람 없음"이 뜨면, 그 줄의 빈칸에 메일 주소를 적고 "저장"을 누르면 바로 메일이 만들어집니다.</p>
+ <h3>제대로 고치기</h3>
+ <ol class="steps">
+  <li>메일 작성기 오른쪽 위 <span class="btn">⚙ 업체·설정 고치기</span>를 누릅니다.</li>
+  <li>표에서 고칠 칸을 눌러 바로 고칩니다. 메일 주소가 여러 개면 쉼표(,)로 나눠 적습니다.</li>
+  <li>새 업체는 <span class="btn">+ 업체 추가</span>. 이제 안 쓰는 업체는 지우지 말고 "사용" 체크를 끕니다.</li>
+  <li><span class="btn pri">저장하고 설정 파일 받기 (다른 PC에도 적용)</span>를 누릅니다.</li>
+  <li>화면에 올리는 방법이 나옵니다. 링크를 눌러 열린 화면에 받은 파일을 끌어다 놓고, 아래 초록색 <b>Commit changes</b> 버튼을 누릅니다.</li>
+  <li>2~3분 뒤 메일 작성기를 새로 고치면(F5) 위쪽 노란 알림이 사라집니다. 사라졌으면 끝입니다.</li>
+ </ol>
+ <table>
+  <tr><th>표의 칸</th><th>무엇을 적나</th></tr>
+  <tr><td>받는 사람 메일</td><td>그 업체 담당자 메일. 빨간 칸은 비어 있다는 뜻입니다.</td></tr>
+  <tr><td>이 업체만 참조 추가</td><td>그 업체 메일에만 더 들어갈 참조. 공통 참조는 따로 자동으로 들어갑니다.</td></tr>
+  <tr><td>주문서·리스트에 적힌 업체 이름</td><td>리스트나 주문서에 찍히는 다른 표기. 여러 개면 쉼표로.</td></tr>
+  <tr><td>출하 요청 메일 / 주문서 메일</td><td>체크를 끄면 그 업체로는 그 메일을 만들지 않습니다.</td></tr>
+  <tr><td>전산 업체코드</td><td>입고 파일의 업체코드 칸에 들어갈 번호.</td></tr>
+ </table>
+ <div class="box warn"><b>위쪽 노란 알림 "이 PC에만 저장된 설정 변경 ○건"</b>고친 내용이 아직 이 PC에만 있다는 뜻입니다. 다른 PC에서 열면 보이지 않습니다. <span class="btn pri">설정 파일 받아서 올리기</span>를 눌러 올려야 어디서나 적용됩니다.</div>
+ <div class="box tip"><b>올리기가 어려우면</b>올리는 화면은 GitHub 로그인이 필요합니다. 계정이 없거나 어렵다면 받은 설정 파일을 남효주에게 메일로 보내 주세요. 그동안 이 PC에서는 고친 대로 계속 쓸 수 있습니다.</div>
+</section>
+
+<section id="faq"><h2>막힐 때 보는 곳</h2>
+ <p class="q">화면이 예전 모양이거나 버튼이 안 보여요.</p>
+ <p class="a">Ctrl 키를 누른 채 F5를 눌러 새로 고치세요.</p>
+ <p class="q">메일 파일을 더블클릭했는데 Outlook이 안 열려요.</p>
+ <p class="a">파일을 마우스 오른쪽 버튼 → 연결 프로그램 → 다른 앱 선택 → Outlook → "항상". 그래도 안 되면 메일 작성기의 "🔰 처음 확인"에서 "다른 프로그램이 열렸다"를 눌러 안내를 따라 하세요.</p>
+ <p class="q">메일은 열리는데 "보내기" 버튼이 없어요.</p>
+ <p class="a">Outlook 오른쪽 위 "새 Outlook" 스위치를 끄고 다시 해 보세요. 스위치가 없으면 메일 줄의 <span class="btn">다른 방법</span>을 누르면 ① 새 메일 창 열기 ② 본문 복사 ③ 첨부 받기 버튼이 나옵니다. 새 메일 창 본문에 Ctrl+V로 붙이고 첨부를 끌어다 놓으면 됩니다.</p>
+ <p class="q">서명이 두 번 들어가요 / 서명이 없어요.</p>
+ <p class="a">메일 작성기 → "고급 설정" → "본문 끝에 서명 넣기"를 끄거나 켭니다.</p>
+ <p class="q">업체가 목록에 안 나와요.</p>
+ <p class="a">세 가지 중 하나입니다. 이번 주 수량이 없거나, 메일을 보내지 않는 업체로 되어 있거나("건너뜀"에 나옵니다), 리스트의 거래처 이름을 못 찾았거나("업체를 모르는 품목"에 나옵니다).</p>
+ <p class="q">"이미 만든 적이 있는 메일"이라고 나오는데 실제로는 안 보냈어요.</p>
+ <p class="a">메일 파일을 받기만 하고 보내지 않은 경우입니다. Outlook 보낸 편지함에 없는 것을 확인하고 "포함"을 켠 뒤 받으면 됩니다.</p>
+ <p class="q">다른 PC에서 열었더니 고친 메일 주소가 없어요.</p>
+ <p class="a">고친 내용을 올리지 않아서입니다. 고쳤던 PC에서 노란 알림의 "설정 파일 받아서 올리기"를 하세요.</p>
+ <p class="q">리스트 만들기에서 파일을 넣었는데 "쓸 수 있는 표를 찾지 못했습니다"라고 나와요.</p>
+ <p class="a">요청 파일이 아닌 다른 파일이거나, 시트 이름이나 머리글이 평소와 다른 경우입니다. 받은 원본 그대로 넣었는지 확인하세요.</p>
+ <p class="q">에어 표가 엉뚱한 시트에서 읽혔어요.</p>
+ <p class="a">리스트 파일에 에어 표가 여러 시트 있으면 "Remain" 열이 있는 시트(Air up)를 먼저 씁니다. 다른 시트를 쓰려면 파일을 넣은 칸 아래 "에어 시트"에서 고르세요.</p>
+</section>
+
+<section id="limits"><h2>꼭 직접 확인할 것</h2>
+ <p class="lead">아래는 사람이 한 번 더 봐야 하는 부분입니다.</p>
+ <ul>
+  <li><b>보내기 전에 받는 사람과 첨부를 확인하세요.</b> 이 화면은 메일을 만들 뿐이고, 맞는지 보는 것은 보내는 사람 몫입니다.</li>
+  <li><b>실제로 보냈는지는 Outlook 보낸 편지함이 기준입니다.</b> "이미 만든 적이 있는 메일" 표시는 이 PC에서 메일 파일을 받은 기록일 뿐입니다. PC를 바꾸면 그 기록은 없습니다.</li>
+  <li><b>KET 긴급 자재 메일의 표</b>는 실제 메일과 아직 맞춰 보지 않았습니다. 숫자를 확인하세요.</li>
+  <li><b>입고 파일의 입고수량</b>은 업체가 적은 값이나 내가 적은 값이 그대로 들어갑니다. 전산에 올리기 전에 한 번 훑어보세요.</li>
+  <li><b>리스트의 출고수량, 컨펌, Air up 시트</b>는 자동으로 만들어지지 않습니다. 받은 엑셀에서 평소처럼 작업합니다.</li>
+ </ul>
+ <p class="muted">고쳐야 할 점이나 안 되는 것이 있으면 화면을 캡처해서 남효주에게 알려 주세요.</p>
+</section>
+
+</main></div>
+<script>document.querySelectorAll("a[data-nav]").forEach((a) => { a.href += location.search; });</script>
+</body></html>
