@@ -4,12 +4,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-<script src="js/core.js?v=4" defer></script>
-<script src="js/config.js?v=4" defer></script>
-<script src="js/lists.js?v=4" defer></script>
-<script src="js/mail.js?v=4" defer></script>
-<script src="js/run.js?v=4" defer></script>
-<script src="js/ui.js?v=4" defer></script>
+<script src="js/core.js?v=5" defer></script>
+<script src="js/config.js?v=5" defer></script>
+<script src="js/lists.js?v=5" defer></script>
+<script src="js/mail.js?v=5" defer></script>
+<script src="js/run.js?v=5" defer></script>
+<script src="js/ui.js?v=5" defer></script>
 <style>
 :root{--bg:#f4f6fa;--card:#fff;--line:#e3e7ee;--txt:#1f2937;--mut:#6b7280;--pri:#2563eb;--pri2:#1d4ed8;--ok:#16a34a;--warn:#d97706;--err:#dc2626;--chip:#eef2ff}
 *{box-sizing:border-box}body{margin:0;font-family:"Malgun Gothic","맑은 고딕",system-ui,sans-serif;background:var(--bg);color:var(--txt);font-size:14px}
@@ -87,7 +87,7 @@ a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;ba
  <div id="fcResult" style="display:none"></div>
 </section>
 <div class="full"><div class="steps"><span>① 엑셀/PDF 끌어다 놓기</span><span>② 미리보기 · 메일 만들기</span><span>③ 📦 전부 받기(ZIP)</span><span>④ 압축 풀고 .eml 더블클릭</span><span>⑤ Outlook에서 확인 후 보내기</span></div>
- <p class="flow">한 주 순서: 받은 파일로 <a href="list.html"><b>주간 리스트 만들기</b></a> → <b>금요일</b> <a href="https://gywn000929-bot.github.io/air-confirm/" target="_blank" rel="noopener">에어 컨펌 도우미</a>로 컨펌 → 주간 엑셀의 Air up 시트 정리 → <b>월요일</b> 이 화면에서 출하 요청 메일(+ KET 긴급 자재 메일) · 주문서는 PDF가 나올 때마다</p></div>
+ <p class="flow">한 주 순서: 받은 파일로 <a href="list.html"><b>주간 리스트 만들기</b></a> → <b>금요일</b> <a href="https://gywn000929-bot.github.io/air-confirm/" target="_blank" rel="noopener">에어 컨펌 도우미</a>로 컨펌 → 주간 엑셀의 Air up 시트 정리 → <b>월요일</b> 이 화면에서 출하 요청 메일(+ KET 긴급 자재 메일) · 주문서는 PDF가 나올 때마다 · 업체가 입고수량을 회신하면 <a href="inbound.html"><b>입고 파일 만들기</b></a></p></div>
 <section class="card"><h2><span class="step">1</span> 출하 요청 메일 (선박 / 에어)</h2>
  <div class="drop" id="dropShip"><b>선박리스트</b> 엑셀을 여기에 끌어다 놓거나 클릭<small id="shipName">아직 없음</small></div>
  <div class="row" style="margin-top:6px;display:none"><label>선박 시트</label><select id="shipSheet" style="display:none"></select></div>
