@@ -6,7 +6,8 @@ from openpyxl import load_workbook
 
 def _norm(s):
     s = str(s or "")
-    s = re.sub(r"\(주\)|주식회사|㈜|\(\s*\d+\s*\)", "", s)
+    s = re.sub(r"\(\s*주\s*\)|주식회사|㈜|\(\s*\d+\s*\)", " ", s)
+    s = re.sub(r"(^|[\s(])주(?=[\s)]|$)", r"\1", s)  # PDF에서 띄어져 읽힌 "( 주 반도기전 )", "반도기전 주 김해지점"
     return re.sub(r"[\s()\-_.]", "", s).lower()
 
 
