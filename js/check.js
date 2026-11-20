@@ -10,7 +10,7 @@ const ckState = { orders: [], status: null, result: null };
 
 const ckS = (v) => (v === null || v === undefined ? "" : String(v)).trim();
 const ckNorm = (v) => ckS(v).normalize("NFKC").replace(/\s+/g, " ").toUpperCase();
-const ckKeyNorm = (v) => ckNorm(v).replace(/[\s.\-_/()]/g, "");
+const ckKeyNorm = (v) => ckNorm(v).replace(/[\s.\-_/()△▽▲▼↑↓]/g, ""); // △▽: 전산 화면의 정렬 표시
 const ckEsc = (s) => ckS(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
 function ckNum(v) {
@@ -38,6 +38,19 @@ function ckSameText(orderVal, statusVal) {
   const re = new RegExp("^" + b.replace(/[.*+^${}()|[\]\\]/g, "\\$&").replace(/\?/g, ".?") + "$");
   return re.test(a);
 }
+/* 품명: 태국 주문서와 전산 품목 마스터는 같은 품목도 표기가 조금 다르다
+   (예: "SRGW 0.3SQ WHT (BOSUNG)" ↔ "SRGW 0.3SQ(12/0.18) WHT"). 괄호 안(메이커·심선 구성)과 색 약어 차이는 같은 품목으로 본다. */
+const CK_COLOR = { WHITE: "WHT", BLACK: "BLK", YELLOW: "YEL", BLUE: "BLU", GREEN: "GRN", ORANGE: "ORG", GRAY: "GRY", GREY: "GRY", BROWN: "BRN", PINK: "PNK", VIOLET: "VIO", PURPLE: "PUR", CLEAR: "CLR", NATURAL: "NAT" };
+function ckNameCore(v) {
+  return ckNorm(v).replace(/\([^()]*\)/g, " ").replace(/\([^()]*\)/g, " ").split(/[^A-Z0-9.#가-힣?]+/).filter(Boolean)
+    .map((t) => CK_COLOR[t] || t).sort().join(" ");
+}
+/** 0 = 글자까지 같음, 1 = 표기만 다름(같은 품목으로 봄), 2 = 다름 */
+function ckNameLevel(orderVal, statusVal) {
+  if (ckSameText(orderVal, statusVal)) return 0;
+  const a = ckNameCore(orderVal), b = ckNameCore(statusVal);
+  return a && a === b ? 1 : 2;
+}
 const ckSameNum = (a, b) => a !== null && b !== null && Math.abs(a - b) < 1e-6;
 
 /** 시트에서 머리글 줄을 찾아 {열이름(정규화): 열번호}와 데이터 줄을 돌려준다. */
@@ -46,7 +59,7 @@ function ckFindTable(wb, needs) {
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: null });
     for (let i = 0; i < Math.min(rows.length, 30); i++) {
       const head = (rows[i] || []).map(ckKeyNorm);
-      if (needs.every((n) => head.includes(ckKeyNorm(n)))) {
+      if (needs.every((n) => [].concat(n).some((a) => head.includes(ckKeyNorm(a))))) {
         const col = {};
         head.forEach((h, c) => { if (h && !(h in col)) col[h] = c; });
         return { col, rows: rows.slice(i + 1), headRow: i };
@@ -55,7 +68,8 @@ function ckFindTable(wb, needs) {
   }
   return null;
 }
-const ckGet = (t, row, name) => { const c = t.col[ckKeyNorm(name)]; return c === undefined ? null : row[c]; };
+/** 열 이름은 여러 후보를 줄 수 있다(전산 화면마다 머리글이 조금 다름). 처음 찾은 열의 값을 돌려준다. */
+const ckGet = (t, row, ...names) => { for (const n of names) { const c = t.col[ckKeyNorm(n)]; if (c !== undefined) return row[c]; } return null; };
 
 function ckParseOrder(t, fileName) {
   const lines = [];
@@ -78,23 +92,39 @@ function ckParseStatus(t, fileName) {
     const no = ckS(ckGet(t, r, "수주번호"));
     if (!no) return; // 거래처 계 / 합계 줄
     lines.push({
-      file: fileName, row: t.headRow + 2 + i, no: no.toUpperCase(), seq: ckNum(ckGet(t, r, "수주순번")),
+      file: fileName, row: t.headRow + 2 + i, no: no.toUpperCase(), seq: ckNum(ckGet(t, r, "수주순번", "순번")),
       custNo: ckS(ckGet(t, r, "고객주문번호")).toUpperCase(),
       vendCd: ckS(ckGet(t, r, "거래처코드")), vend: ckS(ckGet(t, r, "거래처명")),
       itemCd: ckS(ckGet(t, r, "품목코드")), name: ckS(ckGet(t, r, "품목명")), spec: ckS(ckGet(t, r, "규격")),
-      unit: ckS(ckGet(t, r, "단위")), qty: ckNum(ckGet(t, r, "수주수량")), price: ckNum(ckGet(t, r, "수주단가")),
+      unit: ckS(ckGet(t, r, "단위", "수주단위")), qty: ckNum(ckGet(t, r, "수주수량")), price: ckNum(ckGet(t, r, "수주단가")), hasPrice: t.col[ckKeyNorm("수주단가")] !== undefined,
       date: ckDate(ckGet(t, r, "납기일자")), prodSite: ckS(ckGet(t, r, "생산사업장")),
     });
   });
   return lines;
 }
 
+/** 전산이 내보낸 .xls 중에는 EXTERNSHEET 기록이 규격과 달라 읽기가 멈추는 것이 있다.
+    값과는 상관없는 기록이라, 그 기록만 건너뛰게 바꿔서 다시 읽는다. */
+function ckFixXls(buf) {
+  const cfb = XLSX.CFB.read(new Uint8Array(buf), { type: "array" });
+  const ent = XLSX.CFB.find(cfb, "Workbook") || XLSX.CFB.find(cfb, "Book");
+  const d = ent.content;
+  for (let i = 0; i + 4 <= d.length;) {
+    const id = d[i] | (d[i + 1] << 8), len = d[i + 2] | (d[i + 3] << 8);
+    if (id === 0x17) { d[i] = 0xff; d[i + 1] = 0x0f; } // 0x0017 EXTERNSHEET → 쓰이지 않는 번호
+    i += 4 + len;
+  }
+  return XLSX.CFB.write(cfb, { type: "array" });
+}
+
 /** 파일 하나를 읽어 주문서인지 수주현황인지 알아낸다. */
 async function ckReadFile(file) {
   const buf = await file.arrayBuffer();
   let wb;
-  try { wb = XLSX.read(buf, { type: "array" }); } catch (e) { return { kind: "bad", name: file.name, msg: "엑셀로 열 수 없음" }; }
-  const st = ckFindTable(wb, ["수주번호", "수주순번", "수주수량"]);
+  try { wb = XLSX.read(buf, { type: "array" }); } catch (e) {
+    try { wb = XLSX.read(ckFixXls(buf), { type: "array" }); } catch (e2) { return { kind: "bad", name: file.name, msg: "엑셀로 열 수 없음 (엑셀에서 열어 .xlsx로 다시 저장해 넣어 보세요)" }; }
+  }
+  const st = ckFindTable(wb, ["수주번호", ["수주순번", "순번"], "수주수량"]);
   if (st) return { kind: "status", name: file.name, lines: ckParseStatus(st, file.name) };
   const od = ckFindTable(wb, ["Order No", "Seq", "Qty"]);
   if (od) return { kind: "order", name: file.name, lines: ckParseOrder(od, file.name) };
@@ -146,6 +176,7 @@ function ckCompare(orderFiles, status, opt) {
 
   // 줄 단위 비교
   let okCount = 0;
+  const loose = []; // 표기만 다른 품명(같은 품목으로 본 줄)
   const summary = [], notUploaded = [];
   for (const [no, o] of orders) {
     const m = sIdx.get(no);
@@ -155,17 +186,19 @@ function ckCompare(orderFiles, status, opt) {
     for (const [seq, l] of o.lines) {
       const arr = m.get(seq);
       if (!arr) {
-        const moved = flat.find((x) => ckSameText(l.name, x.name) && ckSameNum(l.qty, x.qty) && !o.lines.has(x.seq));
+        const moved = flat.find((x) => ckNameLevel(l.name, x.name) < 2 && ckSameNum(l.qty, x.qty) && !o.lines.has(x.seq));
         add("err", moved ? "순번 다름" : "빠짐", no, seq, moved ? `주문서 순번은 ${seq}인데 수주현황에는 순번 ${moved.seq}으로 올라가 있습니다` : "주문서에는 있는데 수주현황에 없습니다", l, moved || null);
         bad++; continue;
       }
       const s = arr[0], diffs = [];
       if (!ckSameNum(l.qty, s.qty)) diffs.push(["수량 다름", `수량: 주문서 ${ckFmt(l.qty)} → 수주현황 ${ckFmt(s.qty)}`]);
-      if (!ckSameText(l.name, s.name)) diffs.push(["품명 다름", `품명: 주문서 "${l.name}" → 수주현황 "${s.name}"`]);
+      const nl = ckNameLevel(l.name, s.name);
+      if (nl === 2) diffs.push(["품명 다름", `품명: 주문서 "${l.name}" → 수주현황 "${s.name}"`]);
+      else if (nl === 1) loose.push({ no, seq, o: l.name, s: s.name });
       if (opt.spec && !ckSameText(l.spec, s.spec)) diffs.push(["규격 다름", `규격: 주문서 "${l.spec}" → 수주현황 "${s.spec}"`]);
       if (opt.unit && !ckSameText(l.unit, s.unit)) diffs.push(["단위 다름", `단위: 주문서 ${l.unit} → 수주현황 ${s.unit}`]);
       if (opt.date && l.date !== s.date) diffs.push(["납기 다름", `납기: 주문서 ${l.date} → 수주현황 ${s.date}`]);
-      if (opt.price && !ckSameNum(l.price, s.price)) diffs.push(["단가 다름", `단가: 주문서 ${l.price} → 수주현황 ${s.price}`]);
+      if (opt.price && s.hasPrice && !ckSameNum(l.price, s.price)) diffs.push(["단가 다름", `단가: 주문서 ${l.price} → 수주현황 ${s.price}`]);
       if (diffs.length) { bad++; for (const [k, msg] of diffs) add("err", k, no, seq, msg, l, s); } else okCount++;
     }
     for (const [seq, arr] of m) if (!o.lines.has(seq)) {
@@ -176,7 +209,7 @@ function ckCompare(orderFiles, status, opt) {
   }
   const noFile = [...sIdx.keys()].filter((no) => !orders.has(no)).map((no) => ({ no, n: [...sIdx.get(no).values()].flat().length }));
   issues.sort((a, b) => a.no.localeCompare(b.no) || (a.seq ?? 0) - (b.seq ?? 0));
-  return { issues, okCount, summary, noFile, notUploaded, dupFiles, statusN: status.lines.length };
+  return { issues, okCount, loose, summary, noFile, notUploaded, dupFiles, statusN: status.lines.length };
 }
 const ckFmt = (n) => (n === null || n === undefined ? "(없음)" : Number(n).toLocaleString("en-US", { maximumFractionDigits: 6 }));
 
@@ -240,6 +273,9 @@ function ckRender() {
         `<td class="mut">${x.o ? `${ckEsc(x.o.name)}<br>${ckFmt(x.o.qty)} ${ckEsc(x.o.unit)}` : ""}</td>` +
         `<td class="mut">${x.s ? `${ckEsc(x.s.name)}<br>${ckFmt(x.s.qty)} ${ckEsc(x.s.unit)} · 엑셀 ${x.s.row}행` : ""}</td></tr>`).join("") + `</tbody></table>`;
   }
+  if (r.loose.length)
+    h += `<details class="box loosebox"><summary>품명 표기만 다른 줄 ${r.loose.length}줄 — 같은 품목으로 보고 넘어갔습니다 (눌러서 보기)</summary><table class="res"><thead><tr><th>수주번호</th><th>순번</th><th>주문서 품명</th><th>수주현황 품명</th></tr></thead><tbody>` +
+      r.loose.map((x) => `<tr><td class="nw">${ckEsc(x.no)}</td><td>${x.seq}</td><td>${ckEsc(x.o)}</td><td>${ckEsc(x.s)}</td></tr>`).join("") + `</tbody></table></details>`;
   if (r.summary.length)
     h += `<h3>주문별 요약</h3><table class="res"><thead><tr><th>수주번호</th><th>주문서 줄</th><th>수주현황 줄</th><th>결과</th><th>파일</th></tr></thead><tbody>` +
       r.summary.map((x) => `<tr><td class="nw">${ckEsc(x.no)}</td><td>${x.orderN}</td><td>${x.statusN}</td><td>${x.bad ? `<span class="tag red">확인 ${x.bad}줄</span>` : `<span class="tag grn">같음</span>`}</td><td class="mut">${ckEsc(x.file)}</td></tr>`).join("") + `</tbody></table>`;
