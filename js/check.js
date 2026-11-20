@@ -51,6 +51,49 @@ function ckNameLevel(orderVal, statusVal) {
   const a = ckNameCore(orderVal), b = ckNameCore(statusVal);
   return a && a === b ? 1 : 2;
 }
+/** 품명이 얼마나 비슷한지 0~1. 태국 주문서와 전산 품목 마스터는 같은 품목도 이름이 꽤 다르다
+    (예: "MG630591T WHT (KET)" ↔ "MG630591T", "PVC TUBE PINK (DAEMYUNG)" ↔ "TIE PINK TUBE (NEW)"). */
+const CK_COLORS = new Set([...Object.values(CK_COLOR), "RED"]);
+function ckNameTokens(v) { return ckNorm(v).split(/[^A-Z0-9가-힣]+/).filter(Boolean).map((t) => CK_COLOR[t] || t); }
+function ckNameSim(orderVal, statusVal) {
+  if (ckSameText(orderVal, statusVal)) return 1;
+  const A = ckNameTokens(orderVal), B = ckNameTokens(statusVal);
+  if (!A.length || !B.length) return 0;
+  // 양쪽 다 색이 적혀 있는데 겹치는 색이 하나도 없으면 다른 품목이다 (RED ↔ BLUE)
+  const ca = A.filter((t) => CK_COLORS.has(t)), cb = new Set(B.filter((t) => CK_COLORS.has(t)));
+  if (ca.length && cb.size && !ca.some((t) => cb.has(t))) return 0;
+  const sb = new Set(B); let hit = 0;
+  for (const t of new Set(A)) if (sb.has(t)) hit++;
+  const tok = hit / Math.min(new Set(A).size, sb.size);
+  const a = A.join(""), b = B.join(""); let i = 0;
+  while (i < a.length && i < b.length && a[i] === b[i]) i++;
+  const pre = i >= 4 ? i / Math.min(a.length, b.length) : 0;
+  return Math.max(tok, pre);
+}
+const CK_NAME_BAD = 0.34;   // 이보다 덜 비슷하면 "품명 다름"
+const CK_NAME_LOOK = 0.6;   // 이보다 덜 비슷하면 "눈으로 확인" 목록에 표시
+
+/** 한 주문 안에서 주문서 줄(O)과 수주현황 줄(S)을 순서를 지키며 짝짓는다.
+    전산은 수주순번을 1부터 빈틈없이 다시 매기므로 순번 숫자로는 짝을 지을 수 없다(주문서 Seq에는 빠진 번호가 있음).
+    수량이 같고 품명이 비슷한 줄끼리 맞추고, 남는 줄은 빠짐/남는 줄로 둔다. */
+function ckAlign(O, S) {
+  const n = O.length, m = S.length, GAP = -1;
+  const pair = (o, s) => (ckSameNum(o.qty, s.qty) ? 3 : -2) + 2 * ckNameSim(o.name, s.name) + (ckSameText(o.unit, s.unit) ? 0 : -1);
+  const D = Array.from({ length: n + 1 }, () => new Float64Array(m + 1));
+  for (let i = 1; i <= n; i++) D[i][0] = i * GAP;
+  for (let j = 1; j <= m; j++) D[0][j] = j * GAP;
+  for (let i = 1; i <= n; i++) for (let j = 1; j <= m; j++)
+    D[i][j] = Math.max(D[i - 1][j - 1] + pair(O[i - 1], S[j - 1]), D[i - 1][j] + GAP, D[i][j - 1] + GAP);
+  const out = []; let i = n, j = m;
+  while (i > 0 || j > 0) {
+    const pv = i > 0 && j > 0 ? pair(O[i - 1], S[j - 1]) : -Infinity;
+    if (pv > 2 * GAP && D[i][j] === D[i - 1][j - 1] + pv) out.push([O[--i], S[--j]]); // 점수가 같으면 짝짓지 않고 빠짐/남는 줄로 둔다
+    else if (i > 0 && D[i][j] === D[i - 1][j] + GAP) out.push([O[--i], null]);
+    else if (j > 0 && D[i][j] === D[i][j - 1] + GAP) out.push([null, S[--j]]);
+    else out.push([O[--i], S[--j]]);
+  }
+  return out.reverse();
+}
 const ckSameNum = (a, b) => a !== null && b !== null && Math.abs(a - b) < 1e-6;
 
 /** 시트에서 머리글 줄을 찾아 {열이름(정규화): 열번호}와 데이터 줄을 돌려준다. */
@@ -176,40 +219,46 @@ function ckCompare(orderFiles, status, opt) {
 
   // 줄 단위 비교
   let okCount = 0;
-  const loose = []; // 표기만 다른 품명(같은 품목으로 본 줄)
+  const loose = []; // 품명이 꽤 달라 보이지만 같은 줄로 본 것(눈으로 확인용)
+  const pairs = []; // 수량까지 같은 짝 (품목코드 기억용)
   const summary = [], notUploaded = [];
+  const itemMap = opt.itemMap || {};
   for (const [no, o] of orders) {
     const m = sIdx.get(no);
     if (!m) { notUploaded.push({ no, file: o.file, n: o.lines.size }); continue; }
     let bad = 0;
-    const flat = [...m.values()].flat();
-    for (const [seq, l] of o.lines) {
-      const arr = m.get(seq);
-      if (!arr) {
-        const moved = flat.find((x) => ckNameLevel(l.name, x.name) < 2 && ckSameNum(l.qty, x.qty) && !o.lines.has(x.seq));
-        add("err", moved ? "순번 다름" : "빠짐", no, seq, moved ? `주문서 순번은 ${seq}인데 수주현황에는 순번 ${moved.seq}으로 올라가 있습니다` : "주문서에는 있는데 수주현황에 없습니다", l, moved || null);
-        bad++; continue;
+    const O = [...o.lines.values()].sort((x, y) => x.seq - y.seq);
+    const S = [...m.values()].map((arr) => arr[0]).sort((x, y) => (x.seq ?? 0) - (y.seq ?? 0));
+    const al = ckAlign(O, S);
+    const onlyO = al.filter((p) => !p[1]).map((p) => p[0]), onlyS = al.filter((p) => !p[0]).map((p) => p[1]);
+    const usedS = new Set();
+    for (const [l, s] of al) {
+      if (l && s) {
+        const diffs = [], sim = ckNameSim(l.name, s.name), sameQty = ckSameNum(l.qty, s.qty);
+        if (!sameQty) diffs.push(["수량 다름", `수량: 주문서 ${ckFmt(l.qty)} → 수주현황 ${ckFmt(s.qty)}`]);
+        if (sim < CK_NAME_BAD) diffs.push(["품명 다름", `품명: 주문서 "${l.name}" → 수주현황 "${s.name}"`]);
+        else if (sim < CK_NAME_LOOK) loose.push({ no, seq: l.seq, sseq: s.seq, o: l.name, s: s.name });
+        const known = l.itemCd && itemMap[l.itemCd];
+        if (known && s.itemCd && known !== s.itemCd) diffs.push(["품목코드 다름", `품목코드: 주문서 ${l.itemCd} 은 전에 ${known} 로 올렸는데 이번에는 ${s.itemCd} 입니다`]);
+        if (opt.spec && !ckSameText(l.spec, s.spec)) diffs.push(["규격 다름", `규격: 주문서 "${l.spec}" → 수주현황 "${s.spec}"`]);
+        if (opt.unit && !ckSameText(l.unit, s.unit)) diffs.push(["단위 다름", `단위: 주문서 ${l.unit} → 수주현황 ${s.unit}`]);
+        if (opt.date && l.date !== s.date) diffs.push(["납기 다름", `납기: 주문서 ${l.date} → 수주현황 ${s.date}`]);
+        if (opt.price && s.hasPrice && !ckSameNum(l.price, s.price)) diffs.push(["단가 다름", `단가: 주문서 ${l.price} → 수주현황 ${s.price}`]);
+        if (diffs.length) { bad++; for (const [k, msg] of diffs) add("err", k, no, l.seq, msg, l, s); } else okCount++;
+        if (sameQty && sim >= CK_NAME_BAD && l.itemCd && s.itemCd) pairs.push({ m: l.itemCd, s: s.itemCd, known: known || "" });
+      } else if (l) {
+        const moved = onlyS.find((x) => !usedS.has(x) && ckSameNum(l.qty, x.qty) && ckNameSim(l.name, x.name) >= CK_NAME_LOOK);
+        if (moved) { usedS.add(moved); add("err", "순서 다름", no, l.seq, `주문서와 다른 자리에 올라가 있습니다 (수주현황 순번 ${moved.seq})`, l, moved); }
+        else add("err", "빠짐", no, l.seq, "주문서에는 있는데 수주현황에 없습니다", l, null);
+        bad++;
       }
-      const s = arr[0], diffs = [];
-      if (!ckSameNum(l.qty, s.qty)) diffs.push(["수량 다름", `수량: 주문서 ${ckFmt(l.qty)} → 수주현황 ${ckFmt(s.qty)}`]);
-      const nl = ckNameLevel(l.name, s.name);
-      if (nl === 2) diffs.push(["품명 다름", `품명: 주문서 "${l.name}" → 수주현황 "${s.name}"`]);
-      else if (nl === 1) loose.push({ no, seq, o: l.name, s: s.name });
-      if (opt.spec && !ckSameText(l.spec, s.spec)) diffs.push(["규격 다름", `규격: 주문서 "${l.spec}" → 수주현황 "${s.spec}"`]);
-      if (opt.unit && !ckSameText(l.unit, s.unit)) diffs.push(["단위 다름", `단위: 주문서 ${l.unit} → 수주현황 ${s.unit}`]);
-      if (opt.date && l.date !== s.date) diffs.push(["납기 다름", `납기: 주문서 ${l.date} → 수주현황 ${s.date}`]);
-      if (opt.price && s.hasPrice && !ckSameNum(l.price, s.price)) diffs.push(["단가 다름", `단가: 주문서 ${l.price} → 수주현황 ${s.price}`]);
-      if (diffs.length) { bad++; for (const [k, msg] of diffs) add("err", k, no, seq, msg, l, s); } else okCount++;
     }
-    for (const [seq, arr] of m) if (!o.lines.has(seq)) {
-      const already = issues.some((x) => x.kind === "순번 다름" && x.no === no && x.s === arr[0]);
-      if (!already) { add("err", "남는 줄", no, seq, "수주현황에는 있는데 주문서 원본에 없는 순번입니다", null, arr[0]); bad++; }
-    }
-    summary.push({ no, file: o.file, orderN: o.lines.size, statusN: flat.length, bad });
+    for (const s of onlyS) if (!usedS.has(s)) { add("err", "남는 줄", no, s.seq, "수주현황에는 있는데 주문서 원본에 없는 줄입니다", null, s); bad++; }
+    summary.push({ no, file: o.file, orderN: O.length, statusN: S.length, bad });
   }
   const noFile = [...sIdx.keys()].filter((no) => !orders.has(no)).map((no) => ({ no, n: [...sIdx.get(no).values()].flat().length }));
   issues.sort((a, b) => a.no.localeCompare(b.no) || (a.seq ?? 0) - (b.seq ?? 0));
-  return { issues, okCount, loose, summary, noFile, notUploaded, dupFiles, statusN: status.lines.length };
+  return { issues, okCount, loose, pairs, summary, noFile, notUploaded, dupFiles, statusN: status.lines.length };
 }
 const ckFmt = (n) => (n === null || n === undefined ? "(없음)" : Number(n).toLocaleString("en-US", { maximumFractionDigits: 6 }));
 
@@ -220,6 +269,9 @@ function ckOpts() {
   document.querySelectorAll("[data-opt]").forEach((el) => { o[el.dataset.opt] = el.checked; });
   return o;
 }
+const CK_MAP_KEY = "ck_item_map_v1";
+function ckLoadMap() { try { return JSON.parse(localStorage.getItem(CK_MAP_KEY) || "{}"); } catch (e) { return {}; } }
+function ckSaveMap(m) { try { localStorage.setItem(CK_MAP_KEY, JSON.stringify(m)); } catch (e) { /* 저장 불가 */ } }
 function ckToast(msg) { const t = ck$("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2500); }
 
 async function ckAddFiles(fileList) {
@@ -247,7 +299,13 @@ function ckRender() {
     out.style.display = "none"; ckState.result = null;
     return;
   }
-  const r = ckState.result = ckCompare(orders, status, ckOpts());
+  const itemMap = ckLoadMap();
+  const r = ckState.result = ckCompare(orders, status, Object.assign(ckOpts(), { itemMap }));
+  // 수량·품명이 맞은 줄의 품목코드 짝(주문서 M코드 → 전산 S코드)을 기억해 두고, 다음에 다른 코드로 올라오면 알린다
+  let learned = 0;
+  for (const p of r.pairs) if (!itemMap[p.m]) { itemMap[p.m] = p.s; learned++; }
+  if (learned) ckSaveMap(itemMap);
+  ck$("mapInfo").textContent = `기억한 품목코드 ${Object.keys(itemMap).length}개` + (learned ? ` (이번에 ${learned}개 새로 기억)` : "");
   out.style.display = "";
   const errN = r.issues.length;
   let h = "";
@@ -271,16 +329,19 @@ function ckRender() {
     h += `<table class="res"><thead><tr><th>수주번호</th><th>순번</th><th>무엇이</th><th>내용</th><th>주문서 원본</th><th>수주현황</th></tr></thead><tbody>` +
       r.issues.map((x) => `<tr><td class="nw">${ckEsc(x.no)}</td><td>${x.seq ?? ""}</td><td class="nw"><span class="tag red">${ckEsc(x.kind)}</span></td><td>${ckEsc(x.msg)}</td>` +
         `<td class="mut">${x.o ? `${ckEsc(x.o.name)}<br>${ckFmt(x.o.qty)} ${ckEsc(x.o.unit)}` : ""}</td>` +
-        `<td class="mut">${x.s ? `${ckEsc(x.s.name)}<br>${ckFmt(x.s.qty)} ${ckEsc(x.s.unit)} · 엑셀 ${x.s.row}행` : ""}</td></tr>`).join("") + `</tbody></table>`;
+        `<td class="mut">${x.s ? `${ckEsc(x.s.name)}<br>${ckFmt(x.s.qty)} ${ckEsc(x.s.unit)} · 순번 ${x.s.seq} · 엑셀 ${x.s.row}행` : ""}${x.kind === "품목코드 다름" ? `<br><button class="sm" data-accept="${ckEsc(x.o.itemCd)}" data-code="${ckEsc(x.s.itemCd)}">이번 코드가 맞음</button>` : ""}</td></tr>`).join("") + `</tbody></table>`;
   }
   if (r.loose.length)
-    h += `<details class="box loosebox"><summary>품명 표기만 다른 줄 ${r.loose.length}줄 — 같은 품목으로 보고 넘어갔습니다 (눌러서 보기)</summary><table class="res"><thead><tr><th>수주번호</th><th>순번</th><th>주문서 품명</th><th>수주현황 품명</th></tr></thead><tbody>` +
-      r.loose.map((x) => `<tr><td class="nw">${ckEsc(x.no)}</td><td>${x.seq}</td><td>${ckEsc(x.o)}</td><td>${ckEsc(x.s)}</td></tr>`).join("") + `</tbody></table></details>`;
+    h += `<details class="box loosebox"><summary>품명이 꽤 달라 보이는 줄 ${r.loose.length}줄 — 수량이 같아 같은 품목으로 봤습니다. 눈으로 한 번 확인하세요 (눌러서 보기)</summary><table class="res"><thead><tr><th>수주번호</th><th>주문서 순번</th><th>주문서 품명</th><th>수주현황 순번</th><th>수주현황 품명</th></tr></thead><tbody>` +
+      r.loose.map((x) => `<tr><td class="nw">${ckEsc(x.no)}</td><td>${x.seq}</td><td>${ckEsc(x.o)}</td><td>${x.sseq}</td><td>${ckEsc(x.s)}</td></tr>`).join("") + `</tbody></table></details>`;
   if (r.summary.length)
     h += `<h3>주문별 요약</h3><table class="res"><thead><tr><th>수주번호</th><th>주문서 줄</th><th>수주현황 줄</th><th>결과</th><th>파일</th></tr></thead><tbody>` +
       r.summary.map((x) => `<tr><td class="nw">${ckEsc(x.no)}</td><td>${x.orderN}</td><td>${x.statusN}</td><td>${x.bad ? `<span class="tag red">확인 ${x.bad}줄</span>` : `<span class="tag grn">같음</span>`}</td><td class="mut">${ckEsc(x.file)}</td></tr>`).join("") + `</tbody></table>`;
   ck$("resBody").innerHTML = h;
   ck$("btnDl").style.display = errN ? "" : "none";
+  document.querySelectorAll("[data-accept]").forEach((b) => b.addEventListener("click", () => {
+    const m = ckLoadMap(); m[b.dataset.accept] = b.dataset.code; ckSaveMap(m); ckRender(); ckToast("이번 코드로 바꿔 기억했습니다");
+  }));
 }
 
 function ckDownload() {
@@ -309,5 +370,7 @@ function initCheck() {
   window.addEventListener("drop", (e) => e.preventDefault());
   ck$("btnClear").addEventListener("click", () => { ckState.orders = []; ckState.status = null; ck$("badFiles").innerHTML = ""; ckRender(); ckToast("비웠습니다"); });
   ck$("btnDl").addEventListener("click", ckDownload);
+  ck$("btnMapClear").addEventListener("click", () => { if (confirm("기억한 품목코드 짝을 모두 지울까요?")) { ckSaveMap({}); ckRender(); ck$("mapInfo").textContent = "기억한 품목코드 0개"; ckToast("지웠습니다"); } });
+  ck$("mapInfo").textContent = `기억한 품목코드 ${Object.keys(ckLoadMap()).length}개`;
   ckRender();
 }
