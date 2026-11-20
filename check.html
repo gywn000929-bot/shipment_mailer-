@@ -1,7 +1,7 @@
 <!doctype html><html lang="ko"><head><meta charset="utf-8"><title>수주 등록 확인</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
-<script src="js/check.js?v=3" defer></script>
+<script src="js/check.js?v=5" defer></script>
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css");
 :root{--bg:#f4f6fa;--card:#fff;--line:#e3e7ee;--txt:#1f2937;--mut:#6b7280;--pri:#2563eb;--pri2:#1d4ed8;--ok:#16a34a;--warn:#d97706;--err:#dc2626;--chip:#eef2ff}
@@ -16,7 +16,7 @@ main{max-width:1100px;margin:20px auto;padding:0 16px;display:grid;gap:16px}
 .drop.over{background:#eef2ff;border-color:var(--pri)}.drop.has{border-style:solid;border-color:var(--ok);background:#f0fdf4;color:var(--txt)}
 .drop b{color:var(--txt)}
 .btns{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;align-items:center}
-button{border:0;border-radius:10px;padding:10px 14px;font-size:14px;cursor:pointer;background:#e5e7eb;color:var(--txt)}button.ok{background:var(--ok);color:#fff}
+button{border:0;border-radius:10px;padding:10px 14px;font-size:14px;cursor:pointer;background:#e5e7eb;color:var(--txt)}button.sm{padding:5px 9px;font-size:12px}button.ok{background:var(--ok);color:#fff}
 a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;background:#e5e7eb;color:var(--txt);text-decoration:none}
 .hint{color:var(--mut);font-size:12px;margin-top:6px}.warn{color:var(--warn);margin-top:6px}.mut{color:var(--mut);font-size:12px}
 .chip{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:3px 12px;margin:10px 6px 0 0;font-size:13px;color:var(--mut);background:#fff}.chip.on{border-color:#86efac;background:#f0fdf4;color:#166534}
@@ -38,12 +38,12 @@ ol li{margin:4px 0}
  <div class="drop" id="drop"><b>그날 주문서 원본 전부 + 수주현황 엑셀</b>을 여기에 한꺼번에 끌어다 놓거나 클릭</div>
  <input type="file" id="files" accept=".xlsx,.xls" multiple hidden>
  <div id="chips"></div><div id="badFiles"></div>
- <div class="opts"><span class="mut">항상 봄: 수주순번 · 수주수량 · 품명 · 공장(거래처) · 중복</span>
-  <label><input type="checkbox" data-opt="spec" checked> 규격</label>
+ <div class="opts"><span class="mut">항상 봄: 줄 순서 · 수주수량 · 품명 · 품목코드(기억한 것) · 공장(거래처) · 중복</span>
+  <label><input type="checkbox" data-opt="spec"> 규격</label>
   <label><input type="checkbox" data-opt="unit" checked> 단위</label>
   <label><input type="checkbox" data-opt="date"> 납기일자</label>
   <label><input type="checkbox" data-opt="price"> 단가</label></div>
- <div class="btns"><button id="btnClear">비우기</button><span class="hint" style="margin:0">넣은 파일은 내 PC 밖으로 나가지 않습니다.</span></div>
+ <div class="btns"><button id="btnClear">비우기</button><span class="mut" id="mapInfo"></span><button class="sm" id="btnMapClear">품목코드 기억 지우기</button><span class="hint" style="margin:0">넣은 파일은 내 PC 밖으로 나가지 않습니다.</span></div>
 </section>
 <section class="card" id="result" style="display:none"><h2><span class="step">2</span> 결과</h2>
  <div class="tblwrap" id="resBody"></div>
@@ -52,11 +52,13 @@ ol li{margin:4px 0}
 <section class="card"><h2>사용법</h2>
  <ol>
   <li><code>주문서\디이텍</code>, <code>주문서\대아홀딩스</code> 폴더에서 <b>그날 올린 주문서 원본</b>을 전부 고르고, <code>주문서\수주현황</code>의 <b>그날 수주현황 엑셀</b>(예: 1120 수주현황.xlsx)도 같이 끌어다 놓습니다. 무엇이 주문서이고 무엇이 수주현황인지는 화면이 알아봅니다.</li>
-  <li>주문서의 <b>Order No + Seq</b>와 수주현황의 <b>수주번호 + 수주순번</b>이 같은 줄끼리 짝을 지어 수량·품명을 비교합니다. 품명은 공백·대소문자, 괄호 안 내용(메이커·심선 구성), 색 약어(WHITE/WHT) 차이는 같은 품목으로 봅니다. 그렇게 넘어간 줄은 결과 아래 "품명 표기만 다른 줄"에서 볼 수 있습니다.</li>
+  <li>같은 주문번호(<b>Order No</b> = <b>수주번호</b>) 안에서 <b>위에서부터 순서대로</b> 줄을 맞춥니다. 전산은 수주순번을 1부터 빈틈없이 다시 매기기 때문에 주문서 Seq 숫자와 수주순번 숫자가 달라도 틀린 것이 아닙니다. 수량이 같고 품명이 비슷한 줄끼리 짝이 됩니다.</li>
+  <li><b>품명</b>은 주문서와 전산 품목 이름이 원래 조금씩 달라서, 많이 다를 때만 "품명 다름"으로 표시합니다. 조금 애매한 줄은 결과 아래 "품명이 꽤 달라 보이는 줄"에 모아 두니 눈으로 확인하세요.</li>
+  <li><b>품목코드</b>: 주문서의 M코드와 전산의 S코드 짝을 이 PC가 기억합니다. 같은 M코드가 다음에 다른 S코드로 올라오면 "품목코드 다름"으로 알려 줍니다. 반대로 <b>기억한 S코드와 같으면 품명이 아예 달라도 맞는 것</b>으로 봅니다. (처음 올리는 품목은 비교할 기억이 없어 품명·수량으로만 봅니다)</li>
   <li>수주현황은 전산에서 받은 <b>.xls / .xlsx 둘 다</b> 됩니다.</li>
   <li><b>공장</b>은 주문번호 앞 두 글자로 봅니다. F1 주문은 거래처 1010(태국대아), F2 주문은 1060(DAE-A ELECTRONICS)으로 올라가 있어야 합니다.</li>
-  <li>빨간 표시 종류: 수량 다름 · 품명 다름 · 순번 다름 · 빠짐(주문서에만 있음) · 남는 줄(수주현황에만 있음) · 중복 등록 · 공장 다름.</li>
-  <li>납기일자·단가는 원본과 다르게 올리는 경우가 있을 수 있어 기본은 꺼 두었습니다. 필요하면 체크하세요(이 PC가 기억합니다).</li>
+  <li>빨간 표시 종류: 수량 다름 · 품명 다름 · 품목코드 다름 · 순서 다름 · 빠짐(주문서에만 있음) · 남는 줄(수주현황에만 있음) · 중복 등록 · 공장 다름.</li>
+  <li>규격·납기일자·단가는 원본과 다르게 올리는 경우가 있을 수 있어 기본은 꺼 두었습니다. 필요하면 체크하세요(이 PC가 기억합니다).</li>
  </ol>
 </section>
 </main><div class="toast" id="toast"></div>
