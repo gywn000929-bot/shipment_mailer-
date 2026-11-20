@@ -236,9 +236,11 @@ function ckCompare(orderFiles, status, opt) {
       if (l && s) {
         const diffs = [], sim = ckNameSim(l.name, s.name), sameQty = ckSameNum(l.qty, s.qty);
         if (!sameQty) diffs.push(["수량 다름", `수량: 주문서 ${ckFmt(l.qty)} → 수주현황 ${ckFmt(s.qty)}`]);
-        if (sim < CK_NAME_BAD) diffs.push(["품명 다름", `품명: 주문서 "${l.name}" → 수주현황 "${s.name}"`]);
-        else if (sim < CK_NAME_LOOK) loose.push({ no, seq: l.seq, sseq: s.seq, o: l.name, s: s.name });
         const known = l.itemCd && itemMap[l.itemCd];
+        const codeOk = !!known && known === s.itemCd; // 기억한 S코드와 같으면 이름이 아예 달라도 맞는 것으로 본다
+        if (codeOk) { /* 품명은 보지 않음 */ }
+        else if (sim < CK_NAME_BAD) diffs.push(["품명 다름", `품명: 주문서 "${l.name}" → 수주현황 "${s.name}"`]);
+        else if (sim < CK_NAME_LOOK) loose.push({ no, seq: l.seq, sseq: s.seq, o: l.name, s: s.name });
         if (known && s.itemCd && known !== s.itemCd) diffs.push(["품목코드 다름", `품목코드: 주문서 ${l.itemCd} 은 전에 ${known} 로 올렸는데 이번에는 ${s.itemCd} 입니다`]);
         if (opt.spec && !ckSameText(l.spec, s.spec)) diffs.push(["규격 다름", `규격: 주문서 "${l.spec}" → 수주현황 "${s.spec}"`]);
         if (opt.unit && !ckSameText(l.unit, s.unit)) diffs.push(["단위 다름", `단위: 주문서 ${l.unit} → 수주현황 ${s.unit}`]);
@@ -329,7 +331,7 @@ function ckRender() {
     h += `<table class="res"><thead><tr><th>수주번호</th><th>순번</th><th>무엇이</th><th>내용</th><th>주문서 원본</th><th>수주현황</th></tr></thead><tbody>` +
       r.issues.map((x) => `<tr><td class="nw">${ckEsc(x.no)}</td><td>${x.seq ?? ""}</td><td class="nw"><span class="tag red">${ckEsc(x.kind)}</span></td><td>${ckEsc(x.msg)}</td>` +
         `<td class="mut">${x.o ? `${ckEsc(x.o.name)}<br>${ckFmt(x.o.qty)} ${ckEsc(x.o.unit)}` : ""}</td>` +
-        `<td class="mut">${x.s ? `${ckEsc(x.s.name)}<br>${ckFmt(x.s.qty)} ${ckEsc(x.s.unit)} · 순번 ${x.s.seq} · 엑셀 ${x.s.row}행` : ""}${x.kind === "품목코드 다름" ? `<br><button class="sm" data-accept="${ckEsc(x.o.itemCd)}" data-code="${ckEsc(x.s.itemCd)}">이번 코드가 맞음</button>` : ""}</td></tr>`).join("") + `</tbody></table>`;
+        `<td class="mut">${x.s ? `${ckEsc(x.s.name)}<br>${ckFmt(x.s.qty)} ${ckEsc(x.s.unit)} · 순번 ${x.s.seq} · 엑셀 ${x.s.row}행` : ""}${(x.kind === "품목코드 다름" || x.kind === "품명 다름") && x.o && x.o.itemCd && x.s.itemCd ? `<br><button class="sm" data-accept="${ckEsc(x.o.itemCd)}" data-code="${ckEsc(x.s.itemCd)}">${x.kind === "품명 다름" ? `같은 품목 맞음 (${ckEsc(x.s.itemCd)} 기억)` : "이번 코드가 맞음"}</button>` : ""}</td></tr>`).join("") + `</tbody></table>`;
   }
   if (r.loose.length)
     h += `<details class="box loosebox"><summary>품명이 꽤 달라 보이는 줄 ${r.loose.length}줄 — 수량이 같아 같은 품목으로 봤습니다. 눈으로 한 번 확인하세요 (눌러서 보기)</summary><table class="res"><thead><tr><th>수주번호</th><th>주문서 순번</th><th>주문서 품명</th><th>수주현황 순번</th><th>수주현황 품명</th></tr></thead><tbody>` +
@@ -340,7 +342,7 @@ function ckRender() {
   ck$("resBody").innerHTML = h;
   ck$("btnDl").style.display = errN ? "" : "none";
   document.querySelectorAll("[data-accept]").forEach((b) => b.addEventListener("click", () => {
-    const m = ckLoadMap(); m[b.dataset.accept] = b.dataset.code; ckSaveMap(m); ckRender(); ckToast("이번 코드로 바꿔 기억했습니다");
+    const m = ckLoadMap(); m[b.dataset.accept] = b.dataset.code; ckSaveMap(m); ckRender(); ckToast("기억했습니다. 다음부터 이 품목은 이 코드면 맞는 것으로 봅니다");
   }));
 }
 
