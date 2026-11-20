@@ -50,7 +50,8 @@ const koDate = (d) => `${d.getMonth() + 1}월 ${d.getDate()}일(${weekdayKo(d)})
 const shortDate = (d) => `${d.getMonth() + 1}/${d.getDate()}일(${weekdayKo(d)})`;
 const koStamp = (iso) => { const d = new Date(iso); return isNaN(d) ? String(iso) : `${d.getMonth() + 1}/${d.getDate()}(${weekdayKo(d)})` + (String(iso).length > 10 ? ` ${pad2(d.getHours())}:${pad2(d.getMinutes())}` : ""); };
 const safeName = (s) => s.replace(/[\\/:*?"<>|]/g, "_");
-const normName = (s) => clean(s).replace(/\(주\)|주식회사|㈜|\(\s*\d+\s*\)|\[[^\]]*\]/g, "").replace(/[\s()\-_.]/g, "").toLowerCase();
+// PDF에서는 "(주)"가 "( 주 반도기전 )", "반도기전 주 김해지점"처럼 띄어져 읽히기도 해서, 따로 떨어진 "주"도 지운다
+const normName = (s) => clean(s).replace(/\(\s*주\s*\)|주식회사|㈜|\(\s*\d+\s*\)|\[[^\]]*\]/g, " ").replace(/(^|[\s(])주(?=[\s)]|$)/g, "$1").replace(/[\s()\-_.]/g, "").toLowerCase();
 const uniq = (a) => [...new Set(a)];
 const parseEmails = (s) => String(s || "").split(/[,;\s]+/).map((x) => x.trim()).filter((x) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x));
 

@@ -21,7 +21,7 @@ HDR = ["업체", "받는사람", "추가참조", "수신줄", "호칭", "MAKER",
 VENDORS = [
  # 기준: '업체별 담당자 E-Mail 주소(주문서 송부)' 정리본의 업체명. 예전 이름은 거래처명(주문서) 칸에 별칭으로 남김.
  ["대일CST", "skim@daeilcst.co.kr", "", "", "계장님", "DAEIL CST", "Y", "", "Y", "대일CST, 대일", "Y", "대일CST", "", "Y", "2090"],
- ["김해반도", "sclee@bandoamp.com, kjkim@bandoamp.com", "", "", "", "AMP, TE", "Y", "", "Y", "반도기전 김해, 반도기전(김해), 김해반도", "Y", "반도김해", "", "Y", "2150"],
+ ["김해반도", "sclee@bandoamp.com, kjkim@bandoamp.com", "", "", "", "AMP, TE", "Y", "", "Y", "반도기전 김해, 반도기전(김해), 반도기전 김해지점, 김해반도", "Y", "반도김해", "", "Y", "2150"],
  ["진영반도", "sales4@bandomk.com, sales1@bandomk.com", "jongho.lee@bandomk.com", "", "선임님", "MOLEX", "Y", "", "Y", "반도기전, 반도기전 진영, 진영반도", "Y", "반도진영", "", "Y", "2140"],
  ["멕텍(MEC)", "smlee@mec.co.kr, yuk7400@mec.co.kr", "", "", "차장님", "MEC", "N", "", "Y", "엠이시시스텍, MEC, 멕텍(MEC), 멕텍", "Y", "MEC", "", "Y", "3820"],
  ["위성단자", "wesung-1989@daum.net", "", "", "과장님", "CAIS ELECTRONICS, JIN", "N", "", "Y", "위성단자", "Y", "위성", "", "Y", "2330"],
