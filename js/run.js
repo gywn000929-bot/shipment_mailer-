@@ -146,11 +146,21 @@ async function splitPdf(buf, pageIdxs) {
   copied.forEach((p) => out.addPage(p));
   return await out.save();
 }
-function findVendorByPo(poVendorName) {
+/** 주문서 PDF의 거래처명(+업체코드)으로 업체 찾기. 돌려주는 값: {v, how} / 못 찾으면 null.
+    1) 이름이 정확히 같음  2) PDF의 업체코드가 같음  3) PDF 이름이 등록된 이름(4글자 이상)으로 시작함(가장 긴 것, 한 업체로 정해질 때만).
+    메일이 엉뚱한 업체로 가면 안 되므로 3)은 좁게 잡는다: 짧은 이름("엠이")이 다른 업체("에스엠이코리아")를 가로채지 않게 한다. */
+function findVendorByPo(poVendorName, poCode) {
   const key = normName(poVendorName);
-  for (const n of CONFIG.order) { const v = CONFIG.vendors[n]; if (v.poNames.map(normName).includes(key)) return v; }
-  for (const n of CONFIG.order) { const vn = normName(n); if (vn && (key.includes(vn) || vn.includes(key))) return CONFIG.vendors[n]; }
-  return null;
+  const names = (v) => uniq([v.name, ...v.poNames, v.poShort].map(normName).filter(Boolean));
+  if (key) for (const n of CONFIG.order) { const v = CONFIG.vendors[n]; if (names(v).includes(key)) return { v, how: "" }; }
+  const code = clean(poCode);
+  if (code) { const hit = CONFIG.order.filter((n) => clean(CONFIG.vendors[n].code) === code); if (hit.length === 1) return { v: CONFIG.vendors[hit[0]], how: `업체코드 ${code}` }; }
+  let best = null, tie = false;
+  if (key) for (const n of CONFIG.order) for (const a of names(CONFIG.vendors[n])) {
+    if (a.length < 4 || !key.startsWith(a)) continue;
+    if (!best || a.length > best.a.length) { best = { a, n }; tie = false; } else if (a.length === best.a.length && n !== best.n) tie = true;
+  }
+  return best && !tie ? { v: CONFIG.vendors[best.n], how: "이름 앞부분" } : null;
 }
 async function runPo() {
   if (!CONFIG) { toast("설정을 먼저 불러와야 합니다"); return; }
@@ -174,13 +184,13 @@ async function runPo() {
     if (!poPages.size) throw new Error("주문서를 하나도 읽지 못했습니다. (스캔 이미지 PDF면 텍스트가 없어 읽을 수 없습니다)");
     const plan = {}, skipped = [], unknown = []; RESULT.poTable = [];
     for (const key of order) {
-      const e = poPages.get(key); const v = findVendorByPo(e.vendor);
-      const row = { po: e.po, pages: e.pages.length, pdfVendor: e.vendor, vendor: v ? v.name : "", status: "" };
+      const e = poPages.get(key); const found = findVendorByPo(e.vendor, e.code), v = found && found.v;
+      const row = { po: e.po, pages: e.pages.length, pdfVendor: e.vendor, vendor: v ? v.name + (found.how ? ` (${found.how}로 찾음)` : "") : "", status: "" };
       RESULT.poTable.push(row);
       if (!v) { unknown.push(e); row.status = "업체 못 찾음"; continue; }
       if (!v.sendPo) { skipped.push(e); row.status = "발주서 미발송 업체(건너뜀)"; continue; }
       row.status = v.to.length ? "메일 생성" : "받는 사람 없음";
-      (plan[v.name] = plan[v.name] || { vendor: v, entries: [], poVendor: e.vendor }).entries.push(e);
+      (plan[v.name] = plan[v.name] || { vendor: v, entries: [], poVendor: e.vendor, how: found.how }).entries.push(e);
     }
     log("==================== 미리보기 ====================", "head");
     log(`공통 참조: ${commonCc.join(", ")}`); log("");
@@ -190,6 +200,7 @@ async function runPo() {
       const attachments = [];
       for (const e of p.entries) attachments.push({ name: safeName((S["주문서첨부이름"] || "{PO}.pdf").replace("{PO}", e.po).replace("{업체}", v.poShort)), data: await splitPdf(e.buf, e.pages) });
       log(`■ ${n} (PDF 거래처명: ${p.poVendor})  PO ${pos.join(", ")}  제목: ${subject}`);
+      if (p.how) log(`   [확인] 이름이 정확히 같지 않아 ${p.how}(으)로 찾았습니다. 업체가 맞는지 확인하세요.`, "warn");
       const note = v.to.length ? "" : "[받는 사람 없음] 설정 업체 시트에 메일을 적어 주세요";
       if (v.to.length) log(`   받는 사람: ${v.to.join(", ")}`); else log("   " + note, "warn");
       if (v.cc.length) log(`   추가 참조: ${v.cc.join(", ")}`);
