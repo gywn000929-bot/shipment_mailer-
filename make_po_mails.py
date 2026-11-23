@@ -35,7 +35,7 @@ def split_list(s):
 def norm_name(s):
     """거래처명 비교용: (주), 주식회사, 공백, 괄호 제거."""
     s = clean(s)
-    s = re.sub(r"\(\s*주\s*\)|주식회사|㈜|\(\s*\d+\s*\)", " ", s)
+    s = re.sub(r"\(\s*주\s*\)|주식회사|㈜|\(\s*\d+\s*\)|\[[^\]]*\]", " ", s)
     s = re.sub(r"(^|[\s(])주(?=[\s)]|$)", r"\1", s)  # PDF에서 띄어져 읽힌 "( 주 반도기전 )", "반도기전 주 김해지점"
     return re.sub(r"[\s()\-_.]", "", s).lower()
 
@@ -67,14 +67,24 @@ def load_config(path):
 
 def find_vendor(po_vendor_name, vendors):
     key = norm_name(po_vendor_name)
-    for v in vendors:                      # 1) 거래처명(주문서) 열과 정확히 일치
-        if key in v["po_names"]:
+    if not key:
+        return None
+    names = lambda v: [x for x in dict.fromkeys([norm_name(v["name"]), norm_name(v["po_short"])] + v["po_names"]) if x]
+    for v in vendors:                      # 1) 이름이 정확히 같음
+        if key in names(v):
             return v
-    for v in vendors:                      # 2) 업체 이름이 거래처명에 포함
-        vn = norm_name(v["name"])
-        if vn and (vn in key or key in vn):
-            return v
-    return None
+    # 2) 등록된 이름(4글자 이상)이 거래처명 안에 들어 있음 - 가장 긴 것, 한 업체로 정해질 때만
+    #    (짧은 이름 "엠이"가 "에스엠이코리아"를 가로채 메일이 엉뚱한 업체로 가지 않게)
+    best, tie = None, False
+    for v in vendors:
+        for a in names(v):
+            if len(a) < 4 or not key.startswith(a):
+                continue
+            if best is None or len(a) > len(best[0]):
+                best, tie = (a, v), False
+            elif len(a) == len(best[0]) and v is not best[1]:
+                tie = True
+    return best[1] if best and not tie else None
 
 
 # ---------------------------------------------------------------- PDF

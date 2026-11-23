@@ -6,7 +6,7 @@ from openpyxl import load_workbook
 
 def _norm(s):
     s = str(s or "")
-    s = re.sub(r"\(\s*주\s*\)|주식회사|㈜|\(\s*\d+\s*\)", " ", s)
+    s = re.sub(r"\(\s*주\s*\)|주식회사|㈜|\(\s*\d+\s*\)|\[[^\]]*\]", " ", s)
     s = re.sub(r"(^|[\s(])주(?=[\s)]|$)", r"\1", s)  # PDF에서 띄어져 읽힌 "( 주 반도기전 )", "반도기전 주 김해지점"
     return re.sub(r"[\s()\-_.]", "", s).lower()
 
@@ -64,11 +64,16 @@ class VendorSheet:
         for r in self.rows():
             if key in [_norm(x) for x in _split(self.get(r, "거래처명(주문서)"))]:
                 return r
+        best, tie = None, False            # 등록된 이름(4글자 이상)이 들어 있음 - 가장 긴 것, 한 업체일 때만
         for r in self.rows():
-            vn = _norm(self.get(r, "업체"))
-            if vn and (vn in key or key in vn):
-                return r
-        return None
+            for a in [_norm(self.get(r, "업체"))] + [_norm(x) for x in _split(self.get(r, "거래처명(주문서)"))]:
+                if len(a) < 4 or not key.startswith(a):
+                    continue
+                if best is None or len(a) > len(best[0]):
+                    best, tie = (a, r), False
+                elif len(a) == len(best[0]) and r != best[1]:
+                    tie = True
+        return best[1] if best and not tie else None
 
     def find_by_maker(self, maker):
         key = str(maker or "").strip().upper()
