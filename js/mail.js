@@ -1,6 +1,12 @@
 /* 메일 본문 · 첨부 엑셀 · .eml 파일 · (Outlook에서 안 열릴 때) 복사해서 보내기 */
 "use strict";
 const RED_BG = "FFC7CE";
+// 메일 글꼴: 설정 "본문글꼴". Windows에 기본으로 있는 글꼴만 (받는 사람 PC에도 있어야 같게 보임)
+const MAIL_FONTS = {
+  "맑은 고딕": "'맑은 고딕','Malgun Gothic',sans-serif", "굴림": "'굴림',Gulim,sans-serif", "돋움": "'돋움',Dotum,sans-serif",
+  "바탕": "'바탕',Batang,serif", "궁서": "'궁서',Gungsuh,serif", "Arial": "Arial,sans-serif", "Calibri": "Calibri,sans-serif", "Tahoma": "Tahoma,sans-serif",
+};
+const mailFont = (settings) => MAIL_FONTS[clean((settings || (typeof CONFIG !== "undefined" && CONFIG ? CONFIG.settings : {}))["본문글꼴"])] || MAIL_FONTS["맑은 고딕"];
 // ---------------------------------------------------------------- 본문 HTML
 function htmlTable(headers, rows, highlight = [], redRows = []) {
   const th = headers.map((h) => `<th style="border:1px solid #999;padding:3px 8px;background:#f2f2f2;white-space:nowrap">${esc(h)}</th>`).join("");
@@ -12,13 +18,13 @@ function htmlTable(headers, rows, highlight = [], redRows = []) {
     if (typeof v === "number" || /^[\d,]+$/.test(String(v))) st.push("text-align:right");
     return `<td style="${st.join(";")}">${esc(String(v ?? ""))}</td>`;
   }).join("") + "</tr>").join("");
-  return `<table style="border-collapse:collapse;font-family:맑은 고딕,Malgun Gothic,sans-serif;font-size:10pt">${"<tr>" + th + "</tr>"}${trs}</table>`;
+  return `<table style="border-collapse:collapse;font-family:${mailFont().replace(/'/g, "")};font-size:10pt">${"<tr>" + th + "</tr>"}${trs}</table>`;
 }
 const P = (s) => `<p style="margin:0">${s}</p>`;
 const BR = '<p style="margin:0">&nbsp;</p>';
 function bodyWrap(settings, inner) {   // 설정: 본문크기(pt), 본문굵게(Y/N)
   const size = parseInt(settings["본문크기"]) || 10, bold = /^(Y|YES|O|1)$/i.test(clean(settings["본문굵게"]));
-  return `<div style="font-family:맑은 고딕,Malgun Gothic,sans-serif;font-size:${size}pt${bold ? ";font-weight:bold" : ""}">${inner}</div>`;
+  return `<div style="font-family:${mailFont(settings).replace(/'/g, "")};font-size:${size}pt${bold ? ";font-weight:bold" : ""}">${inner}</div>`;
 }
 // 서명: 설정 시트의 "서명". Outlook이 서명을 자동으로 넣는 PC에서는 화면의 "본문 끝에 서명 넣기"를 끈다(이 PC에 기억).
 const sigOn = () => !pref("sigOff", CONFIG_NAME);
