@@ -88,6 +88,7 @@ function parseShip(wb, etdCount) {
     row._vendor = resolveVendor(cV ? clean(r[cV]) : "", cd, maker);
     rows.push(row);
   }
+  if (cV) rememberItemVendors(sh.rows.filter((r) => clean(r[cCd]) && clean(r[cV])).map((r) => [ivKey(r[cFac], r[cCd]), clean(r[cV])]));
   return { rows, etdSel, etdAll, hasSum: !!cSum };
 }
 // ---------------------------------------------------------------- 에어리스트
@@ -116,6 +117,16 @@ function longLeadItems(wbs) {
   const saved = store.get(LS_LONGLEAD, null);
   return saved ? { items: saved.items, from: `이 PC에 기억해 둔 목록(${koStamp(saved.at)}에 읽은 '${saved.sheets.join(", ")}')`, old: true } : { items: [], from: "" };
 }
+// 품목 → 업체 기억: 업체 열(거래처명(매칭))이 있는 엑셀을 읽을 때마다 FAC+품목코드별 업체 이름을 이 PC에 기억한다.
+// 메일 본문의 표를 붙여 넣으면 업체 열이 없으므로, 이 기억을 MAKER보다 먼저 쓴다.
+const LS_ITEMVEND = "mailmaker_item_vendor";
+const ivKey = (fac, cd) => clean(fac).toUpperCase() + "|" + norm(cd);
+function rememberItemVendors(pairs) {
+  if (!pairs.length) return;
+  const m = store.get(LS_ITEMVEND, {});
+  for (const [k, v] of pairs) { m[k] = v; m["*|" + k.split("|")[1]] = v; }
+  store.set(LS_ITEMVEND, m);
+}
 const airSortKey = (s) => clean(s).toUpperCase().replace(/[-']/g, "");
 const airCmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 const airRowSort = (a, b) => airCmp(a.FAC, b.FAC) || airCmp(airSortKey(a.Maker), airSortKey(b.Maker)) || airCmp(airSortKey(a["Part Name"]), airSortKey(b["Part Name"]));
@@ -132,16 +143,23 @@ function parseAir(wb, { friday = false, extraWbs = [] } = {}) {
   const qty = cRemain ? (r) => toNum(r[cRemain]) : cOut && cPr ? (r) => toNum(r[cPr]) - toNum(r[cOut]) : (r) => toNum(r[cPr]);
   const qtyLabel = mode === "remain" ? "Remain" : "Purchase request";
   log(`에어리스트 시트: ${sh.sheet} / ` + (cRemain ? `수량: '${cRemain}' 열` : cOut && cPr ? `수량: Remain = '${cPr}' − '${cOut}'` : `수량 열: '${cPr}'`) + (cV ? ` / 업체 열: '${cV}' 사용` : ""));
-  let rows = [];
+  let rows = [], fromMem = 0;
+  const mem = cV ? null : store.get(LS_ITEMVEND, {}), seen = [];
   for (const r of sh.rows) {
-    const cd = clean(r[cCd]), q = qty(r); if (!cd || q <= 0) continue;
+    const cd = clean(r[cCd]); if (cd && cV && clean(r[cV])) seen.push([ivKey(r[cFac], cd), clean(r[cV])]);
+    const q = qty(r); if (!cd || q <= 0) continue;
     const maker = clean(r[cMk]) || makerFromName(r[cNm]);
+    const memV = mem && (mem[ivKey(r[cFac], cd)] || mem["*|" + norm(cd)]);
+    if (memV) fromMem++;
     rows.push({
       FAC: clean(r[cFac]), "Item cd": cd, Maker: maker, "Part Name": clean(r[cNm]), "Purchase request": q,
       "Short Del.": cShort ? clean(r[cShort]) : "", "NEED ETD": cNeed ? clean(r[cNeed]) : "", _qtyCol: qtyLabel,
-      _vendor: resolveVendor(cV ? clean(r[cV]) : "", cd, maker), _src: "에어",
+      _vendor: resolveVendor(cV ? clean(r[cV]) : memV || "", cd, maker), _src: "에어",
     });
   }
+  rememberItemVendors(seen);
+  if (!cV && rows.length && !fromMem) log("[주의] 이 PC는 아직 업체 이름(거래처명)이 있는 리스트 엑셀을 읽은 적이 없어, 모두 MAKER로 업체를 정했습니다. KET 품목이 태양단자로 가는 것처럼 틀릴 수 있습니다. 이번 주 월요일 리스트 엑셀을 한 번 넣고 미리보기를 누른 뒤 다시 하거나, 엑셀 파일로 만드세요.", "err");
+  if (!cV) log(`[업체 정하기] 업체 열이 없어 ${fromMem}건은 이 PC가 전에 읽은 엑셀의 거래처명으로, ${rows.length - fromMem}건은 MAKER로 업체를 정했습니다.` + (rows.length - fromMem ? " 업체가 맞는지 메일 목록에서 확인하세요." : ""), rows.length - fromMem ? "warn" : "info");
   if (mode === "remain") {
     rows.sort(airRowSort);   // 리스트 아래에 덧붙인 줄도 FAC → MAKER → 품명 순서 자리로
     log(`[금요일 에어] Remain이 있는 품목 ${rows.length}건 (Remain 0 이하는 뺌)`);
@@ -164,4 +182,13 @@ function parseAir(wb, { friday = false, extraWbs = [] } = {}) {
   }
   rows.mode = mode;
   return rows;
+}
+
+// 메일 본문에서 복사한 표(탭으로 나뉜 글자) → 엑셀과 같은 모양의 통합 문서. 표 머리글(FAC, Item cd …)이 있어야 한다.
+function pastedWorkbook(text) {
+  const lines = String(text || "").replace(/\r/g, "").split("\n").filter((l) => l.trim());
+  if (!lines.length) return null;
+  const aoa = lines.map((l) => l.split("\t").map((c) => c.replace(/[\u00a0\u3000]/g, " ").trim()));
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), "붙여넣은 표");
+  return wb;
 }

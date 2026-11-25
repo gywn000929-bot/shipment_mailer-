@@ -6,10 +6,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="js/core.js?v=11" defer></script>
 <script src="js/config.js?v=11" defer></script>
-<script src="js/lists.js?v=12" defer></script>
+<script src="js/lists.js?v=14" defer></script>
 <script src="js/mail.js?v=13" defer></script>
-<script src="js/run.js?v=12" defer></script>
-<script src="js/ui.js?v=12" defer></script>
+<script src="js/run.js?v=14" defer></script>
+<script src="js/ui.js?v=13" defer></script>
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css");
 :root{--bg:#f4f6fa;--card:#fff;--line:#e3e7ee;--txt:#1f2937;--mut:#6b7280;--pri:#2563eb;--pri2:#1d4ed8;--ok:#16a34a;--warn:#d97706;--err:#dc2626;--chip:#eef2ff}
@@ -95,6 +95,9 @@ a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;ba
  <div style="height:8px"></div>
  <div class="drop" id="dropAir"><b>에어리스트</b> 엑셀을 여기에 끌어다 놓거나 클릭<small id="airName">아직 없음 (선박 파일 안에 Air 시트가 있으면 비워 두어도 자동으로 씁니다)</small></div>
  <div class="row" style="margin-top:6px;display:none"><label>에어 시트</label><select id="airSheet" style="display:none"></select></div>
+ <details style="margin-top:6px" id="pasteBox"><summary><b>또는 메일 본문의 에어 표를 붙여넣기</b> <span class="hint">(수요일 REMAIN 표 등 — 머리글 줄부터 끝 줄까지 복사)</span></summary>
+  <textarea id="airPaste" rows="6" style="width:100%;margin-top:6px;font:12px monospace" placeholder="FAC	Item cd	Maker	Part Name	Remain	STOCK	Short Del.	NEED ETD	REMARK&#10;F1	M030-000280	AMP	170325-1 (AMP)	18,000		07-Dec-26	27-Nov-26	CHANGE QTY"></textarea>
+  <div class="row"><button class="sm" id="btnPasteClear">붙여넣은 표 지우기</button><span class="hint">에어 엑셀 칸이 비어 있을 때만 씁니다. 표에는 업체 이름이 없어서, 이 PC가 전에 읽은 주간 리스트의 거래처명으로 업체를 정합니다(없으면 MAKER).</span></div></details>
  <input type="file" id="ship" accept=".xlsx,.xls" hidden><input type="file" id="air" accept=".xlsx,.xls" hidden>
  <div class="row"><label>기준 주 월요일</label><input type="date" id="monday"><button class="sm" id="advToggle">▸ 고급 설정</button></div>
  <div class="hint warn" id="monHint" style="display:none">오늘은 월요일입니다. 지금은 <b>다음 주</b> 월요일로 잡혀 있습니다. 이번 주 것을 만들려면 → <button class="sm" id="btnThisWeek">이번 주(오늘)로 바꾸기</button></div>

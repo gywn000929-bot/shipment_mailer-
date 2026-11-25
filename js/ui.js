@@ -234,6 +234,7 @@ window.addEventListener("DOMContentLoaded", () => {
   $("advToggle").onclick = () => { const a = $("adv"); a.style.display = a.style.display === "none" ? "" : "none"; $("advToggle").textContent = (a.style.display === "none" ? "▸" : "▾") + " 고급 설정"; };
   $("config").addEventListener("change", () => { $("configFile").style.display = $("config").value === "__file__" ? "" : "none"; if ($("config").value !== "__file__") reloadConfig(); });
   $("configFile").addEventListener("change", () => reloadConfig());
+  $("btnPasteClear").onclick = () => { $("airPaste").value = ""; toast("붙여넣은 표를 지웠습니다."); };
   $("btnShip").onclick = runShip; $("btnPo").onclick = runPo; $("btnZip").onclick = downloadZip;
   $("btnAssign").onclick = saveAssign;
   $("btnDlCfg").onclick = downloadConfig; $("btnDiscard").onclick = discardLocal;
