@@ -24,9 +24,9 @@ function urgentItems(airRows, shipAll, weekEnd) {
 // fromPaste: "금요일 에어 메일" 칸에 붙여 넣은 표로 만든다(위 엑셀 칸은 보지 않음)
 async function runShip(fromPaste = false) {
   if (!CONFIG) { toast("설정을 먼저 불러와야 합니다"); return; }
-  const pasted = fromPaste ? clean($("airPaste").value) : "";
+  const pasted = fromPaste ? clean($("airPaste").value) : "", fRemain = fromPaste ? $("remainFile").files[0] : null;
   const fShip = fromPaste ? null : $("ship").files[0], fAir = fromPaste ? null : $("air").files[0];
-  if (fromPaste && !pasted) { toast("먼저 아래 큰 칸에 메일 본문의 표를 붙여 넣으세요 (Ctrl+V)."); $("airPaste").focus(); return; }
+  if (fromPaste && !pasted && !fRemain) { toast("먼저 큰 칸에 메일 본문의 표를 붙여 넣거나(Ctrl+V) REMAIN 엑셀을 넣으세요."); $("airPaste").focus(); return; }
   if (!fromPaste && !fShip && !fAir) { toast("선박리스트나 에어리스트 엑셀을 넣어야 합니다. (메일 본문의 표는 아래 '금요일 에어 메일' 칸에 붙여 넣으세요)"); return; }
   clearLog(); setStatus("실행 중...", true); RESULT = { mails: [], unmatched: [], kind: "ship", extraFiles: [] };
   try {
@@ -36,12 +36,13 @@ async function runShip(fromPaste = false) {
     let ship = [], etdSel = [], air = [], hasSum = false;
     const wbShip = fShip ? XLSX.read(await fShip.arrayBuffer(), { type: "array", cellDates: true }) : null;
     let wbAir = fAir ? (fAir === fShip ? wbShip : XLSX.read(await fAir.arrayBuffer(), { type: "array", cellDates: true })) : null;
-    if (fromPaste) { wbAir = pastedWorkbook($("airPaste").value); log("[붙여넣은 표] '금요일 에어 메일' 칸에 붙여 넣은 표로 만듭니다.", "head"); }
+    if (fromPaste && fRemain) { wbAir = XLSX.read(await fRemain.arrayBuffer(), { type: "array", cellDates: true }); log(`[수요일 REMAIN] 엑셀 '${fRemain.name}'로 만듭니다.`, "head"); }
+    else if (fromPaste) { wbAir = pastedWorkbook($("airPaste").value); log("[수요일 REMAIN] 붙여 넣은 표로 만듭니다.", "head"); }
     // 선박 표가 있으면 월요일 주간 리스트(화요일 에어), 없으면 수요일 REMAIN 리스트(금요일 에어)로 본다
     let shipErr = null;
     const tryShip = (wb) => { try { return parseShip(wb, etdCount); } catch (e) { shipErr = shipErr || e; return null; } };
     let shipRes = wbShip ? tryShip(wbShip) : null, shipFrom = wbShip;
-    if (!shipRes && wbAir && $("autoBoth").checked) { shipRes = tryShip(wbAir); shipFrom = wbAir; }
+    if (!shipRes && wbAir && !fromPaste && $("autoBoth").checked) { shipRes = tryShip(wbAir); shipFrom = wbAir; }   // 수요일 REMAIN 메일에서는 선박 표를 보지 않는다
     const friday = !shipRes;
     const airWb = wbAir || (friday || $("autoBoth").checked ? wbShip : null);
     if (airWb) {
@@ -50,6 +51,7 @@ async function runShip(fromPaste = false) {
       if (!wbAir && !friday && air.length) log(`[참고] 에어리스트를 따로 넣지 않아, 선박리스트 파일 안의 에어 표를 함께 사용합니다. (에어를 빼려면 고급 설정 → "같은 파일의 에어 표 자동 사용" 해제)`, "warn");
     }
     const fri = friday && air.mode === "remain";
+    if (fromPaste && !fri) throw new Error("넣은 표에 Remain 열(또는 출고수량 열)이 없습니다. 월요일 주간 리스트라면 위에서 '📅 월요일 메일'을 고르고 그 칸에 넣으세요.");
     if (friday && !fri) log("[참고] 선박 표가 없고, 에어 표에도 Remain·출고수량 열이 없어 화요일 에어(월요일 리스트)로 만듭니다.", "warn");
     if (shipRes) { ({ rows: ship, etdSel, hasSum } = shipRes); if (shipFrom !== wbShip) log("[참고] 선박리스트를 따로 넣지 않아, 에어리스트 파일 안의 선박 표를 함께 사용합니다.", "warn"); }
     else if (!fri) log("선박리스트 없음 → 에어만 진행");

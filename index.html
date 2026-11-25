@@ -9,8 +9,8 @@
 <script src="js/vendor_table.js?v=1" defer></script>
 <script src="js/lists.js?v=16" defer></script>
 <script src="js/mail.js?v=13" defer></script>
-<script src="js/run.js?v=16" defer></script>
-<script src="js/ui.js?v=15" defer></script>
+<script src="js/run.js?v=17" defer></script>
+<script src="js/ui.js?v=16" defer></script>
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css");
 :root{--bg:#f4f6fa;--card:#fff;--line:#e3e7ee;--txt:#1f2937;--mut:#6b7280;--pri:#2563eb;--pri2:#1d4ed8;--ok:#16a34a;--warn:#d97706;--err:#dc2626;--chip:#eef2ff}
@@ -31,6 +31,12 @@ main{max-width:1100px;margin:20px auto;padding:0 16px;display:grid;grid-template
 button{border:0;border-radius:10px;padding:10px 14px;font-size:14px;cursor:pointer;background:#e5e7eb;color:var(--txt)}
 button.pri{background:var(--pri);color:#fff}button.pri:hover{background:var(--pri2)}button.ok{background:var(--ok);color:#fff}button.sm{padding:6px 10px;font-size:13px}
 .full{grid-column:1/-1}
+.modeBar{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
+.modeQ{align-self:center;font-weight:bold;margin-right:4px}
+.modeBtn{flex:1;min-width:200px;text-align:left;background:#f8fafc;border:2px solid var(--line);border-radius:12px;padding:10px 14px}
+.modeBtn b{display:block;font-size:15px}.modeBtn small{display:block;color:var(--mut);margin-top:3px;font-size:12px}
+.modeBtn.on{border-color:var(--pri);background:#eef2ff}.modeBtn.on b{color:var(--pri2)}
+[data-modes].mhide{display:none}
 .pasteSteps{margin:0 0 10px;padding-left:20px;font-size:14px;line-height:1.7}
 .pasteArea{width:100%;box-sizing:border-box;border:2px dashed #c7d2fe;border-radius:12px;padding:12px;background:#fafbff;font:12px Consolas,"D2Coding",monospace;resize:vertical;white-space:pre;overflow:auto}
 .pasteArea:focus{outline:none;border-color:var(--pri);background:#fff}.pasteArea.has{border-style:solid;border-color:var(--ok);background:#f0fdf4}
@@ -93,7 +99,12 @@ a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;ba
 </section>
 <div class="full"><div class="steps"><span>1. 엑셀/PDF 끌어다 놓기</span><span>2. 미리보기 · 메일 만들기</span><span>3. 📦 전부 받기(ZIP)</span><span>4. 압축 풀고 .eml 더블클릭</span><span>5. Outlook에서 확인 후 보내기</span></div>
  <p class="flow">한 주 순서: 받은 파일로 <a href="list.html"><b>주간 리스트 만들기</b></a> → <b>금요일</b> <a href="https://gywn000929-bot.github.io/air-confirm/" target="_blank" rel="noopener">에어 컨펌 도우미</a>로 컨펌 → <b>월요일</b> 주간 리스트로 이 화면에서 출하 요청 메일(+ 화요일 에어, KET 긴급 자재 메일) → <b>수요일</b> REMAIN 리스트 엑셀(출고수량 열이 있는 AIR 시트)을 그대로 넣으면 <b>금요일 에어</b> 메일 · 주문서는 PDF가 나올 때마다 · 업체가 입고수량을 회신하면 <a href="inbound.html"><b>입고 파일 만들기</b></a></p></div>
-<section class="card"><h2><span class="step">1</span> 출하 요청 메일 (선박 / 에어)</h2>
+<div class="full modeBar" id="modeBar"><span class="modeQ">오늘 만들 메일은?</span>
+ <button class="modeBtn" data-mode="mon"><b>📅 월요일 메일</b><small>주간 리스트 엑셀 → 출하 요청(선박 + 화요일 에어) · KET 긴급 자재</small></button>
+ <button class="modeBtn" data-mode="wed"><b>✈ 수요일 REMAIN 메일</b><small>REMAIN 표 붙여넣기(또는 엑셀) → 금요일 에어 메일</small></button>
+ <button class="modeBtn" data-mode="po"><b>📄 주문서 메일</b><small>주문서 PDF → 업체별 발주서 메일</small></button>
+</div>
+<section class="card" id="shipCard" data-modes="mon"><h2><span class="step">1</span> 출하 요청 메일 (선박 / 에어)</h2>
  <div class="drop" id="dropShip"><b>선박리스트</b> 엑셀을 여기에 끌어다 놓거나 클릭<small id="shipName">아직 없음</small></div>
  <div class="row" style="margin-top:6px;display:none"><label>선박 시트</label><select id="shipSheet" style="display:none"></select></div>
  <div style="height:8px"></div>
@@ -108,22 +119,24 @@ a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;ba
  <div class="btns"><button class="pri" id="btnShip">미리보기 · 메일 만들기</button></div>
  <div class="hint">업체별로 본문·첨부 엑셀을 만들어 아래에 보여 줍니다. 설정에 "긴급메일업체"(KET)가 있으면 에어리스트의 그 업체 품목으로 <b>긴급 자재 메일</b>도 함께 만듭니다. 내 PC 밖으로 나가는 것은 없습니다(모두 이 브라우저 안에서 처리).</div>
 </section>
-<section class="card"><h2><span class="step">1</span> 주문서(발주서) 메일</h2>
- <div class="drop" id="dropPdf"><b>주문서 PDF</b>를 여기에 끌어다 놓거나 클릭 (여러 개 가능)<small id="pdfName">아직 없음</small></div>
- <input type="file" id="pdf" accept=".pdf" multiple hidden>
- <div class="btns"><button class="pri" id="btnPo">미리보기 · 메일 만들기</button></div>
- <div class="hint">한 PDF에 여러 업체·여러 PO가 있어도 됩니다. 업체별로 잘라서 "업체-PO번호" 메일을 만듭니다. 발주서발송=N 업체(한국단자공업·연호·경신)는 자동 제외.</div>
-</section>
-<section class="card full" id="pasteCard"><h2><span class="step">1</span> 금요일 에어 메일 <span class="status">— 수요일 REMAIN 메일의 표를 붙여 넣어서 만들기</span></h2>
+<section class="card full" id="pasteCard" data-modes="wed"><h2><span class="step">1</span> 금요일 에어 메일 <span class="status">— 수요일 REMAIN 메일의 표를 붙여 넣어서 만들기</span></h2>
  <ol class="pasteSteps">
   <li>Outlook에서 "금주 금요일 에어 REMAIN 리스트" 메일을 열고, 표의 <b>맨 윗줄(FAC, Item cd …)부터 마지막 줄까지</b> 마우스로 끌어서 선택한 뒤 <b>Ctrl+C</b></li>
   <li>아래 큰 칸을 한 번 클릭하고 <b>Ctrl+V</b></li>
   <li><b>미리보기 · 메일 만들기</b> → 아래에 업체별 메일이 나오면 <b>📦 전부 받기 (ZIP)</b></li>
  </ol>
  <textarea id="airPaste" class="pasteArea" rows="7" placeholder="여기를 클릭하고 Ctrl+V 로 붙여 넣으세요.&#10;&#10;(붙여 넣으면 이렇게 보입니다)&#10;FAC   Item cd       Maker   Part Name        Remain   STOCK   Short Del.   NEED ETD&#10;F1    M030-000280   AMP     170325-1 (AMP)   18,000           07-Dec-26    27-Nov-26"></textarea>
+ <div class="drop" id="dropRemain" style="margin-top:8px;padding:10px"><b>또는 REMAIN 엑셀 파일</b>을 여기에 끌어다 놓기 <small id="remainName">아직 없음 (엑셀을 넣으면 위 붙여넣은 표보다 엑셀을 씁니다)</small></div>
+ <input type="file" id="remainFile" accept=".xlsx,.xls" hidden>
  <div class="row" style="margin-top:6px"><span id="pasteInfo" class="hint" style="margin:0">아직 붙여 넣지 않았습니다</span></div>
  <div class="btns"><button class="pri" id="btnPasteRun">미리보기 · 메일 만들기</button><button id="btnPasteClear">지우기</button></div>
- <div class="hint">기준 주는 이번 주, 입고 요망일은 금요일로 자동으로 잡힙니다. 제목 끝에 "(금요일 에어)"가 붙습니다. 업체는 거래처 표(화면에 미리 들어 있음)로 나눕니다. 엑셀 파일이 있으면 위 "출하 요청 메일" 칸에 엑셀을 넣어도 같은 메일이 만들어집니다.</div>
+ <div class="hint">기준 주는 이번 주, 입고 요망일은 금요일로 자동으로 잡힙니다. 제목 끝에 "(금요일 에어)"가 붙습니다. 업체는 거래처 표(화면에 미리 들어 있음)로 나눕니다. 붙여넣기와 엑셀은 어느 쪽이든 같은 메일이 만들어집니다.</div>
+</section>
+<section class="card" id="poCard" data-modes="mon po"><h2><span class="step">1</span> 주문서(발주서) 메일</h2>
+ <div class="drop" id="dropPdf"><b>주문서 PDF</b>를 여기에 끌어다 놓거나 클릭 (여러 개 가능)<small id="pdfName">아직 없음</small></div>
+ <input type="file" id="pdf" accept=".pdf" multiple hidden>
+ <div class="btns"><button class="pri" id="btnPo">미리보기 · 메일 만들기</button></div>
+ <div class="hint">한 PDF에 여러 업체·여러 PO가 있어도 됩니다. 업체별로 잘라서 "업체-PO번호" 메일을 만듭니다. 발주서발송=N 업체(한국단자공업·연호·경신)는 자동 제외.</div>
 </section>
 <section class="card full" id="resultCard" style="display:none"><h2><span class="step">2</span> <span id="resultTitle">만들어진 메일</span><span class="sp" style="flex:1"></span><button class="ok" id="btnZip">📦 전부 받기 (ZIP)</button></h2>
  <div id="summary"></div>
