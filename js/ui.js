@@ -128,7 +128,7 @@ async function downloadZip() {
   for (const m of sel) zip.file(emlName(m), buildEml(m));
   if (RESULT.extraFiles) for (const f of RESULT.extraFiles) zip.file(f.name, f.data);
   const blob = await zip.generateAsync({ type: "blob" });
-  download(blob, (RESULT.kind === "po" ? "주문서메일_" : RESULT.fri ? "금요일에어메일_" : "출하요청메일_") + fmtDate(new Date()) + ".zip");
+  download(blob, (RESULT.kind === "po" ? "주문서메일_" : RESULT.kind === "order" ? "발주확인메일_" : RESULT.fri ? "금요일에어메일_" : "출하요청메일_") + fmtDate(new Date()) + ".zip");
   recordDownload(sel); renderResult();
   toast(`메일 ${sel.length}통을 ZIP으로 받았습니다. 압축을 풀고 .eml 파일을 더블클릭하면 Outlook 새 메일 창이 열립니다.`);
   $("afterZip").style.display = "";
@@ -241,7 +241,17 @@ async function routeFiles(files) {
   if (!xls.length) { toast("엑셀(.xlsx)이나 주문서 PDF를 놓아 주세요."); return; }
   const f = xls[0], cur = document.querySelector(".modeBtn.on");
   if (cur && cur.dataset.mode === "int") { put("intFile", [f]); return; }
-  let wb; try { wb = XLSX.read(await f.arrayBuffer(), { type: "array", cellDates: true }); } catch (e) { toast("엑셀을 읽지 못했습니다: " + f.name); return; }
+  // ERP 발주 미납 파일이 섞여 있으면 → 발주 점검 (리스트 엑셀은 ① 칸, 미납 파일은 ② 칸)
+  const wbs = []; for (const x of xls) { try { wbs.push(await ordReadWb(x)); } catch (e) { wbs.push(null); } }
+  const erpIdx = wbs.map((w, i) => (w && ordIsErp(w) ? i : -1)).filter((i) => i >= 0);
+  if (erpIdx.length || (cur && cur.dataset.mode === "ord")) {
+    setMode("ord", true);
+    const lists = xls.filter((_, i) => !erpIdx.includes(i)), erps = xls.filter((_, i) => erpIdx.includes(i));
+    if (lists.length) put("ordList", [lists[0]]);
+    if (erps.length) put("ordErp", erps);
+    toast(erps.length ? `ERP 발주 미납 ${erps.length}개 → 발주 점검` : "선박리스트 → 발주 점검 ①칸"); return;
+  }
+  let wb = wbs[0]; if (!wb) { toast("엑셀을 읽지 못했습니다: " + f.name); return; }
   const hasShip = wb.SheetNames.some((sn) => findHeaderRow(sheetRows(wb, sn), ["ITEM CD", "MAKER"], [], ["ETD"]) >= 0);
   const hasRemain = wb.SheetNames.some((sn) => { const rows = sheetRows(wb, sn), h = findHeaderRow(rows, ["Item cd", "Maker"]); return h >= 0 && rows[h].map(norm).some((c) => c === "출고수량" || c === "remain"); });
   if (!hasShip && hasRemain) { setMode("wed", true); put("remainFile", [f]); toast("REMAIN 엑셀 → 금요일 에어 메일을 만듭니다."); }
@@ -320,16 +330,16 @@ window.addEventListener("DOMContentLoaded", () => {
   // 칸에 놓으면 바로 만든다
   const auto = (id, fn) => $(id).addEventListener("change", () => { if ($(id).files.length) setTimeout(fn, 50); });
   auto("ship", () => runShip(false)); auto("remainFile", () => runShip(true)); auto("pdf", runPo); auto("intFile", runInternal);
-  bindDropAnywhere(); bindPasteAnywhere();
+  bindDropAnywhere(); bindPasteAnywhere(); ordBind();
   // 맨 위 "오늘 만들 메일은?" — 고른 메일에 필요한 칸만 보여 준다. 처음엔 요일로 고른다(수·목 = 수요일 REMAIN, 그 밖 = 월요일)
   const setMode = window.setMode = (m, quiet) => {
     document.querySelectorAll(".modeBtn").forEach((b) => b.classList.toggle("on", b.dataset.mode === m));
     document.querySelectorAll("[data-modes]").forEach((el) => el.classList.toggle("mhide", !el.dataset.modes.split(" ").includes(m)));
-    if (!quiet) { const c = { mon: "shipCard", wed: "pasteCard", po: "poCard", int: "intCard" }[m]; $(c).scrollIntoView({ behavior: "smooth", block: "start" }); }
+    if (!quiet) { const c = { mon: "shipCard", wed: "pasteCard", po: "poCard", int: "intCard", ord: "ordCard" }[m]; $(c).scrollIntoView({ behavior: "smooth", block: "start" }); }
   };
   document.querySelectorAll(".modeBtn").forEach((b) => (b.onclick = () => setMode(b.dataset.mode)));
   { const d = new Date().getDay(), q = new URLSearchParams(location.search).get("mode");
-    setMode(["mon", "wed", "po", "int"].includes(q) ? q : d === 3 || d === 4 ? "wed" : "mon", true); }
+    setMode(["mon", "wed", "po", "int", "ord"].includes(q) ? q : d === 3 || d === 4 ? "wed" : "mon", true); }
   $("btnShip").onclick = () => runShip(false); $("btnPo").onclick = runPo; $("btnZip").onclick = downloadZip;
   $("btnAssign").onclick = saveAssign;
   $("btnDlCfg").onclick = downloadConfig; $("btnDiscard").onclick = discardLocal;
