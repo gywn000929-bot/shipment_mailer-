@@ -1,6 +1,6 @@
 <!doctype html><html lang="ko"><head><meta charset="utf-8"><title>대아홀딩스 메일 작성기</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="app-ver" content="2026-11-25.3">
+<meta name="app-ver" content="2026-11-25.4">
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -13,7 +13,8 @@
 <script src="js/run.js?v=18" defer></script>
 <script src="js/mailtext.js?v=4" defer></script>
 <script src="js/internal.js?v=1" defer></script>
-<script src="js/ui.js?v=22" defer></script>
+<script src="js/order.js?v=2" defer></script>
+<script src="js/ui.js?v=23" defer></script>
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css");
 :root{--bg:#f4f6fa;--card:#fff;--line:#e3e7ee;--txt:#1f2937;--mut:#6b7280;--pri:#2563eb;--pri2:#1d4ed8;--ok:#16a34a;--warn:#d97706;--err:#dc2626;--chip:#eef2ff}
@@ -34,6 +35,12 @@ main{max-width:1100px;margin:20px auto;padding:0 16px;display:grid;grid-template
 button{border:0;border-radius:10px;padding:10px 14px;font-size:14px;cursor:pointer;background:#e5e7eb;color:var(--txt)}
 button.pri{background:var(--pri);color:#fff}button.pri:hover{background:var(--pri2)}button.ok{background:var(--ok);color:#fff}button.sm{padding:6px 10px;font-size:13px}
 .full{grid-column:1/-1}
+.ordDrops{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:800px){.ordDrops{grid-template-columns:1fr}}
+.ordSum{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:14px 0 8px;font-size:14px}.ordSum span{background:#eef2ff;border-radius:8px;padding:6px 10px}.ordSum button{margin-left:auto}
+.ordWrap{overflow:auto;max-height:60vh;border:1px solid var(--line);border-radius:8px}
+.ordTbl{margin:0;font-size:12.5px}.ordTbl th{position:sticky;top:0;background:#eef2f7;white-space:nowrap;text-align:center;padding:5px 6px}.ordTbl thead tr:nth-child(2) th{top:27px}
+.ordTbl td{padding:4px 6px;white-space:nowrap}.ordTbl td.n{text-align:right;font-variant-numeric:tabular-nums}.ordTbl td.nm{max-width:260px;overflow:hidden;text-overflow:ellipsis}.ordTbl .mut{color:var(--mut)}.ordTbl .neg{color:var(--err);font-weight:bold}
+.ordTbl tr.short td{background:#fef2f2}.ordTbl th.sg,.ordTbl td.sg{background:#fefce8}.ordTbl td.sg input{width:84px;text-align:right;border:1px solid #e5e7eb;border-radius:6px;padding:3px 5px;font-size:12.5px}
 .edTabs{display:flex;gap:6px;margin:4px 0 12px;border-bottom:2px solid var(--line)}
 .edTab{background:transparent;border-radius:10px 10px 0 0;padding:10px 16px;font-weight:bold;color:var(--mut);margin-bottom:-2px;border-bottom:3px solid transparent}
 .edTab.on{color:var(--pri2);border-bottom-color:var(--pri)}
@@ -144,6 +151,7 @@ a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;ba
   <button class="modeBtn" data-mode="mon"><b>📅 월요일 메일</b><small>주간 리스트 엑셀 → 출하 요청 (선박 + 화요일 에어)</small></button>
   <button class="modeBtn" data-mode="wed"><b>✈ 수요일 REMAIN 메일</b><small>REMAIN 표 붙여넣기 → 금요일 에어</small></button>
   <button class="modeBtn" data-mode="po"><b>📄 주문서 메일</b><small>주문서 PDF → 업체별 발주서</small></button>
+  <button class="modeBtn" data-mode="ord"><b>🧮 발주 점검</b><small>선박리스트 + ERP 발주 미납 → 부족·추가 발주·잔량 확인 메일</small></button>
   <button class="modeBtn" data-mode="int" id="modeInt" style="display:none"><b>📨 계장님께</b><small>주간 리스트 엑셀 → 계장님께 보낼 리스트·에어·REMAIN 메일</small></button>
  </div>
 </section>
@@ -170,6 +178,16 @@ a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;ba
  <details class="sub"><summary>표 대신 REMAIN 엑셀 파일로 만들기</summary>
   <div class="drop" id="dropRemain" style="margin-top:8px;padding:10px"><b>REMAIN 엑셀</b>을 여기에 끌어다 놓기 <small id="remainName">아직 없음 (엑셀을 넣으면 붙여넣은 표보다 엑셀을 씁니다)</small></div>
   <input type="file" id="remainFile" accept=".xlsx,.xls" hidden></details>
+</section>
+<section class="card full" id="ordCard" data-modes="ord"><h2><span class="step">2</span> 발주 점검 <span class="hint" style="margin:0;font-weight:normal">— KET·경신처럼 엑셀로 발주 잔량을 맞춰 보던 업체</span></h2>
+ <div class="ordDrops">
+  <div class="drop" id="dropOrdList"><b>① 주간 선박리스트</b> 엑셀<small id="ordListName">아직 없음</small></div>
+  <div class="drop" id="dropOrdErp"><b>② ERP 발주 미납</b> 파일 (.xls 그대로, 여러 개 가능)<small id="ordErpName">아직 없음 — ERP 발주 미납 조회에서 업체를 골라 엑셀로 저장한 파일</small></div>
+ </div>
+ <input type="file" id="ordList" accept=".xlsx,.xls" hidden><input type="file" id="ordErp" accept=".xlsx,.xls" multiple hidden>
+ <div class="btns"><button class="pri big" id="btnOrd">점검하기 ▶</button><label class="hint" style="align-self:center;margin:0"><input type="checkbox" id="ordOnlyShort" checked> 부족 품목만 보기</label></div>
+ <div id="ordOut"></div>
+ <div class="hint">두 파일을 넣으면 바로 점검합니다. 품목(공장+M코드)마다 달별 필요량(ETD 월) · 기발주(ERP 납기월) · 재고를 맞춰 모자라는 달에 <b>추가 발주</b> 수량을 추천합니다. 결과 아래 메일 목록에 업체로 보낼 <b>발주 잔량 일정 확인 메일</b>도 만들어집니다. ERP가 없는 PC에서도 됩니다.</div>
 </section>
 <section class="card full" id="intCard" data-modes="int"><h2><span class="step">2</span> 계장님께 보낼 메일</h2>
  <div class="drop big" id="dropInt"><b>주간 리스트 엑셀</b>을 여기에 끌어다 놓거나 클릭<small id="intName">아직 없음</small></div>
