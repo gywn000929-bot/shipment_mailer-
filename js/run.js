@@ -58,7 +58,12 @@ async function runShip(fromPaste = false) {
 
     // 기준 주: 금요일 에어(수요일에 받는 REMAIN 리스트)는 이번 주. 날짜 칸을 직접 바꾸지 않았으면 이번 주 월요일로 잡는다.
     let monday = $("monday").value ? parseISO($("monday").value) : nextMonday();
-    if (fri && !$("monday").dataset.touched) { const t = new Date(); monday = addDays(new Date(t.getFullYear(), t.getMonth(), t.getDate()), -((t.getDay() + 6) % 7)); $("monday").value = fmtDate(monday); log(`[금요일 에어] 기준 주를 이번 주(${fmtDate(monday)} 월)로 잡았습니다. 다른 주면 기준 주 월요일을 바꾸고 다시 누르세요.`, "warn"); }
+    // 날짜 칸을 직접 바꾸지 않았으면: 리스트의 NEED ETD 날짜로 주를 정한다(없으면 금요일 에어는 이번 주, 월요일 리스트는 날짜 칸 그대로)
+    if (!$("monday").dataset.touched) {
+      if (air.weekMonday) { monday = air.weekMonday; log(`[기준 주] 리스트의 NEED ETD 날짜로 ${fmtDate(monday)}(월) 주로 잡았습니다. 다른 주면 기준 주 월요일을 직접 바꾸고 다시 누르세요.`, "warn"); }
+      else if (fri) { const t = new Date(); monday = addDays(new Date(t.getFullYear(), t.getMonth(), t.getDate()), -((t.getDay() + 6) % 7)); log(`[금요일 에어] 기준 주를 이번 주(${fmtDate(monday)} 월)로 잡았습니다. 다른 주면 기준 주 월요일을 바꾸고 다시 누르세요.`, "warn"); }
+      $("monday").value = fmtDate(monday); if ($("monHint")) $("monHint").style.display = "none";
+    }
     const wd = (monday.getDay() + 6) % 7;
     if (wd) { log(`[경고] ${fmtDate(monday)}는 월요일이 아닙니다. 그 주 월요일로 맞춥니다.`, "warn"); monday = addDays(monday, -wd); }
     const [month, week] = weekLabel(monday); RESULT.weekKey = fmtDate(monday); RESULT.fri = fri;
