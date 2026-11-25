@@ -8,7 +8,6 @@
    - 에어: 요청 수량이 "600>>2,100"이면 2,100, "500>>0"이면 그 줄은 뺀다.
  - 정렬: FAC → MAKER → 품목명 (엑셀처럼 하이픈은 무시) */
 "use strict";
-const LS_VTBL = "mailmaker_vendor_table_v1";
 const SLOTS = ["F1 Bal", "F2 Bal", "F5 Bal", "F1 JST Bal", "F2 JST Bal", "F5 JST Bal", "F1 Sto", "F2 Sto", "F5 Sto", "F1 JST Sto", "F2 JST Sto", "F5 JST Sto"];
 const BUILD = { inputs: [], out: null };
 const nsp = (s) => clean(s).replace(/\s+/g, "").toUpperCase();
@@ -95,20 +94,7 @@ function lookupTable(inp) {   // 매크로처럼: 처음 나오는 M0…/S0… �
   for (const r of rows) { const k = clean((r || [])[cc]); if (isCode(k) && !map.has(k)) map.set(k, (r || [])[cc + 2]); }
   return map;
 }
-function vendorRule(tblRows) {
-  const maker = new Map(), ex = [];
-  for (const r of tblRows.slice(1)) {
-    const mk = nsp(r[1]) ? clean(r[1]).toUpperCase() : "";
-    if (mk && !maker.has(mk)) maker.set(mk, clean(r[0]));
-    if (clean(r[4]) && clean(r[5])) ex.push({ vendor: clean(r[4]), nm: nsp(r[5]), codes: clean(r[7]).split(",").map((x) => x.trim()).filter(Boolean) });
-  }
-  return (cd, nm, mk) => {
-    const n = nsp(nm);
-    for (const e of ex) if (e.codes.includes(cd) && n.startsWith(e.nm)) return e.vendor;
-    for (const e of ex) if (n === e.nm) return e.vendor;
-    return maker.get(clean(mk).toUpperCase()) || "";
-  };
-}
+const vendorRule = vtRule;   // js/vendor_table.js
 const xlSortKey = (s) => clean(s).toUpperCase().replace(/[-']/g, "");
 const cmpStr = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 const rowSort = (a, b) => cmpStr(a.fac, b.fac) || cmpStr(xlSortKey(a.maker), xlSortKey(b.maker)) || cmpStr(xlSortKey(a.nm), xlSortKey(b.nm)) || cmpStr(a.nm, b.nm);
@@ -119,8 +105,7 @@ function buildLists() {
   const seas = I.filter((x) => x.kind === "sea").map(parseSea);
   const airIn = I.find((x) => x.kind === "air");
   if (!seas.length && !airIn) throw new Error("선박 요청 파일(F1·F2·F5)이나 에어 리포트를 넣어 주세요.");
-  const vt = I.find((x) => x.kind === "vendor") || store.get(LS_VTBL, null);
-  if (!vt) notes.push("거래처 표(거래처코드 시트)가 없어 거래처명을 붙이지 못했습니다.");
+  const vt = I.find((x) => x.kind === "vendor") || currentVendorTable();   // 넣은 표 → 이 PC에 기억한 새 표 → 내장 표
   const vendorOf = vt ? vendorRule(vt.rows) : () => "";
   const tbl = {}; for (const b of I.filter((x) => x.kind === "bal" && x.slot)) tbl[b.slot] = lookupTable(b);
   for (const b of I.filter((x) => x.kind === "bal" && !x.slot)) notes.push(`${b.file}: 어느 공장의 Balance인지 몰라 쓰지 않았습니다. 위 표에서 골라 주세요.`);
@@ -210,7 +195,7 @@ function listFileName() { const d = BUILD.out.etd[0] ? BUILD.out.etd[0].replace(
 // ---------------------------------------------------------------- 화면
 const KIND_KO = { sea: "선박 요청", air: "에어 리포트", bal: "전산 Balance/Stock", vendor: "거래처 표" };
 function renderBuild() {
-  const I = BUILD.inputs, saved = store.get(LS_VTBL, null);
+  const I = BUILD.inputs, saved = currentVendorTable();
   $("bdList").innerHTML = I.length ? "<tr><th>파일</th><th>시트</th><th>종류</th><th>자리</th></tr>" + I.map((x, i) => `<tr><td>${esc(x.file)}</td><td>${esc(x.sheet)}</td><td>${KIND_KO[x.kind]}</td><td>${x.kind === "bal"
     ? `<select data-b="${i}"><option value="">(골라 주세요)</option>${SLOTS.map((s) => `<option ${s === x.slot ? "selected" : ""}>${s}</option>`).join("")}</select>`
     : x.kind === "sea" ? esc((x.facs || []).join(", ")) : ""}</td></tr>`).join("") : "";
@@ -219,7 +204,7 @@ function renderBuild() {
   const facs = uniq(I.filter((x) => x.kind === "sea").flatMap((x) => x.facs || []));
   $("bdNeed").innerHTML = ["F1", "F2", "F5"].map((f) => chip(facs.includes(f), `${f} 선박 요청`)).join("") + chip(has("air"), "에어 리포트")
     + ["F1", "F2", "F5"].map((f) => chip(slots.includes(`${f} Bal`), `${f} Balance`)).join("") + chip(slots.some((s) => s.includes("JST")), "JST Balance") + chip(slots.some((s) => s.endsWith("Sto")), "Stock")
-    + chip(has("vendor") || !!saved, has("vendor") ? "거래처 표" : saved ? `거래처 표 (지난번 것 · ${saved.at})` : "거래처 표");
+    + chip(true, has("vendor") ? "거래처 표 (넣은 파일)" : saved === BUILTIN_VTBL ? `거래처 표 (내장 · ${saved.at})` : `거래처 표 (이 PC에 넣은 것 · ${saved.at})`);
   $("btnBuild").disabled = !(has("sea") || has("air"));
   const o = BUILD.out; $("bdResult").style.display = o ? "" : "none";
   if (o) {

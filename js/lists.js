@@ -85,7 +85,7 @@ function parseShip(wb, etdCount) {
     const row = { Fac: clean(r[cFac]), "ITEM CD": cd, MAKER: maker, "ITEM NM": clean(r[cNm]), _hasQty: qtys.some((q) => q > 0), _src: "선박" };
     etdSel.forEach((c) => (row[c] = r[c]));
     row._sum = cSum ? toNum(r[cSum]) : etdAll.reduce((a, c) => a + toNum(r[c]), 0);   // 미납수량 합계(긴급 자재 메일용)
-    row._vendor = resolveVendor(cV ? clean(r[cV]) : "", cd, maker);
+    row._vendor = resolveVendor(cV ? clean(r[cV]) : typeof vendorFromTable === "function" ? vendorFromTable(cd, r[cNm], maker) : "", cd, maker);
     rows.push(row);
   }
   if (cV) rememberItemVendors(sh.rows.filter((r) => clean(r[cCd]) && clean(r[cV])).map((r) => [ivKey(r[cFac], r[cCd]), clean(r[cV])]));
@@ -143,23 +143,25 @@ function parseAir(wb, { friday = false, extraWbs = [] } = {}) {
   const qty = cRemain ? (r) => toNum(r[cRemain]) : cOut && cPr ? (r) => toNum(r[cPr]) - toNum(r[cOut]) : (r) => toNum(r[cPr]);
   const qtyLabel = mode === "remain" ? "Remain" : "Purchase request";
   log(`에어리스트 시트: ${sh.sheet} / ` + (cRemain ? `수량: '${cRemain}' 열` : cOut && cPr ? `수량: Remain = '${cPr}' − '${cOut}'` : `수량 열: '${cPr}'`) + (cV ? ` / 업체 열: '${cV}' 사용` : ""));
-  let rows = [], fromMem = 0;
+  let rows = [], fromMem = 0, fromTbl = 0;
   const mem = cV ? null : store.get(LS_ITEMVEND, {}), seen = [];
   for (const r of sh.rows) {
     const cd = clean(r[cCd]); if (cd && cV && clean(r[cV])) seen.push([ivKey(r[cFac], cd), clean(r[cV])]);
     const q = qty(r); if (!cd || q <= 0) continue;
     const maker = clean(r[cMk]) || makerFromName(r[cNm]);
     const memV = mem && (mem[ivKey(r[cFac], cd)] || mem["*|" + norm(cd)]);
-    if (memV) fromMem++;
+    const tblV = !cV && !memV && typeof vendorFromTable === "function" ? vendorFromTable(cd, r[cNm], maker) : "";
+    if (memV) fromMem++; else if (tblV) fromTbl++;
     rows.push({
       FAC: clean(r[cFac]), "Item cd": cd, Maker: maker, "Part Name": clean(r[cNm]), "Purchase request": q,
       "Short Del.": cShort ? clean(r[cShort]) : "", "NEED ETD": cNeed ? clean(r[cNeed]) : "", _qtyCol: qtyLabel,
-      _vendor: resolveVendor(cV ? clean(r[cV]) : memV || "", cd, maker), _src: "에어",
+      _vendor: resolveVendor(cV ? clean(r[cV]) : memV || tblV || "", cd, maker), _src: "에어",
     });
   }
   rememberItemVendors(seen);
-  if (!cV && rows.length && !fromMem) log("[주의] 이 PC는 아직 업체 이름(거래처명)이 있는 리스트 엑셀을 읽은 적이 없어, 모두 MAKER로 업체를 정했습니다. KET 품목이 태양단자로 가는 것처럼 틀릴 수 있습니다. 이번 주 월요일 리스트 엑셀을 한 번 넣고 미리보기를 누른 뒤 다시 하거나, 엑셀 파일로 만드세요.", "err");
-  if (!cV) log(`[업체 정하기] 업체 열이 없어 ${fromMem}건은 이 PC가 전에 읽은 엑셀의 거래처명으로, ${rows.length - fromMem}건은 MAKER로 업체를 정했습니다.` + (rows.length - fromMem ? " 업체가 맞는지 메일 목록에서 확인하세요." : ""), rows.length - fromMem ? "warn" : "info");
+  if (!cV && rows.length && !fromMem && !fromTbl) log("[주의] 이 PC는 아직 업체 이름(거래처명)이 있는 리스트 엑셀을 읽은 적이 없어, 모두 MAKER로 업체를 정했습니다. KET 품목이 태양단자로 가는 것처럼 틀릴 수 있습니다. 이번 주 월요일 리스트 엑셀을 한 번 넣고 미리보기를 누른 뒤 다시 하거나, 엑셀 파일로 만드세요.", "err");
+  const byMk = rows.length - fromMem - fromTbl;
+  if (!cV) log(`[업체 정하기] 업체 열이 없어 ${fromMem}건은 이 PC가 전에 읽은 엑셀의 거래처명, ${fromTbl}건은 거래처 표(내장)${byMk ? `, ${byMk}건은 MAKER` : ""}로 업체를 정했습니다.` + (byMk ? " MAKER로 정한 업체가 맞는지 메일 목록에서 확인하세요." : ""), byMk ? "warn" : "info");
   if (mode === "remain") {
     rows.sort(airRowSort);   // 리스트 아래에 덧붙인 줄도 FAC → MAKER → 품명 순서 자리로
     log(`[금요일 에어] Remain이 있는 품목 ${rows.length}건 (Remain 0 이하는 뺌)`);
