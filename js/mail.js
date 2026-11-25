@@ -57,19 +57,25 @@ function templateHtml(tpl, vars = {}, blocks = "") {
 //  {선박} = 선박리스트 제목 줄 + 표(또는 첨부 안내), {에어} = 에어리스트 제목 줄 + 표. 줄 전체가 {선박}/{에어}여야 한다.
 const SHIP_TPL_DEFAULT = "{인사}\n{안내}\n\n{선박}\n\n{에어}\n\n감사합니다.";
 const FRI_TPL_DEFAULT = "{인사}\n하기 내용으로 금주 금요일 에어 리스트 송부 드립니다.\n\n{에어}\n\n감사합니다.";
+// 표 위 제목 줄·첨부 안내 문구 (설정에서 고침). {입고일} 자리에 굵은 날짜가 들어간다. 비워 두면 그 줄을 넣지 않는다.
+const BLOCK_LINE_DEFAULT = { 선박제목줄: "선박리스트 (노란색 수량, {입고일} 입고 요망)", 선박첨부안내: "첨부 선박 리스트는 자재 입고 전 입고수량 기재하여 회신 부탁드립니다.", 에어제목줄: "에어리스트 (노란색 수량, {입고일} 입고 요망)" };
+function blockLine(settings, key, date) {
+  const t = settings[key] != null ? String(settings[key]) : BLOCK_LINE_DEFAULT[key];
+  return clean(t) ? P(esc(t).replace(/\{입고일\}/g, date ? `<b>${shortDate(date)}</b>` : "")) : "";
+}
 function buildShipBody(v, air, ship, etdSel, airDate, shipDate, settings, attached, friday = false) {
   const hasShip = ship.length > 0, hasAir = air.length > 0;
   const greet = (v.title ? v.title + " " : "") + (clean(settings["출하요청인사"]) || "안녕하세요.") + " " + (settings["발신자소개"] || "대아홀딩스 남효주 입니다.");
   const guide = hasShip ? (attached ? "첨부" : "하기") + " 내용으로 금주 선박 리스트 송부 드립니다." : `하기 내용으로 금주 ${friday ? "금요일 " : ""}에어 리스트 송부 드립니다.`;
   let shipBlk = "", airBlk = "";
   if (hasShip) {
-    shipBlk = P(`선박리스트 (노란색 수량, <b>${shortDate(shipDate)}</b> 입고 요망)`) + (attached ? P("첨부 선박 리스트는 자재 입고 전 입고수량 기재하여 회신 부탁드립니다.")
+    shipBlk = blockLine(settings, "선박제목줄", shipDate) + (attached ? blockLine(settings, "선박첨부안내")
       : htmlTable(["Fac", "ITEM CD", "MAKER", "ITEM NM", ...etdSel], ship.map((r) => [r.Fac, r["ITEM CD"], r.MAKER, r["ITEM NM"], ...etdSel.map((c) => fmtNum(r[c]))]), [etdSel[0]]));
   }
   if (hasAir) {
     const qtyLabel = air[0]._qtyCol || "Purchase request", hasShort = air.some((r) => clean(r["Short Del."]));
     const hdr = ["FAC", "Item cd", "Maker", "Part Name", qtyLabel, ...(hasShort ? ["Short Del."] : []), "NEED ETD"];
-    airBlk = P(`에어리스트 (노란색 수량, <b>${shortDate(airDate)}</b> 입고 요망)`) + htmlTable(hdr, air.map((r) => [r.FAC, r["Item cd"], r.Maker, r["Part Name"], fmtNum(r["Purchase request"]), ...(hasShort ? [r["Short Del."]] : []), r["NEED ETD"]]), [qtyLabel]);
+    airBlk = blockLine(settings, "에어제목줄", airDate) + htmlTable(hdr, air.map((r) => [r.FAC, r["Item cd"], r.Maker, r["Part Name"], fmtNum(r["Purchase request"]), ...(hasShort ? [r["Short Del."]] : []), r["NEED ETD"]]), [qtyLabel]);
   }
   let tpl = clean(settings[friday ? "금요에어본문" : "출하요청본문"]) ? settings[friday ? "금요에어본문" : "출하요청본문"] : friday ? FRI_TPL_DEFAULT : SHIP_TPL_DEFAULT;
   // 고친 문구에서 {선박}/{에어} 줄을 지웠어도 표가 빠지지 않게 맨 끝에 붙인다
