@@ -279,7 +279,7 @@ window.addEventListener("DOMContentLoaded", () => {
   $("btnShip").onclick = () => runShip(false); $("btnPo").onclick = runPo; $("btnZip").onclick = downloadZip;
   $("btnAssign").onclick = saveAssign;
   $("btnDlCfg").onclick = downloadConfig; $("btnDiscard").onclick = discardLocal;
-  $("btnEdit").onclick = () => openEditor(false); $("btnEditNoMail").onclick = () => openEditor(true);
+  $("btnEdit").onclick = () => openEditor(false, "vend"); $("btnMailText").onclick = () => openEditor(false, "mail"); $("btnEditNoMail").onclick = () => openEditor(true);
   bindEditor(); takeHandoff();
   $("lnkGuide").href = "guide.html" + location.search;
   $("btnHelp").onclick = () => { $("helpDetails").open = true; $("helpCard").scrollIntoView({ behavior: "smooth" }); };
