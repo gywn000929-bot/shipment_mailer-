@@ -47,7 +47,7 @@ function buildShipBody(v, air, ship, etdSel, airDate, shipDate, settings, attach
   const hasShip = ship.length > 0, hasAir = air.length > 0;
   if (v.memo) out.push(`<p style="color:red;font-weight:bold;background:#fff3cd;padding:6px;border:2px solid red">※ ${esc(v.memo)} (보내기 전 이 줄은 지워 주세요)</p>`);
   if (v.recvLine) out.push(P(esc(v.recvLine)), BR);
-  out.push(P(esc((v.title ? v.title + " " : "") + "안녕하세요. " + (settings["발신자소개"] || "대아홀딩스 남효주 입니다."))));
+  out.push(P(esc((v.title ? v.title + " " : "") + (clean(settings["출하요청인사"]) || "안녕하세요.") + " " + (settings["발신자소개"] || "대아홀딩스 남효주 입니다."))));
   out.push(P(hasShip ? (attached ? "첨부" : "하기") + " 내용으로 금주 선박 리스트 송부 드립니다." : `하기 내용으로 금주 ${friday ? "금요일 " : ""}에어 리스트 송부 드립니다.`));
   if (hasShip) {
     out.push(P(`선박리스트 (노란색 수량, <b>${shortDate(shipDate)}</b> 입고 요망)`));
