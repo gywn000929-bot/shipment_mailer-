@@ -342,5 +342,9 @@ window.addEventListener("DOMContentLoaded", () => {
   $("firstCard").addEventListener("click", onFirstCheck);
   $("sigOn").addEventListener("change", () => { pref("sigOff", CONFIG_NAME, !$("sigOn").checked); if (RESULT.mails.length) renderResult(); toast($("sigOn").checked ? "본문 끝에 서명을 넣습니다." : "본문 끝에 서명을 넣지 않습니다."); });
   $("btnHistClear").onclick = () => { if (confirm("받은 메일 파일 기록을 모두 지울까요? (지우면 이미 만든 메일인지 알려 주지 못합니다)")) { store.set(LS_HIST, []); store.set("mailmaker_sent", {}); renderHist(); } };
-  reloadConfig();
+  reloadConfig().then(() => {   // 주소의 ?open=mail|vend → 메일 문구 / 업체 주소 화면을 바로 연다 (계장님 할 일 페이지에서 넘어올 때)
+    const o = new URLSearchParams(location.search).get("open");
+    if (o === "mail" || o === "vend") openEditor(false, o);
+  });
+  { const w = new URLSearchParams(location.search).get("who"); if ($("lnkTodo")) $("lnkTodo").href = w === "kim" ? "kim.html" : "my.html?who=" + (w || "nam"); }
 });

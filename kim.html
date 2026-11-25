@@ -1,0 +1,174 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>계장님 할 일 · 바로가기</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<style>
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css");
+:root{--navy:#1B3A6B;--navy2:#2E5C8A;--navy3:#4A7AAD;--bg:#f5f7fa;--card:#fff;--line:#D0DFF0;--txt:#141414;--mut:#5b5b62;--pri:#2E5C8A;--pri2:#1B3A6B;--ok:#2E7D32;
+ --font:'Aptos','Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,system-ui,'Segoe UI',Roboto,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:16px}
+body{margin:0;font-family:var(--font);background:var(--bg);color:var(--txt);font-size:15px;line-height:1.7;text-rendering:optimizeLegibility;letter-spacing:-0.01em;-webkit-font-smoothing:antialiased}
+header{background:linear-gradient(135deg,#16315C,#2E5C8A);color:#fff;padding:26px 28px}
+header h1{margin:0;font-size:25px;font-weight:700;line-height:1.25}header p{margin:8px 0 0;font-size:16px;opacity:.85}
+.wrap{max-width:1180px;margin:0 auto;padding:22px 16px 60px;display:grid;grid-template-columns:250px 1fr;gap:24px;align-items:start}
+nav{position:sticky;top:16px;background:linear-gradient(180deg,#16315C,#1B3A6B);border-radius:12px;padding:16px 12px 12px;font-size:15px}
+nav b{display:block;margin:0 8px 6px;color:rgba(255,255,255,.88);font-size:12px;letter-spacing:1px;font-weight:700}
+nav a{display:block;padding:8px 10px;border-radius:8px;color:rgba(255,255,255,.88);text-decoration:none;border-left:3px solid transparent}nav a:hover{background:rgba(255,255,255,.09);color:#fff}
+nav .tools{border-top:1px solid rgba(255,255,255,.15);margin-top:10px;padding-top:12px}nav .tools a{color:#fff;font-weight:600}
+@media(max-width:860px){.wrap{grid-template-columns:1fr}nav{position:static}}
+main{min-width:0}
+section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:24px 26px;margin-bottom:18px}
+h2{margin:0 0 6px;font-size:20px;font-weight:700;color:var(--navy);display:flex;gap:10px;align-items:center;line-height:1.3}
+h2 .n{display:inline-flex;width:32px;height:32px;border-radius:50%;background:var(--navy2);color:#fff;font-size:16px;font-weight:700;align-items:center;justify-content:center;flex:none;font-variant-numeric:tabular-nums}
+h3{margin:24px 0 6px;font-size:16px;font-weight:700;color:var(--navy)}
+p{margin:8px 0}.lead{color:var(--mut);margin-top:0;font-size:15px}
+ol,ul{margin:8px 0;padding-left:22px}li{margin:6px 0}
+ol.steps{list-style:none;padding:0;counter-reset:s}
+ol.steps>li{counter-increment:s;position:relative;padding:11px 14px 11px 56px;border:1px solid var(--line);border-radius:10px;margin:8px 0;background:#fafcff}
+ol.steps>li::before{content:counter(s);position:absolute;left:14px;top:11px;width:28px;height:28px;border-radius:50%;background:var(--navy2);color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+.btn{display:inline-block;border-radius:6px;padding:1px 9px;font-size:13.5px;background:#D4E4F7;color:var(--navy);white-space:nowrap;font-weight:700;line-height:1.6}
+.btn.pri{background:var(--navy2);color:#fff}.btn.ok{background:var(--ok);color:#fff}
+.box{border-radius:8px;padding:12px 16px;margin:12px 0;font-size:14.5px;line-height:1.65}
+.tip{background:#EEF3FA;border-left:3px solid var(--navy3)}.warn{background:#FFF8E1;border-left:3px solid #F9A825}.stop{background:#FFF3E0;border-left:3px solid #E65100}.good{background:#E8F5E9;border-left:3px solid #2E7D32}
+.box>b:first-child{display:block;margin-bottom:2px;color:var(--navy)}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:15px;font-variant-numeric:tabular-nums}
+th{background:var(--navy2);color:#fff;padding:10px 14px;text-align:left;font-weight:600;font-size:14px;white-space:nowrap}
+td{padding:9px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}
+.flow div{border:1px solid var(--line);border-radius:10px;padding:14px;background:#fafcff;font-size:14px;line-height:1.6;color:var(--mut)}
+.flow div b{display:block;font-size:16px;color:var(--navy);margin:2px 0}.flow div span{display:inline-block;background:var(--navy);color:#fff;border-radius:10px;padding:1px 10px;font-size:12px;font-weight:600}
+@media(max-width:860px){.flow{grid-template-columns:1fr 1fr}}
+.tool{display:block;border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:8px 0;text-decoration:none;color:var(--txt);background:#fff}
+.tool:hover{border-color:var(--navy3);background:#f6f9fe}.tool b{color:var(--navy);font-size:16px;font-weight:700}.tool small{display:block;color:var(--mut);font-size:14px;margin-top:2px}
+code{background:#EEF3FA;color:var(--navy);border-radius:4px;padding:1px 7px;font-family:var(--mono);font-size:13.5px}
+.q{font-weight:700;color:var(--navy);margin-top:18px}.a{margin:3px 0 0 0;color:var(--mut)}
+.muted{color:var(--mut);font-size:14px}
+.day{border:1px solid var(--line);border-radius:12px;margin:12px 0;overflow:hidden}
+.day>h3{margin:0;padding:11px 16px;background:var(--navy2);color:#fff;font-size:16px;display:flex;gap:10px;align-items:center}
+.day>h3 small{font-weight:400;opacity:.85;font-size:13.5px}.day.today>h3{background:#E65100}
+.day ul{list-style:none;margin:0;padding:8px 14px 12px}.day li{margin:0;padding:7px 4px;border-bottom:1px dashed var(--line);display:flex;gap:10px;align-items:flex-start}.day li:last-child{border-bottom:0}
+.day input{margin-top:5px;width:17px;height:17px;flex:none}.day li.done span{color:#9aa3b2;text-decoration:line-through}
+.est{display:inline-block;background:#FFF3E0;color:#E65100;border-radius:4px;padding:0 6px;font-size:12px;font-weight:700;margin-left:4px;white-space:nowrap}
+.tag{display:inline-block;border-radius:4px;padding:0 7px;font-size:12.5px;font-weight:700;white-space:nowrap}
+.t-x{background:#D4E4F7;color:var(--navy)}.t-b{background:#E8F5E9;color:#2E7D32}.t-n{background:#eceff3;color:#5b5b62}.t-new{background:#E65100;color:#fff}
+.vc{border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:12px 0;background:#fff}
+.vc h3{margin:0 0 4px;font-size:17px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.vc dl{display:grid;grid-template-columns:120px 1fr;gap:4px 12px;margin:8px 0 0;font-size:14.5px}.vc dt{color:var(--mut)}.vc dd{margin:0;word-break:break-all}
+.vc .care{margin-top:10px;background:#FFF8E1;border-left:3px solid #F9A825;border-radius:6px;padding:8px 12px;font-size:14.5px}
+@media(max-width:860px){.vc dl{grid-template-columns:1fr}.vc dt{font-weight:700;margin-top:4px}}
+a.go{display:inline-block;background:var(--navy2);color:#fff;border-radius:6px;padding:3px 12px;font-size:14px;font-weight:700;text-decoration:none;margin:2px 4px 2px 0}a.go:hover{background:var(--navy)}
+button.plain{border:1px solid var(--line);background:#fff;border-radius:6px;padding:4px 12px;font:inherit;font-size:14px;cursor:pointer}
+.vtbl td{font-size:14px}.vtbl .miss{color:#c62828;font-weight:700}
+.big{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}.big a{display:block;border-radius:12px;padding:16px;text-decoration:none;background:var(--navy2);color:#fff;font-weight:700;font-size:17px;line-height:1.4}
+.big a small{display:block;font-weight:400;font-size:13.5px;opacity:.9;margin-top:4px}.big a:hover{background:var(--navy)}
+@media(max-width:860px){.big{grid-template-columns:1fr}}
+</style></head><body>
+<header><h1>김민지 계장님 · 이번 주 할 일</h1><p>요일마다 할 일, 누르면 바로 열리는 메일 작성기, 담당 업체 한눈에</p></header>
+<div class="wrap">
+<nav><b>차례</b>
+ <a href="#go">바로 만들기</a>
+ <a href="#week">요일별 할 일</a>
+ <a href="#any">요일과 상관없는 일</a>
+ <a href="#vend">내 담당 업체</a>
+ <a href="#tips">막힐 때</a>
+ <div class="tools"><b>화면 바로 가기</b>
+  <a href="index.html?who=kim">📮 메일 작성기</a>
+  <a href="index.html?who=kim&open=mail">✉ 메일 문구 고치기</a>
+  <a href="index.html?who=kim&open=vend">🏢 업체 메일 주소</a>
+  <a href="guide.html?who=kim" target="_blank" rel="noopener">📖 자세한 안내</a>
+  <a href="https://gywn000929-bot.github.io/air-confirm/" target="_blank" rel="noopener">✈ 에어 컨펌 도우미</a>
+ </div>
+</nav>
+<main>
+<section id="go"><h2>바로 만들기</h2>
+ <p class="lead">누르면 메일 작성기가 그 메일로 맞춰진 채 열립니다. 받은 엑셀·PDF는 열린 화면 <b>아무 곳에나</b> 끌어다 놓으면 바로 만들어집니다.</p>
+ <div class="big">
+  <a href="index.html?who=kim&mode=mon">📅 월요일 메일<small>남효주가 보낸 "선박 및 에어리스트" 엑셀 → 출하 요청(선박 + 화요일 에어) + KET 긴급 자재</small></a>
+  <a href="index.html?who=kim&mode=wed">✈ 수요일 REMAIN 메일<small>REMAIN 메일 본문의 표를 Ctrl+V → 금요일 에어 메일</small></a>
+  <a href="index.html?who=kim&mode=po">📄 주문서 메일<small>주문서 PDF → 업체별 "업체-PO" 메일</small></a>
+ </div>
+ <div class="box tip"><b>메일을 만든 뒤에는 늘 같습니다</b>📦 전부 받기(ZIP) → 압축 풀기 → .eml 더블클릭 → Outlook에서 받는 사람·첨부 확인 → 보내기 → 화면 목록에서 "Outlook에서 보냈음" 체크.</div>
+</section>
+
+<section id="week"><h2>요일별 할 일</h2>
+ <p class="lead">끝낸 일은 체크하세요. 이 PC에 기억되고, 주가 바뀌면 자동으로 비워집니다. <button class="plain" id="btnReset">이번 주 체크 지우기</button></p>
+ <div class="day" data-day="1"><h3>월요일 <small>출하 요청 메일 보내는 날</small></h3><ul>
+  <li><input type="checkbox" data-k="1-0"><span>남효주의 <b>"○월 ○째주 선박 및 에어리스트의 건"</b> 메일에서 첨부 엑셀을 저장합니다.</span></li>
+  <li><input type="checkbox" data-k="1-1"><span>메일 작성기에 그 엑셀을 끌어다 놓습니다 → 업체별 <b>출하 요청 메일</b>(선박 + 화요일 에어)과 <b>KET 긴급 자재 메일</b>이 나옵니다. <a class="go" href="index.html?who=kim&mode=mon">월요일 메일</a></span></li>
+  <li><input type="checkbox" data-k="1-2"><span>화요일 에어 표에는 <b>KET·에어 장납 품목은 전부</b>, 나머지는 <b>URGENT만</b> 들어갑니다. KET 긴급 자재 메일의 붉은 칸·숫자를 한 번 보고 보냅니다.</span></li>
+  <li><input type="checkbox" data-k="1-3"><span>📦 전부 받기 → .eml 더블클릭 → 보내기 → "Outlook에서 보냈음" 체크.</span></li>
+  <li><input type="checkbox" data-k="1-4"><span>오후에 남효주의 <b>"에어 업데이트 된 전체 에어 리스트"</b> 메일이 오면, 바뀐 업체에 회신이 필요한지 봅니다.</span></li>
+ </ul></div>
+ <div class="day" data-day="2"><h3>화요일 <small>에어 입고일</small></h3><ul>
+  <li><input type="checkbox" data-k="2-0"><span>월요일 메일에 <b>회신이 없는 업체</b>를 확인합니다.</span></li>
+  <li><input type="checkbox" data-k="2-1"><span><b>에어 인보이스</b>가 나오면 검토 메일을 보냅니다(직접).</span></li>
+ </ul></div>
+ <div class="day" data-day="3"><h3>수요일 <small>금요일 에어 메일 보내는 날</small></h3><ul>
+  <li><input type="checkbox" data-k="3-0"><span>남효주의 <b>"금주 금요일 에어 REMAIN 리스트"</b> 메일을 엽니다.</span></li>
+  <li><input type="checkbox" data-k="3-1"><span>본문 표를 맨 윗줄(FAC, Item cd …)부터 끝까지 복사(Ctrl+C) → 메일 작성기 화면에서 <b>Ctrl+V</b>. 첨부 엑셀이 있으면 끌어다 놓아도 됩니다. <a class="go" href="index.html?who=kim&mode=wed">수요일 REMAIN 메일</a></span></li>
+  <li><input type="checkbox" data-k="3-2"><span>제목 끝 <b>(금요일 에어)</b>, 입고 요망일이 금요일인지 보고 보냅니다.</span></li>
+ </ul></div>
+ <div class="day" data-day="4"><h3>목요일 <small>빠진 것 챙기기</small></h3><ul>
+  <li><input type="checkbox" data-k="4-0"><span>금요일 에어 메일에 <b>회신이 없는 업체</b>를 확인합니다.</span></li>
+  <li><input type="checkbox" data-k="4-1"><span>나온 <b>주문서 PDF</b>가 있으면 주문서 메일을 보냅니다. <a class="go" href="index.html?who=kim&mode=po">주문서 메일</a></span></li>
+ </ul></div>
+ <div class="day" data-day="5"><h3>금요일 <small>에어 입고일 · 에어 컨펌</small></h3><ul>
+  <li><input type="checkbox" data-k="5-0"><span><b>에어 컨펌</b>을 합니다. <a class="go" href="https://gywn000929-bot.github.io/air-confirm/" target="_blank" rel="noopener">에어 컨펌 도우미</a></span></li>
+ </ul></div>
+</section>
+
+<section id="any"><h2>요일과 상관없는 일</h2>
+ <table><tr><th>언제</th><th>할 일</th></tr>
+  <tr><td>주문서 PDF가 나올 때</td><td>메일 작성기에 PDF를 놓으면 업체별 "업체-PO" 메일이 나옵니다. 한국단자·연호·경신은 주문서 메일을 보내지 않으므로 자동으로 빠집니다. <a class="go" href="index.html?who=kim&mode=po">주문서 메일</a></td></tr>
+  <tr><td>문구를 바꾸고 싶을 때</td><td>✉ 메일 문구 고치기에서 Outlook 새 메일 창처럼 제목·본문·서명·글꼴을 바로 고칩니다. <a class="go" href="index.html?who=kim&open=mail">메일 문구 고치기</a></td></tr>
+  <tr><td>이번 한 통만 다르게</td><td>메일 목록에서 그 업체의 <b>✏ 고치기</b>로 제목·본문(표 숫자까지)을 고친 뒤 받습니다.</td></tr>
+  <tr><td>업체 담당자·메일이 바뀔 때</td><td>🏢 업체 메일 주소에서 고치고 "저장하고 설정 파일 받기". <a class="go" href="index.html?who=kim&open=vend">업체 메일 주소</a></td></tr>
+  <tr><td>"받는 사람 없음"이 나올 때</td><td>그 줄의 빈칸에 메일 주소를 적고 저장하면 다음부터 기억합니다.</td></tr>
+ </table>
+</section>
+
+<section id="vend"><h2>내 담당 업체 <span class="muted" id="vInfo" style="font-weight:400;font-size:14px">불러오는 중…</span></h2>
+ <p class="lead">올려 둔 설정 파일(config_kim.xlsx) 기준입니다. 빨간 글씨는 메일 주소가 없는 업체입니다.</p>
+ <table class="vtbl" id="vTbl"></table>
+</section>
+
+<section id="tips"><h2>막힐 때</h2>
+ <p class="q">고친 화면이 안 보여요.</p><p class="a">Ctrl+F5 를 한 번 누르세요. (새 버전이 있으면 화면이 알아서 한 번 새로고침합니다)</p>
+ <p class="q">기준 주(○월 ○째주)가 틀려요.</p><p class="a">리스트의 NEED ETD 날짜로 자동으로 맞춥니다. 다른 주로 만들려면 기준 주 날짜를 직접 바꾸고 다시 누르세요.</p>
+ <p class="q">업체를 모르는 품목이 나와요.</p><p class="a">결과 아래 "미지정 업체 지정하기"에서 업체를 고르고 저장한 뒤 다시 만드세요.</p>
+ <p class="q">.eml 이 Outlook 새 메일 창으로 안 열려요.</p><p class="a">메일 작성기 ☰ 더보기 → 🔰 처음 확인을 해 보고, 그래도 안 되면 각 메일의 "다른 방법"(새 메일 창 + 본문 복사)을 쓰세요.</p>
+ <p class="muted">고쳐야 할 점은 화면을 캡처해서 남효주에게 알려 주세요.</p>
+</section>
+</main></div>
+<script>
+(function () {   // 요일별 체크 (주가 바뀌면 비움)
+  const d = new Date(), mon = new Date(d); mon.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  const wk = mon.getFullYear() + "-" + (mon.getMonth() + 1) + "-" + mon.getDate(), KEY = "mailmaker_kimtodo";
+  let st = {}; try { st = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) {}
+  if (st.week !== wk) st = { week: wk, done: {} };
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} };
+  document.querySelectorAll(".day input").forEach((c) => { c.checked = !!st.done[c.dataset.k]; c.closest("li").classList.toggle("done", c.checked);
+    c.addEventListener("change", () => { st.done[c.dataset.k] = c.checked; c.closest("li").classList.toggle("done", c.checked); save(); }); });
+  document.getElementById("btnReset").onclick = () => { st.done = {}; save(); document.querySelectorAll(".day input").forEach((c) => { c.checked = false; c.closest("li").classList.remove("done"); }); };
+  const t = document.querySelector('.day[data-day="' + d.getDay() + '"]'); if (t) { t.classList.add("today"); t.querySelector("h3").insertAdjacentHTML("beforeend", " <small>· 오늘</small>"); }
+})();
+(async function () {   // 내 담당 업체: config_kim.xlsx 에서 '내업체제외'에 없는 활성 업체
+  const info = document.getElementById("vInfo"), tbl = document.getElementById("vTbl");
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const no = (v) => /^(N|NO|X|0)$/i.test(String(v ?? "").trim());
+  try {
+    const wb = XLSX.read(await (await fetch("config_kim.xlsx?t=" + Date.now(), { cache: "no-store" })).arrayBuffer(), { type: "array" });
+    const set = {}; XLSX.utils.sheet_to_json(wb.Sheets["설정"], { header: 1 }).forEach((r) => { if (r[0]) set[String(r[0]).trim()] = r[1]; });
+    const exc = String(set["내업체제외"] || "").split(/[,;\n]/).map((x) => x.trim()).filter(Boolean);
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets["업체"], { defval: "" }).filter((r) => String(r["업체"]).trim() && !String(r["업체"]).startsWith("※") && !no(r["활성"]) && !exc.includes(String(r["업체"]).trim()));
+    const miss = rows.filter((r) => !String(r["받는사람"]).trim()).length;
+    info.textContent = `${rows.length}곳 · 메일 주소 없는 업체 ${miss}곳`;
+    tbl.innerHTML = "<tr><th>업체</th><th>출하 요청</th><th>주문서 메일</th><th>받는 사람</th><th>메모</th></tr>" + rows.map((r) => {
+      const ship = no(r["출하요청발송"]) ? '<span class="tag t-n">안 보냄</span>' : /^Y/i.test(r["엑셀첨부"]) ? '<span class="tag t-x">엑셀 첨부</span>' : '<span class="tag t-b">본문 표</span>';
+      const po = no(r["발주서발송"]) ? '<span class="tag t-n">안 보냄</span>' : "보냄";
+      const to = String(r["받는사람"]).trim();
+      return `<tr><td><b>${esc(r["업체"])}</b></td><td>${ship}</td><td>${po}</td><td class="${to ? "" : "miss"}">${to ? esc(to) : "메일 주소 없음"}</td><td class="muted">${esc(r["메모"])}</td></tr>`;
+    }).join("");
+  } catch (e) { info.textContent = "설정 파일을 읽지 못했습니다 (인터넷 연결을 확인하세요)"; }
+})();
+</script>
+</body></html>
