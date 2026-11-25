@@ -230,7 +230,19 @@ function takeHandoff() {
   dt.items.add(new File([bytes], h.name || "선박 및 에어리스트.xlsx")); $("ship").files = dt.files; $("ship").dispatchEvent(new Event("change"));
   $("firstCard").style.display = "none"; setTimeout(() => { $("dropShip").scrollIntoView({ behavior: "smooth", block: "center" }); toast("만든 리스트를 선박리스트 칸에 넣었습니다. 기준 주를 확인하고 미리보기 · 메일 만들기를 누르세요."); }, 600);
 }
+// 새 버전 확인: 브라우저가 예전 화면을 기억해 두고 보여 주는 일이 있어서, 열 때마다 서버의 최신 index.html 의
+// app-ver 를 보고 다르면 한 번 새로 불러온다(같은 버전에서 두 번 다시 불러오지 않도록 sessionStorage 로 막음).
+async function checkNewVersion() {
+  const mine = (document.querySelector('meta[name="app-ver"]') || {}).content; if (!mine || location.protocol === "file:") return;
+  try {
+    const html = await (await fetch(location.pathname + "?ver=" + Date.now(), { cache: "no-store" })).text();
+    const m = html.match(/<meta name="app-ver" content="([^"]+)"/); if (!m || m[1] === mine) return;
+    const key = "mailmaker_reloaded_" + m[1]; if (sessionStorage.getItem(key)) { toast("새 버전이 있습니다. Ctrl+F5 를 눌러 새로고침해 주세요."); return; }
+    sessionStorage.setItem(key, "1"); location.reload();
+  } catch (e) { /* 인터넷이 안 되면 그냥 지금 화면을 쓴다 */ }
+}
 window.addEventListener("DOMContentLoaded", () => {
+  checkNewVersion();
   if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
   bindDrop("dropShip", "ship", "shipName"); bindDrop("dropAir", "air", "airName"); bindDrop("dropPdf", "pdf", "pdfName");
   $("ship").addEventListener("change", () => fillSheetSelect($("ship"), "shipSheet", ["ITEM CD", "MAKER"], [], ["ETD"], []));
