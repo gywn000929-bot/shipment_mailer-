@@ -28,34 +28,49 @@ async function runShip() {
   clearLog(); setStatus("실행 중...", true); RESULT = { mails: [], unmatched: [], kind: "ship", extraFiles: [] };
   try {
     const S = CONFIG.settings;
-    let monday = $("monday").value ? parseISO($("monday").value) : nextMonday();
-    const wd = (monday.getDay() + 6) % 7;
-    if (wd) { log(`[경고] ${fmtDate(monday)}는 월요일이 아닙니다. 그 주 월요일로 맞춥니다.`, "warn"); monday = addDays(monday, -wd); }
-    const [month, week] = weekLabel(monday); RESULT.weekKey = fmtDate(monday);
-    const airDate = addDays(monday, 1), shipDate = addDays(monday, 2);
-    const subjectBase = (S["제목형식"] || "대아홀딩스 {월}월 {주}주 출하 요청의 건").replace("{월}", month).replace("{주}", week);
     const includeZero = !["N", "NO", "X", "0"].includes(clean(S["수량없는행포함"] ?? "Y").toUpperCase());
     const etdCount = parseInt($("etd").value) || parseInt(S["ETD열개수"]) || 2;
+    let ship = [], etdSel = [], air = [], hasSum = false;
+    const wbShip = fShip ? XLSX.read(await fShip.arrayBuffer(), { type: "array", cellDates: true }) : null;
+    const wbAir = fAir ? (fAir === fShip ? wbShip : XLSX.read(await fAir.arrayBuffer(), { type: "array", cellDates: true })) : null;
+    // 선박 표가 있으면 월요일 주간 리스트(화요일 에어), 없으면 수요일 REMAIN 리스트(금요일 에어)로 본다
+    let shipErr = null;
+    const tryShip = (wb) => { try { return parseShip(wb, etdCount); } catch (e) { shipErr = shipErr || e; return null; } };
+    let shipRes = wbShip ? tryShip(wbShip) : null, shipFrom = wbShip;
+    if (!shipRes && wbAir && $("autoBoth").checked) { shipRes = tryShip(wbAir); shipFrom = wbAir; }
+    const friday = !shipRes;
+    const airWb = wbAir || (friday || $("autoBoth").checked ? wbShip : null);
+    if (airWb) {
+      try { air = parseAir(airWb, { friday, extraWbs: [wbShip, wbAir].filter((w) => w && w !== airWb) }); }
+      catch (e) { if (wbAir || friday) throw shipErr && !wbAir ? new Error(shipErr.message + " / " + e.message) : e; log("에어리스트 없음 (선박 파일에 에어 표도 없음) → 선박만 진행"); }
+      if (!wbAir && !friday && air.length) log(`[참고] 에어리스트를 따로 넣지 않아, 선박리스트 파일 안의 에어 표를 함께 사용합니다. (에어를 빼려면 고급 설정 → "같은 파일의 에어 표 자동 사용" 해제)`, "warn");
+    }
+    const fri = friday && air.mode === "remain";
+    if (friday && !fri) log("[참고] 선박 표가 없고, 에어 표에도 Remain·출고수량 열이 없어 화요일 에어(월요일 리스트)로 만듭니다.", "warn");
+    if (shipRes) { ({ rows: ship, etdSel, hasSum } = shipRes); if (shipFrom !== wbShip) log("[참고] 선박리스트를 따로 넣지 않아, 에어리스트 파일 안의 선박 표를 함께 사용합니다.", "warn"); }
+    else if (!fri) log("선박리스트 없음 → 에어만 진행");
+
+    // 기준 주: 금요일 에어(수요일에 받는 REMAIN 리스트)는 이번 주. 날짜 칸을 직접 바꾸지 않았으면 이번 주 월요일로 잡는다.
+    let monday = $("monday").value ? parseISO($("monday").value) : nextMonday();
+    if (fri && !$("monday").dataset.touched) { const t = new Date(); monday = addDays(new Date(t.getFullYear(), t.getMonth(), t.getDate()), -((t.getDay() + 6) % 7)); $("monday").value = fmtDate(monday); log(`[금요일 에어] 기준 주를 이번 주(${fmtDate(monday)} 월)로 잡았습니다. 다른 주면 기준 주 월요일을 바꾸고 다시 누르세요.`, "warn"); }
+    const wd = (monday.getDay() + 6) % 7;
+    if (wd) { log(`[경고] ${fmtDate(monday)}는 월요일이 아닙니다. 그 주 월요일로 맞춥니다.`, "warn"); monday = addDays(monday, -wd); }
+    const [month, week] = weekLabel(monday); RESULT.weekKey = fmtDate(monday); RESULT.fri = fri;
+    const airDate = addDays(monday, fri ? 4 : 1), shipDate = addDays(monday, 2);
+    const subjectBase = (S["제목형식"] || "대아홀딩스 {월}월 {주}주 출하 요청의 건").replace("{월}", month).replace("{주}", week);
     const typed = splitList($("only").value), mine = $("mineOnly").checked ? myVendors() : null;
     const only = typed.length ? typed : (mine || []);   // "특정 업체만" 칸이 우선, 비어 있으면 "내 업체만"
     if (!typed.length && mine) log(`[내 업체만] ${mine.length}곳만 만듭니다. 전체를 만들려면 "내 업체만" 체크를 끄세요.`, "warn");
     const commonCc = splitList(S["공통참조"]);
 
-    let ship = [], etdSel = [], air = [], hasSum = false;
-    const wbShip = fShip ? XLSX.read(await fShip.arrayBuffer(), { type: "array", cellDates: true }) : null;
-    const wbAir = fAir ? (fAir === fShip ? wbShip : XLSX.read(await fAir.arrayBuffer(), { type: "array", cellDates: true })) : null;
-    if (wbShip) ({ rows: ship, etdSel, hasSum } = parseShip(wbShip, etdCount));
-    if (wbAir) air = parseAir(wbAir);
-    else if (wbShip) { try { air = parseAir(wbShip); log(`[참고] 에어리스트를 따로 넣지 않아, 선박리스트 파일 안의 에어 표를 함께 사용합니다. (에어를 빼려면 고급 설정 → "같은 파일의 에어 표 자동 사용" 해제)`, "warn"); } catch (e) { log("에어리스트 없음 (선박 파일에 에어 표도 없음) → 선박만 진행"); } }
-    if (!wbShip && wbAir) { try { ({ rows: ship, etdSel, hasSum } = parseShip(wbAir, etdCount)); log("[참고] 선박리스트를 따로 넣지 않아, 에어리스트 파일 안의 선박 표를 함께 사용합니다.", "warn"); } catch (e) { log("선박리스트 없음 → 에어만 진행"); } }
-    if (!$("autoBoth").checked) { if (!fAir) air = []; if (!fShip) { ship = []; etdSel = []; } }
     const shipAll = ship;
     if (ship.length && !includeZero) ship = ship.filter((r) => r._hasQty);
     const unShip = ship.filter((r) => !r._vendor && r._hasQty), unAir = air.filter((r) => !r._vendor);
 
     log(""); log("==================== 미리보기 ====================", "head");
     log(`기준 주: ${fmtDate(monday)} (월)   제목: ${subjectBase}`);
-    log(`에어 입고 요망: ${koDate(airDate)}   선박 입고 요망: ${koDate(shipDate)}`);
+    if (fri) log(`[금요일 에어 · REMAIN 리스트] 에어 입고 요망: ${koDate(airDate)}   (선박·긴급 자재 메일은 만들지 않음)`, "head");
+    else log(`에어 입고 요망: ${koDate(airDate)}   선박 입고 요망: ${koDate(shipDate)}`);
     log(`공통 참조: ${commonCc.join(", ")}`); log("");
 
     const names = [...new Set([...ship.map((r) => r._vendor), ...air.map((r) => r._vendor)])].filter(Boolean);
@@ -70,17 +85,17 @@ async function runShip() {
       if (noTo) problems.push(`'${n}' : 받는 사람이 비어 있습니다 (선박 ${s.length} / 에어 ${a.length}) → 아래 결과 칸에서 메일 주소를 적어 주세요`);
       const nShipQty = s.filter((r) => r._hasQty).length;
       if (!nShipQty && !a.length) continue;
-      const subject = subjectBase + (a.length && !nShipQty ? (S["에어만제목접미"] ?? "(에어)") : "");
+      const subject = subjectBase + (fri ? (S["금요에어제목접미"] ?? "(금요일 에어)") : a.length && !nShipQty ? (S["에어만제목접미"] ?? "(에어)") : "");
       if (!nShipQty) s = [];
-      log(`■ ${n}  선박 ${nShipQty}건${s.length !== nShipQty ? `(전체 ${s.length}행)` : ""} / 에어 ${a.length}건  ${v.attach ? "[엑셀 첨부]" : "[본문 표]"}  제목: ${subject}`);
+      log(`■ ${n}  선박 ${nShipQty}건${s.length !== nShipQty ? `(전체 ${s.length}행)` : ""} / 에어 ${a.length}건  ${v.attach && s.length ? "[엑셀 첨부]" : "[본문 표]"}  제목: ${subject}`);
       log(`   받는 사람: ${v.to.join(", ")}`); if (v.cc.length) log(`   추가 참조: ${v.cc.join(", ")}`); if (v.memo) log(`   메모: ${v.memo}`, "warn");
       const attached = v.attach && s.length > 0;
       const attachments = attached ? [{ name: safeName(`${subjectBase}_${v.name}.xlsx`), data: vendorXlsx(s, a, etdSel) }] : [];
-      RESULT.mails.push({ kind: "ship", vendor: n, subject, to: v.to, cc: uniq([...commonCc, ...v.cc]), body: buildShipBody(v, a, s, etdSel, airDate, shipDate, S, attached), attachments, note: v.memo ? "메모: " + v.memo : "", ship: s, air: a, noTo, include: !noTo, keys: [`ship|${RESULT.weekKey}|${n}`] });
+      RESULT.mails.push({ kind: "ship", vendor: n, subject, to: v.to, cc: uniq([...commonCc, ...v.cc]), body: buildShipBody(v, a, s, etdSel, airDate, shipDate, S, attached, fri), attachments, note: v.memo ? "메모: " + v.memo : "", ship: s, air: a, noTo, include: !noTo, keys: [`${fri ? "airfri" : "ship"}|${RESULT.weekKey}|${n}`] });
       RESULT.etdSel = etdSel; RESULT.tag = `${month}월${week}주`;
     }
     // ---- 긴급 자재 메일 (설정 "긴급메일업체"에 적힌 업체. 에어리스트에 올라온 그 업체 품목을 표로)
-    for (const un of splitList(S["긴급메일업체"])) {
+    for (const un of fri ? [] : splitList(S["긴급메일업체"])) {
       const v = CONFIG.vendors[matchAlias(un)]; if (!v || (only.length && !only.includes(v.name))) continue;
       const items = urgentItems(air.filter((r) => r._vendor === v.name), shipAll, addDays(monday, 7));
       if (!items.length) { log(`■ ${v.name} 긴급 자재: 에어리스트에 해당 업체 품목이 없어 만들지 않음`); continue; }

@@ -6,10 +6,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="js/core.js?v=11" defer></script>
 <script src="js/config.js?v=11" defer></script>
-<script src="js/lists.js?v=11" defer></script>
-<script src="js/mail.js?v=11" defer></script>
-<script src="js/run.js?v=11" defer></script>
-<script src="js/ui.js?v=11" defer></script>
+<script src="js/lists.js?v=12" defer></script>
+<script src="js/mail.js?v=12" defer></script>
+<script src="js/run.js?v=12" defer></script>
+<script src="js/ui.js?v=12" defer></script>
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css");
 :root{--bg:#f4f6fa;--card:#fff;--line:#e3e7ee;--txt:#1f2937;--mut:#6b7280;--pri:#2563eb;--pri2:#1d4ed8;--ok:#16a34a;--warn:#d97706;--err:#dc2626;--chip:#eef2ff}
@@ -88,7 +88,7 @@ a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;ba
  <div id="fcResult" style="display:none"></div>
 </section>
 <div class="full"><div class="steps"><span>1. 엑셀/PDF 끌어다 놓기</span><span>2. 미리보기 · 메일 만들기</span><span>3. 📦 전부 받기(ZIP)</span><span>4. 압축 풀고 .eml 더블클릭</span><span>5. Outlook에서 확인 후 보내기</span></div>
- <p class="flow">한 주 순서: 받은 파일로 <a href="list.html"><b>주간 리스트 만들기</b></a> → <b>금요일</b> <a href="https://gywn000929-bot.github.io/air-confirm/" target="_blank" rel="noopener">에어 컨펌 도우미</a>로 컨펌 → 주간 엑셀의 Air up 시트 정리 → <b>월요일</b> 이 화면에서 출하 요청 메일(+ KET 긴급 자재 메일) · 주문서는 PDF가 나올 때마다 · 업체가 입고수량을 회신하면 <a href="inbound.html"><b>입고 파일 만들기</b></a></p></div>
+ <p class="flow">한 주 순서: 받은 파일로 <a href="list.html"><b>주간 리스트 만들기</b></a> → <b>금요일</b> <a href="https://gywn000929-bot.github.io/air-confirm/" target="_blank" rel="noopener">에어 컨펌 도우미</a>로 컨펌 → <b>월요일</b> 주간 리스트로 이 화면에서 출하 요청 메일(+ 화요일 에어, KET 긴급 자재 메일) → <b>수요일</b> REMAIN 리스트 엑셀(출고수량 열이 있는 AIR 시트)을 그대로 넣으면 <b>금요일 에어</b> 메일 · 주문서는 PDF가 나올 때마다 · 업체가 입고수량을 회신하면 <a href="inbound.html"><b>입고 파일 만들기</b></a></p></div>
 <section class="card"><h2><span class="step">1</span> 출하 요청 메일 (선박 / 에어)</h2>
  <div class="drop" id="dropShip"><b>선박리스트</b> 엑셀을 여기에 끌어다 놓거나 클릭<small id="shipName">아직 없음</small></div>
  <div class="row" style="margin-top:6px;display:none"><label>선박 시트</label><select id="shipSheet" style="display:none"></select></div>
@@ -98,7 +98,7 @@ a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;ba
  <input type="file" id="ship" accept=".xlsx,.xls" hidden><input type="file" id="air" accept=".xlsx,.xls" hidden>
  <div class="row"><label>기준 주 월요일</label><input type="date" id="monday"><button class="sm" id="advToggle">▸ 고급 설정</button></div>
  <div class="hint warn" id="monHint" style="display:none">오늘은 월요일입니다. 지금은 <b>다음 주</b> 월요일로 잡혀 있습니다. 이번 주 것을 만들려면 → <button class="sm" id="btnThisWeek">이번 주(오늘)로 바꾸기</button></div>
- <div id="adv" style="display:none"><div class="row"><label>ETD 열 개수</label><input type="text" id="etd" style="width:50px" placeholder="설정값"><label>특정 업체만</label><input type="text" id="only" style="width:160px" placeholder="예: 대일CST,태양단자"><label><input type="checkbox" id="autoBoth" checked> 같은 파일의 선박·에어 표 자동 사용</label></div><div class="row"><label><input type="checkbox" id="sigOn" checked> 본문 끝에 서명 넣기</label><span class="hint">Outlook이 서명을 스스로 넣어서 두 번 보이면 끄세요 (이 PC에 기억)</span></div></div>
+ <div id="adv" style="display:none"><div class="row"><label>ETD 열 개수</label><input type="text" id="etd" style="width:50px" placeholder="설정값"><label>특정 업체만</label><input type="text" id="only" style="width:160px" placeholder="예: 대일CST,태양단자"><label><input type="checkbox" id="autoBoth" checked> 같은 파일의 선박·에어 표 자동 사용</label></div><div class="row"><label><input type="checkbox" id="tueRule" checked> 화요일 에어: KET·에어 장납 품목은 전부, 나머지는 NEED ETD가 URGENT인 것만</label><span class="hint">끄면 Air 시트의 품목을 전부 넣습니다</span></div><div class="row"><label><input type="checkbox" id="sigOn" checked> 본문 끝에 서명 넣기</label><span class="hint">Outlook이 서명을 스스로 넣어서 두 번 보이면 끄세요 (이 PC에 기억)</span></div></div>
  <div class="row" id="mineRow" style="display:none"><label style="color:var(--txt)"><input type="checkbox" id="mineOnly"> <b>내 업체만</b></label><span class="hint" id="mineInfo"></span></div>
  <div class="hint warn" id="onlyNote" style="display:none"></div>
  <div class="btns"><button class="pri" id="btnShip">미리보기 · 메일 만들기</button></div>
@@ -141,6 +141,8 @@ a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;ba
   <li><b>같은 메일을 또 만들면</b> 빨간 테두리로 알려 주고 "포함"이 꺼진 채로 나옵니다(두 번 보내기 방지). 주문서는 PO 번호, 출하 요청은 업체와 기준 주로 구분합니다.</li>
   <li><b>업체 메일 주소·문구를 고치려면</b> 위쪽 <b>⚙ 업체·설정 고치기</b>. 고친 뒤 "저장하고 설정 파일 받기"를 누르면 올리는 방법이 화면에 나옵니다. 올리기 전까지는 이 PC에서만 적용됩니다(위쪽 노란 알림).</li>
   <li>"업체를 모르는 품목"이 나오면 미지정 업체 지정하기에서 업체를 골라 저장하고 미리보기를 다시 누릅니다. "받는 사람 없음" 업체는 그 칸에 메일 주소를 적고 저장하면 됩니다.</li>
+  <li><b>화요일 에어</b>(월요일 주간 리스트): KET 품목과 "에어 장납" 시트(시트 이름에 '장납')에 있는 품목은 NEED ETD와 상관없이 모두, 나머지 업체는 NEED ETD가 <b>URGENT</b>인 품목만 넣습니다. 장납 시트가 없는 주에는 이 PC가 지난번에 읽은 장납 목록을 씁니다.</li>
+  <li><b>금요일 에어</b>(수요일 REMAIN 리스트): 받은 엑셀을 그대로 위 칸에 끌어다 놓습니다. AIR 시트의 <b>Purchase request − 출고수량</b>이 남은 품목(Remain)만 업체별로 만들고, 제목 끝에 "(금요일 에어)"가 붙습니다. 기준 주는 이번 주로 자동으로 잡힙니다.</li>
   <li>선박리스트 파일 안에 Air 시트가 같이 있으면 선박 칸에만 넣어도 에어까지 자동으로 만듭니다. 에어 표가 여러 시트(Air, Air up)면 Remain 열이 있는 시트를 쓰고, 파일 아래 "에어 시트"에서 바꿀 수 있습니다.</li>
   <li><b>KET 긴급 자재 메일</b>: 에어리스트에 KET 품목이 있으면 "긴급 자재" 표시가 붙은 메일이 하나 더 만들어집니다. 표(NO·품목명·미납수량 합계·AIR 수량·부족일정)의 숫자와 붉은 칸을 보내기 전에 꼭 확인하세요.</li>
  </ol>

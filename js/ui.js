@@ -109,7 +109,7 @@ async function downloadZip() {
   for (const m of sel) zip.file(emlName(m), buildEml(m));
   if (RESULT.extraFiles) for (const f of RESULT.extraFiles) zip.file(f.name, f.data);
   const blob = await zip.generateAsync({ type: "blob" });
-  download(blob, (RESULT.kind === "po" ? "주문서메일_" : "출하요청메일_") + fmtDate(new Date()) + ".zip");
+  download(blob, (RESULT.kind === "po" ? "주문서메일_" : RESULT.fri ? "금요일에어메일_" : "출하요청메일_") + fmtDate(new Date()) + ".zip");
   recordDownload(sel); renderResult();
   toast(`메일 ${sel.length}통을 ZIP으로 받았습니다. 압축을 풀고 .eml 파일을 더블클릭하면 Outlook 새 메일 창이 열립니다.`);
   $("afterZip").style.display = "";
@@ -214,11 +214,12 @@ window.addEventListener("DOMContentLoaded", () => {
   if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
   bindDrop("dropShip", "ship", "shipName"); bindDrop("dropAir", "air", "airName"); bindDrop("dropPdf", "pdf", "pdfName");
   $("ship").addEventListener("change", () => fillSheetSelect($("ship"), "shipSheet", ["ITEM CD", "MAKER"], [], ["ETD"], []));
-  $("air").addEventListener("change", () => fillSheetSelect($("air"), "airSheet", ["Item cd", "Maker"], ["Remain", "Purchase request"], [], ["Remain"]));
+  $("air").addEventListener("change", () => fillSheetSelect($("air"), "airSheet", ["Item cd", "Maker"], ["Remain", "Purchase request"], [], AIR_REMAIN_COLS));
   $("monday").value = fmtDate(nextMonday());
+  $("monday").addEventListener("input", () => { $("monday").dataset.touched = "1"; });   // 직접 바꾼 날짜는 금요일 에어에서도 그대로 쓴다
   if (new Date().getDay() === 1) {   // 월요일에 열면 기준 주가 "다음 주"로 잡혀 있으므로 알려 준다
     $("monHint").style.display = "";
-    $("btnThisWeek").onclick = () => { $("monday").value = fmtDate(new Date()); $("monHint").style.display = "none"; toast("기준 주를 이번 주(오늘)로 바꿨습니다."); };
+    $("btnThisWeek").onclick = () => { $("monday").value = fmtDate(new Date()); $("monday").dataset.touched = "1"; $("monHint").style.display = "none"; toast("기준 주를 이번 주(오늘)로 바꿨습니다."); };
   }
   { // 설정 파일 기본값: 주소의 ?who=kim → 계장님, 아니면 지난번 선택
     const q = new URLSearchParams(location.search).get("who"); let last = null; try { last = localStorage.getItem("mailmaker_cfg"); } catch {}
