@@ -89,6 +89,7 @@ function pref(group, name, value) {   // pref("sigOff","config_kim.xlsx") 읽기
 function log(t, k = "info") {
   const d = document.createElement("div"); d.className = k; d.textContent = t;
   $("log").appendChild(d); $("log").scrollTop = $("log").scrollHeight;
+  if (k === "err" && $("logBox")) $("logBox").open = true;   // 오류가 나면 접힌 "진행 내용"을 연다
 }
 function clearLog() { $("log").innerHTML = ""; }
 let toastTimer = null;

@@ -546,7 +546,7 @@ def main():
     month, week = week_label(monday)
     air_date = dt.date.fromisoformat(args.air_date) if args.air_date else monday + dt.timedelta(days=1)
     ship_date = dt.date.fromisoformat(args.ship_date) if args.ship_date else monday + dt.timedelta(days=2)
-    subject_tpl = settings.get("제목형식", "대아홀딩스 {월}월 {주}주 출하 요청의 건")
+    subject_tpl = settings.get("제목형식", "대아홀딩스 {월}월 {주}째주 출하 요청의 건")
     subject_base = subject_tpl.replace("{월}", str(month)).replace("{주}", str(week))
     include_zero = clean(settings.get("수량없는행포함", "Y")).upper() not in ("N", "NO", "X", "0")
 
