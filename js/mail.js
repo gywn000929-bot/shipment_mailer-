@@ -27,12 +27,16 @@ function sigHtml(settings) {
   return sig && sigOn() ? [BR, ...sig.split("\n").map((l) => P(esc(l)))].join("") : "";
 }
 // 메일 한 통의 최종 본문 (본문 + 서명). 미리보기·.eml·복사에서 모두 이것을 쓴다.
-const mailHtml = (m) => bodyWrap(CONFIG.settings, m.body + sigHtml(CONFIG.settings));
+// m.customHtml: 결과 화면의 "✏ 고치기"로 이 메일만 고친 본문(서명 포함 전체)
+const mailHtml = (m) => m.customHtml != null ? m.customHtml : bodyWrap(CONFIG.settings, m.body + sigHtml(CONFIG.settings));
 // 줄글 양식(설정 시트 값) → 문단. {표} 자리에 표를 넣는다.
-function templateHtml(tpl, vars = {}, tableHtml = "") {
+// blocks: 줄 전체가 {이름}이면 그 자리에 통째로 넣는 HTML 덩어리(표 등). 비어 있으면 그 줄은 빠진다.
+function templateHtml(tpl, vars = {}, blocks = "") {
+  if (typeof blocks === "string") blocks = { 표: blocks };
   let out = [];
   for (let line of String(tpl).replace(/\r/g, "").split("\n")) {
-    if (line.trim() === "{표}") { out.push(tableHtml); continue; }
+    const bk = line.trim().match(/^\{([^{}]+)\}$/);
+    if (bk && bk[1] in blocks) { if (blocks[bk[1]]) out.push(blocks[bk[1]]); continue; }
     let skip = false;
     for (const [k, val] of Object.entries(vars)) if (line.includes(`{${k}}`)) { if (!val && line.trim() === `{${k}}`) skip = true; line = line.replace(`{${k}}`, val || ""); }
     if (skip) continue;
@@ -42,30 +46,30 @@ function templateHtml(tpl, vars = {}, tableHtml = "") {
   return out.join("");
 }
 
+// 출하 요청 본문. 문구는 설정 "출하요청본문"(월요일) / "금요에어본문"(수요일 REMAIN)에서 고친다.
+//  {인사} = 호칭 + 출하요청인사 + 발신자소개, {안내} = "첨부/하기 내용으로 금주 … 리스트 송부 드립니다."
+//  {선박} = 선박리스트 제목 줄 + 표(또는 첨부 안내), {에어} = 에어리스트 제목 줄 + 표. 줄 전체가 {선박}/{에어}여야 한다.
+const SHIP_TPL_DEFAULT = "{인사}\n{안내}\n\n{선박}\n\n{에어}\n\n감사합니다.";
+const FRI_TPL_DEFAULT = "{인사}\n하기 내용으로 금주 금요일 에어 리스트 송부 드립니다.\n\n{에어}\n\n감사합니다.";
 function buildShipBody(v, air, ship, etdSel, airDate, shipDate, settings, attached, friday = false) {
-  const out = [];
   const hasShip = ship.length > 0, hasAir = air.length > 0;
-  if (v.memo) out.push(`<p style="color:red;font-weight:bold;background:#fff3cd;padding:6px;border:2px solid red">※ ${esc(v.memo)} (보내기 전 이 줄은 지워 주세요)</p>`);
-  if (v.recvLine) out.push(P(esc(v.recvLine)), BR);
-  out.push(P(esc((v.title ? v.title + " " : "") + (clean(settings["출하요청인사"]) || "안녕하세요.") + " " + (settings["발신자소개"] || "대아홀딩스 남효주 입니다."))));
-  out.push(P(hasShip ? (attached ? "첨부" : "하기") + " 내용으로 금주 선박 리스트 송부 드립니다." : `하기 내용으로 금주 ${friday ? "금요일 " : ""}에어 리스트 송부 드립니다.`));
+  const greet = (v.title ? v.title + " " : "") + (clean(settings["출하요청인사"]) || "안녕하세요.") + " " + (settings["발신자소개"] || "대아홀딩스 남효주 입니다.");
+  const guide = hasShip ? (attached ? "첨부" : "하기") + " 내용으로 금주 선박 리스트 송부 드립니다." : `하기 내용으로 금주 ${friday ? "금요일 " : ""}에어 리스트 송부 드립니다.`;
+  let shipBlk = "", airBlk = "";
   if (hasShip) {
-    out.push(P(`선박리스트 (노란색 수량, <b>${shortDate(shipDate)}</b> 입고 요망)`));
-    if (attached) out.push(P("첨부 선박 리스트는 자재 입고 전 입고수량 기재하여 회신 부탁드립니다."));
-    else out.push(htmlTable(["Fac", "ITEM CD", "MAKER", "ITEM NM", ...etdSel], ship.map((r) => [r.Fac, r["ITEM CD"], r.MAKER, r["ITEM NM"], ...etdSel.map((c) => fmtNum(r[c]))]), [etdSel[0]]));
-    out.push(BR);
+    shipBlk = P(`선박리스트 (노란색 수량, <b>${shortDate(shipDate)}</b> 입고 요망)`) + (attached ? P("첨부 선박 리스트는 자재 입고 전 입고수량 기재하여 회신 부탁드립니다.")
+      : htmlTable(["Fac", "ITEM CD", "MAKER", "ITEM NM", ...etdSel], ship.map((r) => [r.Fac, r["ITEM CD"], r.MAKER, r["ITEM NM"], ...etdSel.map((c) => fmtNum(r[c]))]), [etdSel[0]]));
   }
   if (hasAir) {
-    out.push(P(`에어리스트 (노란색 수량, <b>${shortDate(airDate)}</b> 입고 요망)`));
-    const qtyLabel = air[0]._qtyCol || "Purchase request";
-    const hdr = ["FAC", "Item cd", "Maker", "Part Name", qtyLabel];
-    const hasShort = air.some((r) => clean(r["Short Del."]));
-    if (hasShort) hdr.push("Short Del.");
-    hdr.push("NEED ETD");
-    out.push(htmlTable(hdr, air.map((r) => { const row = [r.FAC, r["Item cd"], r.Maker, r["Part Name"], fmtNum(r["Purchase request"])]; if (hasShort) row.push(r["Short Del."]); row.push(r["NEED ETD"]); return row; }), [qtyLabel]), BR);
+    const qtyLabel = air[0]._qtyCol || "Purchase request", hasShort = air.some((r) => clean(r["Short Del."]));
+    const hdr = ["FAC", "Item cd", "Maker", "Part Name", qtyLabel, ...(hasShort ? ["Short Del."] : []), "NEED ETD"];
+    airBlk = P(`에어리스트 (노란색 수량, <b>${shortDate(airDate)}</b> 입고 요망)`) + htmlTable(hdr, air.map((r) => [r.FAC, r["Item cd"], r.Maker, r["Part Name"], fmtNum(r["Purchase request"]), ...(hasShort ? [r["Short Del."]] : []), r["NEED ETD"]]), [qtyLabel]);
   }
-  out.push(P("감사합니다."));
-  return out.join("");
+  let tpl = clean(settings[friday ? "금요에어본문" : "출하요청본문"]) ? settings[friday ? "금요에어본문" : "출하요청본문"] : friday ? FRI_TPL_DEFAULT : SHIP_TPL_DEFAULT;
+  // 고친 문구에서 {선박}/{에어} 줄을 지웠어도 표가 빠지지 않게 맨 끝에 붙인다
+  for (const [k, blk] of [["선박", shipBlk], ["에어", airBlk]]) if (blk && !new RegExp("^\\s*\\{" + k + "\\}\\s*$", "m").test(tpl)) tpl += `\n\n{${k}}`;
+  const memo = v.memo ? `<p style="color:red;font-weight:bold;background:#fff3cd;padding:6px;border:2px solid red">※ ${esc(v.memo)} (보내기 전 이 줄은 지워 주세요)</p>` : "";
+  return memo + (v.recvLine ? P(esc(v.recvLine)) + BR : "") + templateHtml(tpl, { 인사: greet, 안내: guide, 호칭: v.title ? v.title + " " : "" }, { 선박: shipBlk, 에어: airBlk });
 }
 function buildPoBody(v, settings) {
   let tpl = settings["주문서본문"] || ("안녕하세요. " + (settings["발신자소개"] || "대아홀딩스 남효주 입니다.") + "\n수고 많으십니다.\n\n상기 제목에 따라 주문서 송부하오니\n첨부파일 확인 및 수신 여부 회신 부탁드리겠습니다.\n\n감사합니다.");

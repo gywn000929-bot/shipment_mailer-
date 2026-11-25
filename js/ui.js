@@ -63,6 +63,7 @@ function renderResult() {
   }
   $("summary").innerHTML = parts.map((p) => `<div>${p}</div>`).join("");
   RESULT.mails.forEach((m, i) => {
+    if (m._origSubject == null) m._origSubject = m.subject;
     const d = document.createElement("div"); d.className = "mail" + (m.noTo ? " noto" : m.dupRecs.length ? " dup" : "");
     const alt = `<div class="alt" style="display:${copyMode && !m.noTo ? "" : "none"}"><b>복사해서 보내기</b>
        <a class="btn sm" href="${esc(mailtoUrl(m))}" data-i="${i}" data-act="mailto">1. 새 메일 창 열기</a>
@@ -70,10 +71,14 @@ function renderResult() {
        ${m.attachments.map((a, j) => `<button class="sm" data-i="${i}" data-j="${j}" data-act="att">3. 첨부 받기: ${esc(a.name)}</button>`).join("")}
        <div class="hint">1번으로 열린 새 메일 창의 본문 칸을 누르고 Ctrl+V → 받은 첨부 파일을 메일 창에 끌어다 놓기 → 확인 후 보내기</div></div>`;
     d.innerHTML = `<div class="mh"><label class="inc"><input type="checkbox" data-i="${i}" data-act="inc" ${m.include ? "checked" : ""} ${m.noTo ? "disabled" : ""}> 포함</label><b>${esc(m.vendor)}</b>${m.kind === "urgent" ? '<span class="tag red">긴급 자재</span>' : ""}<span class="subj">${esc(m.subject)}</span>
-      ${m.noTo ? "" : `<button class="sm pri" data-i="${i}" data-act="eml">📩 메일 파일 받기</button><button class="sm" data-i="${i}" data-act="alt" title=".eml 파일이 Outlook 새 메일 창으로 열리지 않을 때">다른 방법</button>`}<button class="sm" data-i="${i}" data-act="view">본문 보기</button></div>
+      ${m.noTo ? "" : `<button class="sm pri" data-i="${i}" data-act="eml">📩 메일 파일 받기</button><button class="sm" data-i="${i}" data-act="alt" title=".eml 파일이 Outlook 새 메일 창으로 열리지 않을 때">다른 방법</button>`}<button class="sm" data-i="${i}" data-act="view">본문 보기</button><button class="sm" data-i="${i}" data-act="edit" title="이 메일 한 통의 제목·본문을 직접 고칩니다">✏ 고치기</button>${m.customHtml != null || m.subjEdited ? `<span class="tag">✏ 고친 메일</span><button class="sm" data-i="${i}" data-act="edreset">원래대로</button>` : ""}</div>
       <div class="meta">${m.noTo ? `<span class="warn">받는 사람 없음</span> → <input type="text" class="toin" data-i="${i}" placeholder="메일 주소 (여러 개면 쉼표)" style="width:300px"> <button class="sm pri" data-i="${i}" data-act="saveto">저장</button>` : "받는 사람: " + esc(m.to.join(", "))}${m.cc.length ? "<br>참조: " + esc(m.cc.join(", ")) : ""}${m.attachments.length ? "<br>첨부: " + esc(m.attachments.map((a) => a.name).join(", ")) : ""}${m.note && !m.noTo ? `<br><span class="warn">${esc(m.note)}</span>` : ""}${m.dupRecs.length ? `<br><span class="warn">⚠ ${esc(dupText(m))}</span>` : ""}
       ${m.got || m.dupRecs.length ? `<br><label class="sent"><input type="checkbox" data-i="${i}" data-act="sent" ${histFor(m).some((r) => r.sent) ? "checked" : ""}> Outlook에서 보냈음</label>${m.got ? ' <span class="ok">✔ 방금 받음</span>' : ""}` : ""}</div>
-      ${m.noTo ? "" : alt}<iframe class="prev" style="display:none"></iframe>`;
+      ${m.noTo ? "" : alt}<iframe class="prev" style="display:none"></iframe>
+      <div class="editBox" style="display:none"><div class="row" style="margin-top:6px"><label>제목</label><input type="text" class="edSubj" style="flex:1;min-width:260px"></div>
+       <div class="hint">아래 본문을 눌러 바로 고치세요(글자 지우기·적기, Ctrl+B 굵게). 표 안 숫자도 고칠 수 있습니다. 고친 내용은 이 메일 한 통에만 들어가고, 미리보기를 다시 누르면 없어집니다.</div>
+       <iframe class="edFrame"></iframe>
+       <div class="btns" style="margin-top:6px"><button class="sm pri" data-i="${i}" data-act="edsave">고친 내용 저장</button><button class="sm" data-i="${i}" data-act="edreset">원래대로</button><button class="sm" data-i="${i}" data-act="edclose">닫기</button></div></div>`;
     box.appendChild(d);
   });
   box.onclick = onMailClick;
@@ -98,6 +103,20 @@ function onMailClick(e) {
     t.to = uniq([...(t.to || []), ...emails]); setLocal(CONFIG_NAME, local);
     m.to = emails; m.noTo = false; m.include = !m.dupRecs.length; log(`[설정 반영 · 이 PC에 저장] ${m.vendor}: 받는사람 + ${emails.join(",")}`, "ok");
     reloadConfig({ refetch: false }).then(renderResult); toast(`${m.vendor} 받는 사람을 저장했습니다`);
+  } else if (act === "edit" || act === "edclose") {
+    const box2 = b.closest(".mail").querySelector(".editBox"), f = box2.querySelector("iframe");
+    if (act === "edclose" || box2.style.display !== "none") { box2.style.display = "none"; return; }
+    box2.querySelector(".edSubj").value = m.subject;
+    f.onload = () => { try { f.contentDocument.designMode = "on"; } catch {} };
+    f.srcdoc = `<meta charset="utf-8"><body style="margin:8px">${mailHtml(m)}</body>`;
+    box2.style.display = "";
+  } else if (act === "edsave") {
+    const box2 = b.closest(".mail").querySelector(".editBox"), f = box2.querySelector("iframe"), subj = clean(box2.querySelector(".edSubj").value);
+    if (subj && subj !== m.subject) { m.subject = subj; m.subjEdited = true; }
+    m.customHtml = f.contentDocument.body.innerHTML;
+    log(`[고침] ${m.vendor}: 이 메일 한 통의 ${m.subjEdited ? "제목·" : ""}본문을 고쳤습니다.`, "ok"); toast(`${m.vendor} 메일을 고친 내용으로 저장했습니다. 메일 파일 받기/ZIP에 고친 내용이 들어갑니다.`); renderResult();
+  } else if (act === "edreset") {
+    if (m._origSubject) m.subject = m._origSubject; delete m.customHtml; m.subjEdited = false; toast(`${m.vendor} 메일을 처음 만든 내용으로 되돌렸습니다.`); renderResult();
   } else if (act === "view") { const f = b.closest(".mail").querySelector("iframe"); if (f.style.display === "none") { f.srcdoc = `<meta charset="utf-8"><div style="padding:8px">${mailHtml(m)}</div>`; f.style.display = ""; } else f.style.display = "none"; }
 }
 async function downloadZip() {

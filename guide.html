@@ -52,6 +52,7 @@ code{background:#EEF3FA;color:var(--navy);border-radius:4px;padding:1px 7px;font
  <a href="#ship">3. 출하 요청 메일</a>
  <a href="#air">3-1. 화요일 에어 · 금요일 에어</a>
  <a href="#ket">4. KET 긴급 자재 메일</a>
+ <a href="#edit">메일 문구 고치기</a>
  <a href="#po">5. 주문서 메일</a>
  <a href="#inbound">6. 입고 파일 만들기</a>
  <a href="#vendor">7. 업체 정보 고치기</a>
@@ -282,6 +283,29 @@ code{background:#EEF3FA;color:var(--navy);border-radius:4px;padding:1px 7px;font
  <p class="a">월요일 주간 리스트(선박 표가 있는 파일)는 원래 Air 시트를, 수요일 REMAIN 리스트(선박 표가 없는 파일)는 출고수량·Remain 열이 있는 시트(AIR)를 씁니다. 다른 시트를 쓰려면 파일을 넣은 칸 아래 "에어 시트"에서 고르세요.</p>
  <p class="q">화요일 에어 표에 URGENT가 아닌 품목도 넣고 싶어요.</p>
  <p class="a">KET처럼 늘 전부 넣을 업체는 "업체·설정 고치기 → 메일 문구·제목·서명 고치기"의 <b>화요일에어전체업체</b> 칸에 쉼표로 추가합니다. 한 주만 전부 넣으려면 고급 설정의 "화요일 에어" 체크를 끕니다.</p>
+</section>
+
+<section id="edit"><h2>메일 문구 고치기</h2>
+ <p class="lead">두 가지 방법이 있습니다. <b>한 번만</b> 바꿀 때와 <b>앞으로 계속</b> 바꿀 때입니다.</p>
+ <h3>이 메일 한 통만 고치기</h3>
+ <ol class="steps">
+  <li>미리보기 후 나온 메일 목록에서 그 업체 줄의 <span class="btn">✏ 고치기</span>를 누릅니다.</li>
+  <li>제목 칸과 본문을 바로 고칩니다. 본문은 글자를 눌러 지우고 적으면 되고, 표 안 숫자도 고칠 수 있습니다(Ctrl+B 굵게).</li>
+  <li><span class="btn pri">고친 내용 저장</span> → 그 줄에 "✏ 고친 메일"이 붙고, 메일 파일 받기/ZIP에 고친 내용이 들어갑니다. 되돌리려면 <span class="btn">원래대로</span>.</li>
+ </ol>
+ <div class="box warn"><b>미리보기를 다시 누르면 고친 내용은 없어집니다</b>다 고친 뒤 바로 받으세요.</div>
+ <h3>앞으로 계속 쓸 문구 바꾸기</h3>
+ <p>위쪽 <span class="btn">⚙ 업체·설정 고치기</span> → 아래 <b>"메일 문구·제목·서명 고치기"</b>를 펼치면 칸별로 고칠 수 있습니다.</p>
+ <table>
+  <tr><th>칸 이름</th><th>어느 메일</th></tr>
+  <tr><td>출하요청본문</td><td>월요일 출하 요청 메일 본문</td></tr>
+  <tr><td>금요에어본문</td><td>수요일 REMAIN으로 만드는 금요일 에어 메일 본문</td></tr>
+  <tr><td>주문서본문</td><td>주문서(발주서) 메일 본문</td></tr>
+  <tr><td>긴급본문</td><td>KET 긴급 자재 메일 본문</td></tr>
+  <tr><td>출하요청인사 · 발신자소개 · 서명</td><td>첫 줄 인사, "대아홀딩스 김민지 계장입니다", 맨 아래 서명</td></tr>
+  <tr><td>제목형식 · 주문서제목형식 · 긴급제목형식 · 금요에어제목접미</td><td>각 메일 제목</td></tr>
+ </table>
+ <p>본문 칸에서 <code>{인사}</code> <code>{안내}</code> <code>{선박}</code> <code>{에어}</code> <code>{표}</code> <code>{추가문구}</code>처럼 중괄호로 된 것은 자동으로 채워지는 자리입니다. 그 밖의 글자는 자유롭게 바꾸고 줄을 더해도 됩니다. <code>{선박}</code> <code>{에어}</code> <code>{표}</code>는 한 줄에 그것만 적어 두세요. 고친 뒤 "저장하고 설정 파일 받기"를 하면 다른 PC에도 같은 문구가 들어갑니다.</p>
 </section>
 
 <section id="limits"><h2>꼭 직접 확인할 것</h2>
