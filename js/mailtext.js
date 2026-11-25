@@ -11,7 +11,7 @@ const MT_MAILS = [
   { id: "po", label: "📄 주문서", subj: "주문서제목형식", body: "주문서본문", def: () => "안녕하세요. " + (mtVal("발신자소개") || "대아홀딩스 남효주 입니다.") + "\n수고 많으십니다.\n\n상기 제목에 따라 주문서 송부하오니\n첨부파일 확인 및 수신 여부 회신 부탁드리겠습니다.\n\n{추가문구}\n\n감사합니다.", to: "업체마다 자동 (주문서 PDF의 거래처)" },
   { id: "urg", label: "🚨 KET 긴급 자재", subj: "긴급제목형식", body: "긴급본문", def: () => "수고많으십니다. " + (mtVal("발신자소개") || "") + "\n\n하기 긴급 자재 건 납기 확인 후 회신 부탁드립니다.\n\n{표}\n\n감사합니다.", to: "KET (설정 '긴급메일업체')" },
 ];
-const MT_KEYS = ["제목형식", "금요에어제목접미", "출하요청본문", "금요에어본문", "주문서제목형식", "주문서본문", "긴급제목형식", "긴급본문", "서명", "공통참조", "본문굵게", "본문크기", "본문글꼴"];
+const MT_KEYS = ["제목형식", "금요에어제목접미", "출하요청본문", "금요에어본문", "주문서제목형식", "주문서본문", "긴급제목형식", "긴급본문", "서명", "공통참조", "본문굵게", "본문크기", "본문글꼴", "선박제목줄", "선박첨부안내", "에어제목줄"];
 const MT_SUBJ_DEF = { 제목형식: "대아홀딩스 {월}월 {주}째주 출하 요청의 건", 금요에어제목접미: "(금요일 에어)", 주문서제목형식: "대아 주문서-{PO}", 긴급제목형식: "대아홀딩스 {월}월 {주}째주 긴급 자재의 건" };
 
 // 자동으로 채워지는 자리: 화면에 보일 글자와 모양(block = 한 줄 전체 차지)
@@ -24,6 +24,7 @@ function mtPh(name) {
     선박: { text: "📋 선박리스트 (노란색 수량, ○/○일(수) 입고 요망) + 선박 표 또는 첨부 안내", block: true, tip: "이 자리에 선박 표가 자동으로 들어갑니다" },
     에어: { text: "✈ 에어리스트 (노란색 수량, ○/○일 입고 요망) + 에어 표", block: true, tip: "이 자리에 에어 표가 자동으로 들어갑니다" },
     표: { text: "📋 긴급 자재 표 (NO · 품목명 · 미납수량 합계 · AIR 수량 · 부족일정)", block: true, tip: "이 자리에 표가 자동으로 들어갑니다" },
+    입고일: { text: "○/○일(요일)", tip: "입고 요망 날짜 (자동, 굵게)" },
     추가문구: { text: "업체별 추가 문구 (있는 업체만)", tip: "업체 시트의 '주문서추가문구'. 없는 업체는 이 줄이 빠집니다" },
     호칭: { text: "호칭", tip: "업체 시트의 '호칭' (없으면 빠짐)" },
     월: { text: String(m), tip: "월 (자동)" }, 주: { text: String(w), tip: "주 (자동)" },
@@ -44,8 +45,15 @@ function mtSet(k, v) {
 const mtBase = (k) => { const b = CONFIG.base.settings.find((s) => s[0] === k); return b ? b[1] : undefined; };
 
 // ---------------------------------------------------------------- 글자 ↔ 편집 칸
+// 선박/에어 표 칸: 표 위 제목 줄(·첨부 안내)은 그 자리에서 고칠 수 있게, 표만 회색으로
+const MT_BLOCK_LINES = { 선박: [["선박제목줄", ""], ["선박첨부안내", "엑셀 첨부 업체만"]], 에어: [["에어제목줄", ""]] };
+function mtBlockLineVal(k) { const v = mtVal(k); return ED && ED.settings.some((x) => x[0] === k) ? v : (CONFIG.settings[k] != null ? CONFIG.settings[k] : BLOCK_LINE_DEFAULT[k]); }
 function mtChip(name) {
   const p = mtPh(name);
+  if (MT_BLOCK_LINES[name]) {
+    const lines = MT_BLOCK_LINES[name].map(([k, note]) => `<div class="mtHead" contenteditable="true" spellcheck="false" data-key="${k}">${mtLineHtml(mtBlockLineVal(k))}</div>${note ? `<span class="mtNote">↑ ${note}</span>` : ""}`).join("");
+    return `<div class="mtChip blk mtBlk" contenteditable="false" data-ph="${esc(name)}" title="표 위 글자는 눌러서 고칠 수 있습니다. 회색 표 칸은 자동으로 들어갑니다">${lines}<div class="mtTbl">${name === "선박" ? "📋 선박 표 (자동 · 엑셀 첨부 업체는 표 대신 위 안내 문구)" : "✈ 에어 표 (자동)"}</div></div>`;
+  }
   return `<span class="mtChip${p.block ? " blk" : ""}${p.editable ? " ed" : ""}" contenteditable="false" data-ph="${esc(name)}" title="${esc(p.tip)} — 지우거나 옮길 수 있습니다">${esc(p.text)}${p.editable ? ' <b class="mtPen">✎ 고치기</b>' : ""}</span>`;
 }
 function mtLineHtml(line) {
@@ -101,12 +109,13 @@ function renderMailText() {
    <div class="mtSigLbl">서명 <span class="hint" style="margin:0">(모든 메일 공통 · Outlook이 서명을 스스로 넣는 PC면 비워 두세요)</span></div>
    <div class="mtBody mtSig" id="mtSig" contenteditable="true" spellcheck="false" style="font-family:${fontCss};font-size:${size}pt;${bold ? "font-weight:bold" : ""}">${mtToHtml(mtVal("서명"))}</div>
   </div>
-  <div class="hint">글자를 눌러 바로 고치세요. <span class="mtChip">회색 칸</span>은 메일을 만들 때 자동으로 채워지는 부분입니다(표·날짜·업체 이름 등). 필요 없으면 지우고, 다른 곳으로 끌어다 옮길 수 있습니다. 실수로 지웠으면 "↺ 이 메일 원래대로".</div>`;
+  <div class="hint">글자를 눌러 바로 고치세요. <span class="mtChip">회색 칸</span>은 메일을 만들 때 자동으로 채워지는 부분입니다(표·날짜·업체 이름 등). 표 위 "선박리스트 (…)" 같은 글자는 눌러서 고칠 수 있습니다(에어 제목 줄은 월요일·금요일 메일 공통). 필요 없으면 지우고, 다른 곳으로 끌어다 옮길 수 있습니다. 실수로 지웠으면 "↺ 이 메일 원래대로".</div>`;
   mtMarkChanged();
 }
 function mtMarkChanged() {
   const m = MT_MAILS.find((x) => x.id === MT_CUR), ch = (k) => mtBase(k) !== undefined ? mtVal(k) !== mtBase(k) : !!clean(mtVal(k));
   const set = (id, on) => { const e = $(id); if (e) e.classList.toggle("chg", on); };
+  document.querySelectorAll(".mtHead[data-key]").forEach((el) => el.classList.toggle("chg", mtBase(el.dataset.key) !== undefined ? mtVal(el.dataset.key) !== mtBase(el.dataset.key) : ED.settings.some((x) => x[0] === el.dataset.key) && mtVal(el.dataset.key) !== BLOCK_LINE_DEFAULT[el.dataset.key]));
   set("mtSubj", ch(m.subj)); set("mtBody", ch(m.body)); set("mtSig", ch("서명")); set("mtCc", ch("공통참조"));
   document.querySelectorAll(".mtTab").forEach((b) => { const x = MT_MAILS.find((y) => y.id === b.dataset.mt); b.classList.toggle("chg", ch(x.subj) || ch(x.body)); });
 }
@@ -119,10 +128,13 @@ function bindMailText() {
     if (e.target.id === "mtReset") {
       const m = MT_MAILS.find((x) => x.id === MT_CUR);
       for (const k of [m.subj, m.body]) mtSet(k, mtBase(k) ?? "");
+      for (const k of m.id === "mon" ? ["선박제목줄", "선박첨부안내", "에어제목줄"] : m.id === "fri" ? ["에어제목줄"] : []) mtSet(k, mtBase(k) ?? BLOCK_LINE_DEFAULT[k]);
       renderMailText(); toast("이 메일의 제목·본문을 올려 둔 설정대로 되돌렸습니다.");
     }
   });
   box.addEventListener("input", (e) => {
+    const head = e.target.closest && e.target.closest("[data-key]");
+    if (head) { mtSet(head.dataset.key, mtFromEl(head).replace(/\n/g, " ")); return; }
     const m = MT_MAILS.find((x) => x.id === MT_CUR), id = e.target.id || (e.target.closest("[id]") || {}).id;
     if (id === "mtCc") mtSet("공통참조", e.target.value);
     else if (id === "mtSubj") { let v = mtFromEl($("mtSubj")).replace(/\n/g, " "); if (m.subjBase) v = v.replace("{__base}", ""); mtSet(m.subj, v); }
@@ -135,11 +147,11 @@ function bindMailText() {
     if (e.target.id === "mtFont") { mtSet("본문글꼴", e.target.value); renderMailText(); }
   });
   // 제목은 한 줄, 붙여넣기는 글자만(다른 곳의 서식이 딸려 오지 않게)
-  box.addEventListener("keydown", (e) => { if (e.target.id === "mtSubj" && e.key === "Enter") e.preventDefault(); });
+  box.addEventListener("keydown", (e) => { if ((e.target.id === "mtSubj" || (e.target.closest && e.target.closest("[data-key]"))) && e.key === "Enter") e.preventDefault(); });
   box.addEventListener("paste", (e) => {
     if (!e.target.closest || !e.target.closest("[contenteditable=true]")) return;
     e.preventDefault(); let t = (e.clipboardData || window.clipboardData).getData("text/plain");
-    if (e.target.closest("#mtSubj")) t = t.replace(/\s*\n\s*/g, " ");
+    if (e.target.closest("#mtSubj") || e.target.closest("[data-key]")) t = t.replace(/\s*\n\s*/g, " ");
     document.execCommand("insertText", false, t);
   });
 }
