@@ -9,8 +9,8 @@
 <script src="js/vendor_table.js?v=1" defer></script>
 <script src="js/lists.js?v=15" defer></script>
 <script src="js/mail.js?v=13" defer></script>
-<script src="js/run.js?v=14" defer></script>
-<script src="js/ui.js?v=13" defer></script>
+<script src="js/run.js?v=15" defer></script>
+<script src="js/ui.js?v=14" defer></script>
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css");
 :root{--bg:#f4f6fa;--card:#fff;--line:#e3e7ee;--txt:#1f2937;--mut:#6b7280;--pri:#2563eb;--pri2:#1d4ed8;--ok:#16a34a;--warn:#d97706;--err:#dc2626;--chip:#eef2ff}
@@ -31,6 +31,9 @@ main{max-width:1100px;margin:20px auto;padding:0 16px;display:grid;grid-template
 button{border:0;border-radius:10px;padding:10px 14px;font-size:14px;cursor:pointer;background:#e5e7eb;color:var(--txt)}
 button.pri{background:var(--pri);color:#fff}button.pri:hover{background:var(--pri2)}button.ok{background:var(--ok);color:#fff}button.sm{padding:6px 10px;font-size:13px}
 .full{grid-column:1/-1}
+.pasteSteps{margin:0 0 10px;padding-left:20px;font-size:14px;line-height:1.7}
+.pasteArea{width:100%;box-sizing:border-box;border:2px dashed #c7d2fe;border-radius:12px;padding:12px;background:#fafbff;font:12px Consolas,"D2Coding",monospace;resize:vertical;white-space:pre;overflow:auto}
+.pasteArea:focus{outline:none;border-color:var(--pri);background:#fff}.pasteArea.has{border-style:solid;border-color:var(--ok);background:#f0fdf4}
 #log{background:#0f172a;color:#e2e8f0;border-radius:12px;padding:14px;height:300px;overflow:auto;font-family:Consolas,"D2Coding",monospace;font-size:13px;white-space:pre-wrap;line-height:1.5}
 #log .head{color:#93c5fd;font-weight:bold}#log .ok{color:#86efac}#log .warn{color:#fcd34d}#log .err{color:#fca5a5}
 .status{font-size:13px;color:var(--mut);font-weight:normal}.status.run{color:var(--pri)}
@@ -96,9 +99,6 @@ a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;ba
  <div style="height:8px"></div>
  <div class="drop" id="dropAir"><b>에어리스트</b> 엑셀을 여기에 끌어다 놓거나 클릭<small id="airName">아직 없음 (선박 파일 안에 Air 시트가 있으면 비워 두어도 자동으로 씁니다)</small></div>
  <div class="row" style="margin-top:6px;display:none"><label>에어 시트</label><select id="airSheet" style="display:none"></select></div>
- <details style="margin-top:6px" id="pasteBox"><summary><b>또는 메일 본문의 에어 표를 붙여넣기</b> <span class="hint">(수요일 REMAIN 표 등 — 머리글 줄부터 끝 줄까지 복사)</span></summary>
-  <textarea id="airPaste" rows="6" style="width:100%;margin-top:6px;font:12px monospace" placeholder="FAC	Item cd	Maker	Part Name	Remain	STOCK	Short Del.	NEED ETD	REMARK&#10;F1	M030-000280	AMP	170325-1 (AMP)	18,000		07-Dec-26	27-Nov-26	CHANGE QTY"></textarea>
-  <div class="row"><button class="sm" id="btnPasteClear">붙여넣은 표 지우기</button><span class="hint">에어 엑셀 칸이 비어 있을 때만 씁니다. 표에는 업체 이름이 없어서, 이 PC가 전에 읽은 주간 리스트의 거래처명으로 업체를 정합니다(없으면 MAKER).</span></div></details>
  <input type="file" id="ship" accept=".xlsx,.xls" hidden><input type="file" id="air" accept=".xlsx,.xls" hidden>
  <div class="row"><label>기준 주 월요일</label><input type="date" id="monday"><button class="sm" id="advToggle">▸ 고급 설정</button></div>
  <div class="hint warn" id="monHint" style="display:none">오늘은 월요일입니다. 지금은 <b>다음 주</b> 월요일로 잡혀 있습니다. 이번 주 것을 만들려면 → <button class="sm" id="btnThisWeek">이번 주(오늘)로 바꾸기</button></div>
@@ -113,6 +113,17 @@ a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;ba
  <input type="file" id="pdf" accept=".pdf" multiple hidden>
  <div class="btns"><button class="pri" id="btnPo">미리보기 · 메일 만들기</button></div>
  <div class="hint">한 PDF에 여러 업체·여러 PO가 있어도 됩니다. 업체별로 잘라서 "업체-PO번호" 메일을 만듭니다. 발주서발송=N 업체(한국단자공업·연호·경신)는 자동 제외.</div>
+</section>
+<section class="card full" id="pasteCard"><h2><span class="step">1</span> 금요일 에어 메일 <span class="status">— 수요일 REMAIN 메일의 표를 붙여 넣어서 만들기</span></h2>
+ <ol class="pasteSteps">
+  <li>Outlook에서 "금주 금요일 에어 REMAIN 리스트" 메일을 열고, 표의 <b>맨 윗줄(FAC, Item cd …)부터 마지막 줄까지</b> 마우스로 끌어서 선택한 뒤 <b>Ctrl+C</b></li>
+  <li>아래 큰 칸을 한 번 클릭하고 <b>Ctrl+V</b></li>
+  <li><b>미리보기 · 메일 만들기</b> → 아래에 업체별 메일이 나오면 <b>📦 전부 받기 (ZIP)</b></li>
+ </ol>
+ <textarea id="airPaste" class="pasteArea" rows="7" placeholder="여기를 클릭하고 Ctrl+V 로 붙여 넣으세요.&#10;&#10;(붙여 넣으면 이렇게 보입니다)&#10;FAC   Item cd       Maker   Part Name        Remain   STOCK   Short Del.   NEED ETD&#10;F1    M030-000280   AMP     170325-1 (AMP)   18,000           07-Dec-26    27-Nov-26"></textarea>
+ <div class="row" style="margin-top:6px"><span id="pasteInfo" class="hint" style="margin:0">아직 붙여 넣지 않았습니다</span></div>
+ <div class="btns"><button class="pri" id="btnPasteRun">미리보기 · 메일 만들기</button><button id="btnPasteClear">지우기</button></div>
+ <div class="hint">기준 주는 이번 주, 입고 요망일은 금요일로 자동으로 잡힙니다. 제목 끝에 "(금요일 에어)"가 붙습니다. 업체는 거래처 표(화면에 미리 들어 있음)로 나눕니다. 엑셀 파일이 있으면 위 "출하 요청 메일" 칸에 엑셀을 넣어도 같은 메일이 만들어집니다.</div>
 </section>
 <section class="card full" id="resultCard" style="display:none"><h2><span class="step">2</span> <span id="resultTitle">만들어진 메일</span><span class="sp" style="flex:1"></span><button class="ok" id="btnZip">📦 전부 받기 (ZIP)</button></h2>
  <div id="summary"></div>

@@ -234,8 +234,17 @@ window.addEventListener("DOMContentLoaded", () => {
   $("advToggle").onclick = () => { const a = $("adv"); a.style.display = a.style.display === "none" ? "" : "none"; $("advToggle").textContent = (a.style.display === "none" ? "▸" : "▾") + " 고급 설정"; };
   $("config").addEventListener("change", () => { $("configFile").style.display = $("config").value === "__file__" ? "" : "none"; if ($("config").value !== "__file__") reloadConfig(); });
   $("configFile").addEventListener("change", () => reloadConfig());
-  $("btnPasteClear").onclick = () => { $("airPaste").value = ""; toast("붙여넣은 표를 지웠습니다."); };
-  $("btnShip").onclick = runShip; $("btnPo").onclick = runPo; $("btnZip").onclick = downloadZip;
+  const pasteInfo = () => {   // 붙여 넣은 표가 몇 줄인지 바로 보여 준다
+    const lines = $("airPaste").value.split(/\r?\n/).filter((l) => l.trim()), items = lines.filter((l) => /^\s*F\d\b/i.test(l)).length;
+    const hasHdr = lines.some((l) => /item\s*cd/i.test(l) && /maker/i.test(l));
+    $("airPaste").classList.toggle("has", items > 0);
+    $("pasteInfo").innerHTML = !lines.length ? "아직 붙여 넣지 않았습니다" : !hasHdr ? '<span class="warn">⚠ 맨 윗줄(FAC, Item cd, Maker …)이 빠졌습니다. 표의 머리글 줄부터 다시 복사해 붙여 넣으세요.</span>'
+      : !lines[0].includes("\t") ? '<span class="warn">⚠ 표 모양이 아니라 글자로 붙여졌습니다. Outlook 메일 본문의 표를 그대로 선택해 복사하세요.</span>' : `✔ 품목 <b>${items}</b>줄을 붙여 넣었습니다. 아래 <b>미리보기 · 메일 만들기</b>를 누르세요.`;
+  };
+  $("airPaste").addEventListener("input", pasteInfo);
+  $("btnPasteClear").onclick = () => { $("airPaste").value = ""; pasteInfo(); toast("붙여넣은 표를 지웠습니다."); };
+  $("btnPasteRun").onclick = () => runShip(true);
+  $("btnShip").onclick = () => runShip(false); $("btnPo").onclick = runPo; $("btnZip").onclick = downloadZip;
   $("btnAssign").onclick = saveAssign;
   $("btnDlCfg").onclick = downloadConfig; $("btnDiscard").onclick = discardLocal;
   $("btnEdit").onclick = () => openEditor(false); $("btnEditNoMail").onclick = () => openEditor(true);
