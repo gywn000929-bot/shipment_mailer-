@@ -11,7 +11,7 @@ const MT_MAILS = [
   { id: "po", label: "📄 주문서", subj: "주문서제목형식", body: "주문서본문", def: () => "안녕하세요. " + (mtVal("발신자소개") || "대아홀딩스 남효주 입니다.") + "\n수고 많으십니다.\n\n상기 제목에 따라 주문서 송부하오니\n첨부파일 확인 및 수신 여부 회신 부탁드리겠습니다.\n\n{추가문구}\n\n감사합니다.", to: "업체마다 자동 (주문서 PDF의 거래처)" },
   { id: "urg", label: "🚨 KET 긴급 자재", subj: "긴급제목형식", body: "긴급본문", def: () => "수고많으십니다. " + (mtVal("발신자소개") || "") + "\n\n하기 긴급 자재 건 납기 확인 후 회신 부탁드립니다.\n\n{표}\n\n감사합니다.", to: "KET (설정 '긴급메일업체')" },
 ];
-const MT_KEYS = ["제목형식", "금요에어제목접미", "출하요청본문", "금요에어본문", "주문서제목형식", "주문서본문", "긴급제목형식", "긴급본문", "서명", "공통참조", "본문굵게", "본문크기"];
+const MT_KEYS = ["제목형식", "금요에어제목접미", "출하요청본문", "금요에어본문", "주문서제목형식", "주문서본문", "긴급제목형식", "긴급본문", "서명", "공통참조", "본문굵게", "본문크기", "본문글꼴"];
 const MT_SUBJ_DEF = { 제목형식: "대아홀딩스 {월}월 {주}째주 출하 요청의 건", 금요에어제목접미: "(금요일 에어)", 주문서제목형식: "대아 주문서-{PO}", 긴급제목형식: "대아홀딩스 {월}월 {주}째주 긴급 자재의 건" };
 
 // 자동으로 채워지는 자리: 화면에 보일 글자와 모양(block = 한 줄 전체 차지)
@@ -83,6 +83,7 @@ function renderMailText() {
   const box = $("mtBox"); if (!box || !ED) return;
   const m = MT_MAILS.find((x) => x.id === MT_CUR);
   const bold = /^(Y|YES|O|1)$/i.test(clean(mtVal("본문굵게"))), size = parseInt(mtVal("본문크기")) || 10;
+  const fontName = MAIL_FONTS[clean(mtVal("본문글꼴"))] ? clean(mtVal("본문글꼴")) : "맑은 고딕", fontCss = MAIL_FONTS[fontName].replace(/"/g, "'");
   const subjTpl = m.subjBase ? "{__base}" + (mtVal(m.subj) || MT_SUBJ_DEF[m.subj]) : (mtVal(m.subj) || MT_SUBJ_DEF[m.subj]);
   const bodyTpl = clean(mtVal(m.body)) ? mtVal(m.body) : m.def();
   box.innerHTML = `
@@ -92,12 +93,13 @@ function renderMailText() {
    <div class="mtRow"><span class="mtLbl">참조</span><input type="text" id="mtCc" value="${esc(mtVal("공통참조"))}" placeholder="모든 메일에 들어가는 참조 (쉼표로 구분)"><span class="hint" style="margin:0">모든 메일 공통</span></div>
    <div class="mtRow"><span class="mtLbl">제목</span><div class="mtSubj" id="mtSubj" contenteditable="true" spellcheck="false">${mtLineHtml(subjTpl)}</div></div>
    <div class="mtTools"><label><input type="checkbox" id="mtBold" ${bold ? "checked" : ""}> 본문 굵게</label>
+     <label>글꼴 <select id="mtFont">${Object.keys(MAIL_FONTS).map((f) => `<option ${f === fontName ? "selected" : ""} style="font-family:${MAIL_FONTS[f].replace(/"/g, "'")}">${esc(f)}</option>`).join("")}</select></label>
      <label>글자 크기 <select id="mtSize">${[9, 10, 10.5, 11, 12, 14].map((n) => `<option ${n == size ? "selected" : ""}>${n}</option>`).join("")}</select> pt</label>
      <span class="hint" style="margin:0">모든 메일 공통</span><span class="sp" style="flex:1"></span>
      <button class="sm" id="mtReset" title="이 메일의 제목·본문을 올려 둔 설정 파일의 문구로 되돌립니다">↺ 이 메일 원래대로</button></div>
-   <div class="mtBody" id="mtBody" contenteditable="true" spellcheck="false" style="font-size:${size}pt;${bold ? "font-weight:bold" : ""}">${mtToHtml(bodyTpl)}</div>
+   <div class="mtBody" id="mtBody" contenteditable="true" spellcheck="false" style="font-family:${fontCss};font-size:${size}pt;${bold ? "font-weight:bold" : ""}">${mtToHtml(bodyTpl)}</div>
    <div class="mtSigLbl">서명 <span class="hint" style="margin:0">(모든 메일 공통 · Outlook이 서명을 스스로 넣는 PC면 비워 두세요)</span></div>
-   <div class="mtBody mtSig" id="mtSig" contenteditable="true" spellcheck="false" style="font-size:${size}pt;${bold ? "font-weight:bold" : ""}">${mtToHtml(mtVal("서명"))}</div>
+   <div class="mtBody mtSig" id="mtSig" contenteditable="true" spellcheck="false" style="font-family:${fontCss};font-size:${size}pt;${bold ? "font-weight:bold" : ""}">${mtToHtml(mtVal("서명"))}</div>
   </div>
   <div class="hint">글자를 눌러 바로 고치세요. <span class="mtChip">회색 칸</span>은 메일을 만들 때 자동으로 채워지는 부분입니다(표·날짜·업체 이름 등). 필요 없으면 지우고, 다른 곳으로 끌어다 옮길 수 있습니다. 실수로 지웠으면 "↺ 이 메일 원래대로".</div>`;
   mtMarkChanged();
@@ -130,6 +132,7 @@ function bindMailText() {
   box.addEventListener("change", (e) => {
     if (e.target.id === "mtBold") { mtSet("본문굵게", e.target.checked ? "Y" : "N"); renderMailText(); }
     if (e.target.id === "mtSize") { mtSet("본문크기", e.target.value); renderMailText(); }
+    if (e.target.id === "mtFont") { mtSet("본문글꼴", e.target.value); renderMailText(); }
   });
   // 제목은 한 줄, 붙여넣기는 글자만(다른 곳의 서식이 딸려 오지 않게)
   box.addEventListener("keydown", (e) => { if (e.target.id === "mtSubj" && e.key === "Enter") e.preventDefault(); });
