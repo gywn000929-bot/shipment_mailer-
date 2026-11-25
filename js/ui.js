@@ -207,6 +207,7 @@ function takeHandoff() {
   let h = null; try { h = JSON.parse(sessionStorage.getItem(HANDOFF_KEY) || localStorage.getItem(HANDOFF_KEY) || "null"); localStorage.removeItem(HANDOFF_KEY); sessionStorage.removeItem(HANDOFF_KEY); } catch {}
   if (!h || !h.b64) return;
   const bytes = Uint8Array.from(atob(h.b64), (c) => c.charCodeAt(0)), dt = new DataTransfer();
+  if (window.setMode) setMode("mon", true);
   dt.items.add(new File([bytes], h.name || "선박 및 에어리스트.xlsx")); $("ship").files = dt.files; $("ship").dispatchEvent(new Event("change"));
   $("firstCard").style.display = "none"; setTimeout(() => { $("dropShip").scrollIntoView({ behavior: "smooth", block: "center" }); toast("만든 리스트를 선박리스트 칸에 넣었습니다. 기준 주를 확인하고 미리보기 · 메일 만들기를 누르세요."); }, 600);
 }
@@ -246,6 +247,16 @@ window.addEventListener("DOMContentLoaded", () => {
   $("airPaste").addEventListener("input", pasteInfo);
   $("btnPasteClear").onclick = () => { $("airPaste").value = ""; pasteInfo(); toast("붙여넣은 표를 지웠습니다."); };
   $("btnPasteRun").onclick = () => runShip(true);
+  bindDrop("dropRemain", "remainFile", "remainName");
+  // 맨 위 "오늘 만들 메일은?" — 고른 메일에 필요한 칸만 보여 준다. 처음엔 요일로 고른다(수·목 = 수요일 REMAIN, 그 밖 = 월요일)
+  const setMode = window.setMode = (m, quiet) => {
+    document.querySelectorAll(".modeBtn").forEach((b) => b.classList.toggle("on", b.dataset.mode === m));
+    document.querySelectorAll("[data-modes]").forEach((el) => el.classList.toggle("mhide", !el.dataset.modes.split(" ").includes(m)));
+    if (!quiet) { const c = { mon: "shipCard", wed: "pasteCard", po: "poCard" }[m]; $(c).scrollIntoView({ behavior: "smooth", block: "start" }); }
+  };
+  document.querySelectorAll(".modeBtn").forEach((b) => (b.onclick = () => setMode(b.dataset.mode)));
+  { const d = new Date().getDay(), q = new URLSearchParams(location.search).get("mode");
+    setMode(["mon", "wed", "po"].includes(q) ? q : d === 3 || d === 4 ? "wed" : "mon", true); }
   $("btnShip").onclick = () => runShip(false); $("btnPo").onclick = runPo; $("btnZip").onclick = downloadZip;
   $("btnAssign").onclick = saveAssign;
   $("btnDlCfg").onclick = downloadConfig; $("btnDiscard").onclick = discardLocal;
