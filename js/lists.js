@@ -186,11 +186,36 @@ function parseAir(wb, { friday = false, extraWbs = [] } = {}) {
   return rows;
 }
 
-// 메일 본문에서 복사한 표(탭으로 나뉜 글자) → 엑셀과 같은 모양의 통합 문서. 표 머리글(FAC, Item cd …)이 있어야 한다.
+// 메일 본문에서 복사한 표 → 행 배열. 두 가지 모양을 받는다.
+//  ① 한 줄에 한 행(칸은 탭으로 나뉨)  ② 한 줄에 한 칸(Outlook·브라우저에 따라 표가 세로로 풀려 붙는 경우)
+//  ②는 머리글(첫 FAC 값 "F1" 앞까지)의 칸 수로 행을 나누고, 빈 칸("　")도 한 칸으로 센다.
+const PASTE_FAC = /^F\d+$/i, PASTE_CODE = /^[A-Z]\d{3}-\d{3,7}/i;
+function parsePastedTable(text) {
+  const cell = (c) => c.replace(/[ 　]/g, " ").trim();
+  const raw = String(text || "").replace(/\r/g, "").split("\n");
+  if (raw.some((l) => l.includes("\t"))) {
+    const aoa = raw.filter((l) => l.trim()).map((l) => l.split("\t").map(cell));
+    return { aoa, vertical: false };
+  }
+  const lines = raw.map((l) => ({ v: cell(l), blank: !l.trim() && !/[　 ]/.test(l) }));
+  while (lines.length && lines[0].blank) lines.shift();
+  const isStart = (k) => lines[k] && PASTE_FAC.test(lines[k].v) && lines[k + 1] && PASTE_CODE.test(lines[k + 1].v);
+  let first = lines.findIndex((_, k) => isStart(k));
+  if (first < 0) return { aoa: lines.filter((l) => l.v).map((l) => [l.v]), vertical: true };
+  const header = lines.slice(0, first).filter((l) => l.v).map((l) => l.v), n = header.length;
+  const aoa = [header];
+  for (let k = first; k < lines.length;) {
+    let e = k + 1; while (e < lines.length && !isStart(e)) e++;
+    let g = lines.slice(k, e);
+    if (g.length > n) g = g.filter((l, x) => x < 2 || !l.blank);   // 칸 사이에 끼어든 진짜 빈 줄은 뺀다
+    const row = g.slice(0, n).map((l) => l.v); while (row.length < n) row.push("");
+    aoa.push(row); k = e;
+  }
+  return { aoa, vertical: true };
+}
 function pastedWorkbook(text) {
-  const lines = String(text || "").replace(/\r/g, "").split("\n").filter((l) => l.trim());
-  if (!lines.length) return null;
-  const aoa = lines.map((l) => l.split("\t").map((c) => c.replace(/[\u00a0\u3000]/g, " ").trim()));
+  const { aoa } = parsePastedTable(text);
+  if (!aoa.length) return null;
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), "붙여넣은 표");
   return wb;
 }
