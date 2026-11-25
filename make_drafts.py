@@ -338,7 +338,7 @@ def build_body(vendor, air_df, ship_df, etd_sel, month, week, air_date, ship_dat
                    f'※ {html.escape(vendor["memo"])} (보내기 전 이 줄은 지워 주세요)</p>')
     if vendor["recv_line"]:
         out += [p(html.escape(vendor["recv_line"])), br]
-    greet = (vendor["title"] + " " if vendor["title"] else "") + "안녕하세요. " + settings.get("발신자소개", "대아홀딩스 남효주 입니다.")
+    greet = (vendor["title"] + " " if vendor["title"] else "") + (str(settings.get("출하요청인사") or "").strip() or "안녕하세요.") + " " + settings.get("발신자소개", "대아홀딩스 남효주 입니다.")
     out.append(p(html.escape(greet)))
     if has_ship:
         out.append(p(("첨부" if attached else "하기") + " 내용으로 금주 선박 리스트 송부 드립니다."))
