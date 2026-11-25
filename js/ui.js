@@ -4,6 +4,9 @@
 // 기록 한 건: {keys:[...], vendor, subject, at(받은 시각), sent(Outlook에서 보냈다고 표시), who}
 // keys: 출하 요청 = "ship|기준 주 월요일|업체", 긴급 자재 = "urgent|…", 주문서 = "po|PO번호"(PO마다 하나)
 const LS_HIST = "mailmaker_hist_v2";
+// ?solo=ord → 발주 점검만 보이는 전용 화면 (balju.html 이 이 주소로 넘겨 준다)
+const SOLO = ["ord"].includes(new URLSearchParams(location.search).get("solo")) ? new URLSearchParams(location.search).get("solo") : "";
+if (SOLO) document.documentElement.classList.add("solo-" + SOLO);
 function histAll() {
   let h = store.get(LS_HIST, null);
   if (!h) {   // 예전 기록(제목|업체 → 날짜) 옮기기
@@ -39,10 +42,8 @@ function renderHist() {
 // ---------------------------------------------------------------- 결과 표시
 function renderResult() {
   const box = $("mails"); box.innerHTML = "";
-  if (!RESULT._dupChecked) {   // 처음 한 번: 예전에 이미 받은 메일은 기본으로 빼 둔다
-    for (const m of RESULT.mails) { m.dupRecs = histFor(m); if (m.dupRecs.length) m.include = false; }
-    RESULT._dupChecked = true;
-  }
+  // 처음 보이는 메일마다 한 번: 예전에 이미 받은 메일은 기본으로 빼 둔다 (발주 점검을 다시 만들어 나중에 더해진 메일도)
+  for (const m of RESULT.mails) if (!m.dupRecs) { m.dupRecs = histFor(m); if (m.dupRecs.length) m.include = false; }
   const ready = RESULT.mails.filter((m) => !m.noTo), noTo = RESULT.mails.filter((m) => m.noTo);
   const dup = ready.filter((m) => m.dupRecs.length), copyMode = pref("check", CONFIG_NAME) === "copy";
   $("resultCard").style.display = RESULT.mails.length || RESULT.unmatched.length ? "" : "none";
@@ -237,14 +238,15 @@ async function routeFiles(files) {
   files = [...files]; if (!files.length) return;
   const put = (id, fs) => { const dt = new DataTransfer(); fs.forEach((f) => dt.items.add(f)); $(id).files = dt.files; $(id).dispatchEvent(new Event("change")); };
   const pdfs = files.filter((f) => /\.pdf$/i.test(f.name)), xls = files.filter((f) => /\.xlsx?$/i.test(f.name));
-  if (pdfs.length) { setMode("po", true); put("pdf", pdfs); toast(`주문서 PDF ${pdfs.length}개 → 주문서 메일을 만듭니다.`); return; }
+  if (SOLO && !xls.length) { toast("여기는 발주 점검 화면입니다. 엑셀(.xls·.xlsx)을 놓아 주세요."); return; }
+  if (pdfs.length && !SOLO) { setMode("po", true); put("pdf", pdfs); toast(`주문서 PDF ${pdfs.length}개 → 주문서 메일을 만듭니다.`); return; }
   if (!xls.length) { toast("엑셀(.xlsx)이나 주문서 PDF를 놓아 주세요."); return; }
   const f = xls[0], cur = document.querySelector(".modeBtn.on");
   if (cur && cur.dataset.mode === "int") { put("intFile", [f]); return; }
   // ERP 발주 미납 파일이 섞여 있으면 → 발주 점검 (리스트 엑셀은 ① 칸, 미납 파일은 ② 칸)
   const wbs = []; for (const x of xls) { try { wbs.push(await ordReadWb(x)); } catch (e) { wbs.push(null); } }
   const erpIdx = wbs.map((w, i) => (w && ordIsErp(w) ? i : -1)).filter((i) => i >= 0);
-  if (erpIdx.length || (cur && cur.dataset.mode === "ord")) {
+  if (erpIdx.length || SOLO === "ord" || (cur && cur.dataset.mode === "ord")) {
     setMode("ord", true);
     const lists = xls.filter((_, i) => !erpIdx.includes(i)), erps = xls.filter((_, i) => erpIdx.includes(i));
     if (lists.length) put("ordList", [lists[0]]);
@@ -268,6 +270,7 @@ function bindDropAnywhere() {
 // 입력 칸 밖에서 Ctrl+V: REMAIN 표(머리글에 Item cd·Maker)면 수요일 칸에 넣고 바로 만든다
 function bindPasteAnywhere() {
   document.addEventListener("paste", (e) => {
+    if (SOLO) return;
     const t = e.target; if (t && (t.closest && t.closest("input,textarea,[contenteditable=true],#editCard"))) return;
     const text = (e.clipboardData || window.clipboardData).getData("text/plain") || "";
     const { aoa } = parsePastedTable(text);
@@ -333,6 +336,7 @@ window.addEventListener("DOMContentLoaded", () => {
   bindDropAnywhere(); bindPasteAnywhere(); ordBind();
   // 맨 위 "오늘 만들 메일은?" — 고른 메일에 필요한 칸만 보여 준다. 처음엔 요일로 고른다(수·목 = 수요일 REMAIN, 그 밖 = 월요일)
   const setMode = window.setMode = (m, quiet) => {
+    if (SOLO) m = SOLO;   // 발주 점검 전용 링크(balju.html): 다른 메일 칸은 안 보인다
     document.querySelectorAll(".modeBtn").forEach((b) => b.classList.toggle("on", b.dataset.mode === m));
     document.querySelectorAll("[data-modes]").forEach((el) => el.classList.toggle("mhide", !el.dataset.modes.split(" ").includes(m)));
     if (!quiet) { const c = { mon: "shipCard", wed: "pasteCard", po: "poCard", int: "intCard", ord: "ordCard" }[m]; $(c).scrollIntoView({ behavior: "smooth", block: "start" }); }
@@ -356,5 +360,11 @@ window.addEventListener("DOMContentLoaded", () => {
     const o = new URLSearchParams(location.search).get("open");
     if (o === "mail" || o === "vend") openEditor(false, o);
   });
+  if (SOLO === "ord") {   // 발주 점검 전용 화면: 제목·번호를 바꾸고 메일 작성기로 돌아가는 링크
+    $("appTitle").textContent = "🧮 발주 점검";
+    const st = (id, n) => { const e = document.querySelector(`#${id} .step`); if (e) e.textContent = n; };
+    st("ordCard", "1"); st("resultCard", "2");
+    const w = new URLSearchParams(location.search).get("who"); $("lnkMain").href = "index.html" + (w ? "?who=" + encodeURIComponent(w) : "");
+  }
   { const w = new URLSearchParams(location.search).get("who"); if ($("lnkTodo")) $("lnkTodo").href = w === "kim" ? "kim.html" : "my.html?who=" + (w || "nam"); }
 });
