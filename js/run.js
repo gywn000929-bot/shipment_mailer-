@@ -63,7 +63,7 @@ async function runShip(fromPaste = false) {
     if (wd) { log(`[경고] ${fmtDate(monday)}는 월요일이 아닙니다. 그 주 월요일로 맞춥니다.`, "warn"); monday = addDays(monday, -wd); }
     const [month, week] = weekLabel(monday); RESULT.weekKey = fmtDate(monday); RESULT.fri = fri;
     const airDate = addDays(monday, fri ? 4 : 1), shipDate = addDays(monday, 2);
-    const subjectBase = (S["제목형식"] || "대아홀딩스 {월}월 {주}주 출하 요청의 건").replace("{월}", month).replace("{주}", week);
+    const subjectBase = (S["제목형식"] || "대아홀딩스 {월}월 {주}째주 출하 요청의 건").replace("{월}", month).replace("{주}", week);
     const typed = splitList($("only").value), mine = $("mineOnly").checked ? myVendors() : null;
     const only = typed.length ? typed : (mine || []);   // "특정 업체만" 칸이 우선, 비어 있으면 "내 업체만"
     if (!typed.length && mine) log(`[내 업체만] ${mine.length}곳만 만듭니다. 전체를 만들려면 "내 업체만" 체크를 끄세요.`, "warn");
@@ -105,7 +105,7 @@ async function runShip(fromPaste = false) {
       const v = CONFIG.vendors[matchAlias(un)]; if (!v || (only.length && !only.includes(v.name))) continue;
       const items = urgentItems(air.filter((r) => r._vendor === v.name), shipAll, addDays(monday, 7));
       if (!items.length) { log(`■ ${v.name} 긴급 자재: 에어리스트에 해당 업체 품목이 없어 만들지 않음`); continue; }
-      const subject = (S["긴급제목형식"] || "대아홀딩스 {월}월 {주}주 긴급 자재의 건").replace("{월}", month).replace("{주}", week).replace("{업체}", v.poShort);
+      const subject = (S["긴급제목형식"] || "대아홀딩스 {월}월 {주}째주 긴급 자재의 건").replace("{월}", month).replace("{주}", week).replace("{업체}", v.poShort);
       log(`■ ${v.name} 긴급 자재  ${items.length}품목 (붉은 칸 ${items.filter((x) => x.red).length})  제목: ${subject}`);
       if (!hasSum) log("   [참고] 선박리스트에 SUM 열이 없어 '미납수량 합계'를 ETD 열 합으로 계산했습니다.", "warn");
       const noSum = items.filter((x) => !x.sum).length; if (noSum) log(`   [확인] 선박리스트에 없는 품목 ${noSum}건은 미납수량 합계가 비어 있습니다.`, "warn");

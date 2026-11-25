@@ -282,7 +282,8 @@ window.addEventListener("DOMContentLoaded", () => {
   $("btnEdit").onclick = () => openEditor(false); $("btnEditNoMail").onclick = () => openEditor(true);
   bindEditor(); takeHandoff();
   $("lnkGuide").href = "guide.html" + location.search;
-  $("btnHelp").onclick = () => $("helpCard").scrollIntoView({ behavior: "smooth" });
+  $("btnHelp").onclick = () => { $("helpDetails").open = true; $("helpCard").scrollIntoView({ behavior: "smooth" }); };
+  document.querySelectorAll(".menuBox button, .menuBox a").forEach((el) => el.addEventListener("click", () => { const m = el.closest("details"); if (m) m.open = false; }));
   $("btnFirst").onclick = () => { $("firstCard").style.display = ""; fcShow(""); $("firstCard").scrollIntoView({ behavior: "smooth" }); };
   $("firstCard").addEventListener("click", onFirstCheck);
   $("sigOn").addEventListener("change", () => { pref("sigOff", CONFIG_NAME, !$("sigOn").checked); if (RESULT.mails.length) renderResult(); toast($("sigOn").checked ? "본문 끝에 서명을 넣습니다." : "본문 끝에 서명을 넣지 않습니다."); });
