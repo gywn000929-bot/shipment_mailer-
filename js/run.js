@@ -21,10 +21,13 @@ function urgentItems(airRows, shipAll, weekEnd) {
 }
 
 // ---------------------------------------------------------------- 출하 요청 실행
-async function runShip() {
+// fromPaste: "금요일 에어 메일" 칸에 붙여 넣은 표로 만든다(위 엑셀 칸은 보지 않음)
+async function runShip(fromPaste = false) {
   if (!CONFIG) { toast("설정을 먼저 불러와야 합니다"); return; }
-  const fShip = $("ship").files[0], fAir = $("air").files[0], pasted = clean($("airPaste").value);
-  if (!fShip && !fAir && !pasted) { toast("선박리스트나 에어리스트 중 하나는 넣거나, 에어 표를 붙여 넣어야 합니다."); return; }
+  const pasted = fromPaste ? clean($("airPaste").value) : "";
+  const fShip = fromPaste ? null : $("ship").files[0], fAir = fromPaste ? null : $("air").files[0];
+  if (fromPaste && !pasted) { toast("먼저 아래 큰 칸에 메일 본문의 표를 붙여 넣으세요 (Ctrl+V)."); $("airPaste").focus(); return; }
+  if (!fromPaste && !fShip && !fAir) { toast("선박리스트나 에어리스트 엑셀을 넣어야 합니다. (메일 본문의 표는 아래 '금요일 에어 메일' 칸에 붙여 넣으세요)"); return; }
   clearLog(); setStatus("실행 중...", true); RESULT = { mails: [], unmatched: [], kind: "ship", extraFiles: [] };
   try {
     const S = CONFIG.settings;
@@ -32,9 +35,8 @@ async function runShip() {
     const etdCount = parseInt($("etd").value) || parseInt(S["ETD열개수"]) || 2;
     let ship = [], etdSel = [], air = [], hasSum = false;
     const wbShip = fShip ? XLSX.read(await fShip.arrayBuffer(), { type: "array", cellDates: true }) : null;
-    if ((fShip || fAir) && pasted) log("[참고] 엑셀을 넣어서 붙여넣은 표는 쓰지 않았습니다. 붙여넣은 표로 만들려면 엑셀 칸을 비우세요(화면 새로고침).", "warn");
     let wbAir = fAir ? (fAir === fShip ? wbShip : XLSX.read(await fAir.arrayBuffer(), { type: "array", cellDates: true })) : null;
-    if (!wbAir && !wbShip && pasted) { wbAir = pastedWorkbook($("airPaste").value); log("[붙여넣은 표] 에어 칸에 붙여 넣은 표를 에어리스트로 씁니다.", "warn"); }
+    if (fromPaste) { wbAir = pastedWorkbook($("airPaste").value); log("[붙여넣은 표] '금요일 에어 메일' 칸에 붙여 넣은 표로 만듭니다.", "head"); }
     // 선박 표가 있으면 월요일 주간 리스트(화요일 에어), 없으면 수요일 REMAIN 리스트(금요일 에어)로 본다
     let shipErr = null;
     const tryShip = (wb) => { try { return parseShip(wb, etdCount); } catch (e) { shipErr = shipErr || e; return null; } };
