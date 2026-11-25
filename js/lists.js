@@ -162,6 +162,7 @@ function parseAir(wb, { friday = false, extraWbs = [] } = {}) {
   if (!cV && rows.length && !fromMem && !fromTbl) log("[주의] 이 PC는 아직 업체 이름(거래처명)이 있는 리스트 엑셀을 읽은 적이 없어, 모두 MAKER로 업체를 정했습니다. KET 품목이 태양단자로 가는 것처럼 틀릴 수 있습니다. 이번 주 월요일 리스트 엑셀을 한 번 넣고 미리보기를 누른 뒤 다시 하거나, 엑셀 파일로 만드세요.", "err");
   const byMk = rows.length - fromMem - fromTbl;
   if (!cV) log(`[업체 정하기] 업체 열이 없어 ${fromMem}건은 이 PC가 전에 읽은 엑셀의 거래처명, ${fromTbl}건은 거래처 표(내장)${byMk ? `, ${byMk}건은 MAKER` : ""}로 업체를 정했습니다.` + (byMk ? " MAKER로 정한 업체가 맞는지 메일 목록에서 확인하세요." : ""), byMk ? "warn" : "info");
+  const weekMonday = weekFromNeedEtd(rows);   // 화요일 규칙으로 거르기 전 전체 품목의 NEED ETD로 기준 주를 정한다
   if (mode === "remain") {
     rows.sort(airRowSort);   // 리스트 아래에 덧붙인 줄도 FAC → MAKER → 품명 순서 자리로
     log(`[금요일 에어] Remain이 있는 품목 ${rows.length}건 (Remain 0 이하는 뺌)`);
@@ -182,10 +183,18 @@ function parseAir(wb, { friday = false, extraWbs = [] } = {}) {
     if (!ll.from) log("   [확인] '에어 장납' 시트를 못 찾았습니다(시트 이름에 '장납'이 들어가야 함). 장납 품목도 URGENT가 아니면 빠졌습니다.", "warn");
     else log(`   에어 장납 목록: ${ll.from}, ${ll.items.length}품목`, ll.old ? "warn" : "info");
   }
-  rows.mode = mode;
+  rows.mode = mode; rows.weekMonday = weekMonday;
   return rows;
 }
 
+// 에어 품목의 NEED ETD(날짜) 중 가장 많은 날짜가 들어 있는 주의 월요일. 날짜가 하나도 없으면 null.
+// 예: 11월 4째주 리스트는 NEED ETD가 거의 27-Nov-26(금) → 11/23(월)
+function weekFromNeedEtd(rows) {
+  const cnt = new Map();
+  for (const r of rows) { const d = toDate(r["NEED ETD"]); if (d) { const k = fmtDate(addDays(d, -((d.getDay() + 6) % 7))); cnt.set(k, (cnt.get(k) || 0) + 1); } }
+  if (!cnt.size) return null;
+  return parseISO([...cnt.entries()].sort((a, b) => b[1] - a[1])[0][0]);
+}
 // 메일 본문에서 복사한 표 → 행 배열. 두 가지 모양을 받는다.
 //  ① 한 줄에 한 행(칸은 탭으로 나뉨)  ② 한 줄에 한 칸(Outlook·브라우저에 따라 표가 세로로 풀려 붙는 경우)
 //  ②는 머리글(첫 FAC 값 "F1" 앞까지)의 칸 수로 행을 나누고, 빈 칸("　")도 한 칸으로 센다.

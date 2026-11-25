@@ -177,6 +177,7 @@ async function reloadConfig({ refetch = true } = {}) {
     CONFIG_NAME = CONFIG.name;
     try { if (sel !== "__file__") localStorage.setItem("mailmaker_cfg", sel); } catch {}
     const who = senderName();
+    if ($("modeInt")) $("modeInt").style.display = typeof intOn === "function" && intOn() ? "" : "none";
     $("whoBadge").textContent = "보내는 사람: " + (who || CONFIG_NAME); $("whoBadge").className = "badge " + (/김민지/.test(who) ? "kim" : "nam");
     document.title = `메일 작성기 - ${who || CONFIG_NAME}`;
     const noMail = CONFIG.order.filter((n) => !CONFIG.vendors[n].to.length);

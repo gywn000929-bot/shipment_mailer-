@@ -230,6 +230,43 @@ function takeHandoff() {
   dt.items.add(new File([bytes], h.name || "선박 및 에어리스트.xlsx")); $("ship").files = dt.files; $("ship").dispatchEvent(new Event("change"));
   $("firstCard").style.display = "none"; setTimeout(() => { $("dropShip").scrollIntoView({ behavior: "smooth", block: "center" }); toast("만든 리스트를 선박리스트 칸에 넣었습니다. 기준 주를 확인하고 미리보기 · 메일 만들기를 누르세요."); }, 600);
 }
+// ---------------------------------------------------------------- 화면 아무 곳에나 놓기 / 붙여넣기
+// 파일을 보고 메일 종류를 고른다: PDF → 주문서, 선박 표가 있는 엑셀 → 월요일, 출고수량·Remain 열만 있는 엑셀 → 수요일 REMAIN.
+// "📨 계장님께"를 고른 상태(남효주 설정)에서는 그 칸으로 넣는다.
+async function routeFiles(files) {
+  files = [...files]; if (!files.length) return;
+  const put = (id, fs) => { const dt = new DataTransfer(); fs.forEach((f) => dt.items.add(f)); $(id).files = dt.files; $(id).dispatchEvent(new Event("change")); };
+  const pdfs = files.filter((f) => /\.pdf$/i.test(f.name)), xls = files.filter((f) => /\.xlsx?$/i.test(f.name));
+  if (pdfs.length) { setMode("po", true); put("pdf", pdfs); toast(`주문서 PDF ${pdfs.length}개 → 주문서 메일을 만듭니다.`); return; }
+  if (!xls.length) { toast("엑셀(.xlsx)이나 주문서 PDF를 놓아 주세요."); return; }
+  const f = xls[0], cur = document.querySelector(".modeBtn.on");
+  if (cur && cur.dataset.mode === "int") { put("intFile", [f]); return; }
+  let wb; try { wb = XLSX.read(await f.arrayBuffer(), { type: "array", cellDates: true }); } catch (e) { toast("엑셀을 읽지 못했습니다: " + f.name); return; }
+  const hasShip = wb.SheetNames.some((sn) => findHeaderRow(sheetRows(wb, sn), ["ITEM CD", "MAKER"], [], ["ETD"]) >= 0);
+  const hasRemain = wb.SheetNames.some((sn) => { const rows = sheetRows(wb, sn), h = findHeaderRow(rows, ["Item cd", "Maker"]); return h >= 0 && rows[h].map(norm).some((c) => c === "출고수량" || c === "remain"); });
+  if (!hasShip && hasRemain) { setMode("wed", true); put("remainFile", [f]); toast("REMAIN 엑셀 → 금요일 에어 메일을 만듭니다."); }
+  else { setMode("mon", true); put("ship", [f]); toast("주간 리스트 → 월요일 메일을 만듭니다."); }
+}
+function bindDropAnywhere() {
+  let n = 0; const ov = $("dropAll");
+  const isFiles = (e) => e.dataTransfer && [...e.dataTransfer.types].includes("Files");
+  document.addEventListener("dragenter", (e) => { if (isFiles(e)) { n++; ov.classList.add("on"); } });
+  document.addEventListener("dragleave", () => { if (--n <= 0) { n = 0; ov.classList.remove("on"); } });
+  document.addEventListener("dragover", (e) => { if (isFiles(e)) e.preventDefault(); });
+  document.addEventListener("drop", (e) => { n = 0; ov.classList.remove("on"); if (e.defaultPrevented || !isFiles(e)) return; e.preventDefault(); routeFiles(e.dataTransfer.files); });
+}
+// 입력 칸 밖에서 Ctrl+V: REMAIN 표(머리글에 Item cd·Maker)면 수요일 칸에 넣고 바로 만든다
+function bindPasteAnywhere() {
+  document.addEventListener("paste", (e) => {
+    const t = e.target; if (t && (t.closest && t.closest("input,textarea,[contenteditable=true],#editCard"))) return;
+    const text = (e.clipboardData || window.clipboardData).getData("text/plain") || "";
+    const { aoa } = parsePastedTable(text);
+    if (!(aoa.length > 1 && aoa[0].some((c) => /item\s*cd/i.test(c)) && aoa[0].some((c) => /maker/i.test(c)))) return;
+    e.preventDefault(); setMode("wed", true); $("airPaste").value = text; $("airPaste").dispatchEvent(new Event("input")); $("remainFile").value = "";
+    toast("붙여 넣은 REMAIN 표로 금요일 에어 메일을 만듭니다."); setTimeout(() => runShip(true), 50);
+  });
+}
+
 // 새 버전 확인: 브라우저가 예전 화면을 기억해 두고 보여 주는 일이 있어서, 열 때마다 서버의 최신 index.html 의
 // app-ver 를 보고 다르면 한 번 새로 불러온다(같은 버전에서 두 번 다시 불러오지 않도록 sessionStorage 로 막음).
 async function checkNewVersion() {
@@ -279,15 +316,20 @@ window.addEventListener("DOMContentLoaded", () => {
   $("btnPasteClear").onclick = () => { $("airPaste").value = ""; pasteInfo(); toast("붙여넣은 표를 지웠습니다."); };
   $("btnPasteRun").onclick = () => runShip(true);
   bindDrop("dropRemain", "remainFile", "remainName");
+  bindDrop("dropInt", "intFile", "intName"); $("btnInt").onclick = runInternal; $("intKind").addEventListener("change", () => { if ($("intFile").files.length) runInternal(); });
+  // 칸에 놓으면 바로 만든다
+  const auto = (id, fn) => $(id).addEventListener("change", () => { if ($(id).files.length) setTimeout(fn, 50); });
+  auto("ship", () => runShip(false)); auto("remainFile", () => runShip(true)); auto("pdf", runPo); auto("intFile", runInternal);
+  bindDropAnywhere(); bindPasteAnywhere();
   // 맨 위 "오늘 만들 메일은?" — 고른 메일에 필요한 칸만 보여 준다. 처음엔 요일로 고른다(수·목 = 수요일 REMAIN, 그 밖 = 월요일)
   const setMode = window.setMode = (m, quiet) => {
     document.querySelectorAll(".modeBtn").forEach((b) => b.classList.toggle("on", b.dataset.mode === m));
     document.querySelectorAll("[data-modes]").forEach((el) => el.classList.toggle("mhide", !el.dataset.modes.split(" ").includes(m)));
-    if (!quiet) { const c = { mon: "shipCard", wed: "pasteCard", po: "poCard" }[m]; $(c).scrollIntoView({ behavior: "smooth", block: "start" }); }
+    if (!quiet) { const c = { mon: "shipCard", wed: "pasteCard", po: "poCard", int: "intCard" }[m]; $(c).scrollIntoView({ behavior: "smooth", block: "start" }); }
   };
   document.querySelectorAll(".modeBtn").forEach((b) => (b.onclick = () => setMode(b.dataset.mode)));
   { const d = new Date().getDay(), q = new URLSearchParams(location.search).get("mode");
-    setMode(["mon", "wed", "po"].includes(q) ? q : d === 3 || d === 4 ? "wed" : "mon", true); }
+    setMode(["mon", "wed", "po", "int"].includes(q) ? q : d === 3 || d === 4 ? "wed" : "mon", true); }
   $("btnShip").onclick = () => runShip(false); $("btnPo").onclick = runPo; $("btnZip").onclick = downloadZip;
   $("btnAssign").onclick = saveAssign;
   $("btnDlCfg").onclick = downloadConfig; $("btnDiscard").onclick = discardLocal;
