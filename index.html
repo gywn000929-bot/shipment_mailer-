@@ -5,12 +5,13 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="js/core.js?v=12" defer></script>
-<script src="js/config.js?v=11" defer></script>
+<script src="js/config.js?v=12" defer></script>
 <script src="js/vendor_table.js?v=1" defer></script>
 <script src="js/lists.js?v=16" defer></script>
 <script src="js/mail.js?v=14" defer></script>
 <script src="js/run.js?v=17" defer></script>
-<script src="js/ui.js?v=18" defer></script>
+<script src="js/mailtext.js?v=2" defer></script>
+<script src="js/ui.js?v=19" defer></script>
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css");
 :root{--bg:#f4f6fa;--card:#fff;--line:#e3e7ee;--txt:#1f2937;--mut:#6b7280;--pri:#2563eb;--pri2:#1d4ed8;--ok:#16a34a;--warn:#d97706;--err:#dc2626;--chip:#eef2ff}
@@ -31,6 +32,25 @@ main{max-width:1100px;margin:20px auto;padding:0 16px;display:grid;grid-template
 button{border:0;border-radius:10px;padding:10px 14px;font-size:14px;cursor:pointer;background:#e5e7eb;color:var(--txt)}
 button.pri{background:var(--pri);color:#fff}button.pri:hover{background:var(--pri2)}button.ok{background:var(--ok);color:#fff}button.sm{padding:6px 10px;font-size:13px}
 .full{grid-column:1/-1}
+.edTabs{display:flex;gap:6px;margin:4px 0 12px;border-bottom:2px solid var(--line)}
+.edTab{background:transparent;border-radius:10px 10px 0 0;padding:10px 16px;font-weight:bold;color:var(--mut);margin-bottom:-2px;border-bottom:3px solid transparent}
+.edTab.on{color:var(--pri2);border-bottom-color:var(--pri)}
+.mtTabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.mtTab{background:#f1f5f9;border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:13px}
+.mtTab.on{background:var(--pri);color:#fff;border-color:var(--pri)}.mtTab.chg:not(.on){background:#fef9c3}
+.mtWin{border:1px solid #cbd5e1;border-radius:10px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.mtRow{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--line)}
+.mtLbl{flex:none;width:72px;border:1px solid #cbd5e1;border-radius:6px;padding:5px 0;text-align:center;font-size:13px;background:#fff}
+.mtAuto{color:var(--mut);font-size:13px}.mtRow input[type=text]{flex:1;border:0;border-bottom:1px solid transparent;border-radius:0;padding:6px 2px}.mtRow input[type=text]:focus{outline:none;border-bottom-color:var(--pri)}
+.mtSubj{flex:1;min-height:30px;padding:6px 2px;font-size:15px;outline:none;white-space:nowrap;overflow-x:auto}
+.mtTools{display:flex;align-items:center;gap:14px;padding:6px 14px;background:#f8fafc;border-bottom:1px solid var(--line);font-size:13px;flex-wrap:wrap}
+.mtBody{min-height:180px;padding:14px 16px;outline:none;font-family:"맑은 고딕","Malgun Gothic",sans-serif;line-height:1.55}
+.mtBody:focus,.mtSubj:focus{background:#fcfdff}
+.mtSigLbl{padding:6px 16px 0;border-top:1px dashed #cbd5e1;font-size:12px;color:var(--mut)}.mtSig{min-height:70px;color:#334155}
+.mtChip{display:inline-block;background:#e2e8f0;color:#334155;border-radius:6px;padding:0 7px;margin:0 2px;font-weight:normal;font-size:.92em;cursor:grab;user-select:none}
+.mtChip.blk{display:block;margin:4px 0;padding:10px 12px;border:1px dashed #94a3b8;background:#f1f5f9}
+.mtChip.ed{cursor:pointer}.mtPen{font-weight:normal;color:var(--pri2);font-size:11px;margin-left:4px}
+.mtWin .chg,.mtSubj.chg,#mtCc.chg{background:#fffbeb}
 .menu{position:relative}.menu>summary{list-style:none;cursor:pointer}.menu>summary::-webkit-details-marker{display:none}
 .menuBox{position:absolute;right:0;top:calc(100% + 6px);z-index:20;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:10px;display:flex;flex-direction:column;gap:6px;min-width:300px}
 .menuBox .btn,.menuBox button{text-align:left}.menuCfg{border-top:1px solid var(--line);padding-top:8px;display:flex;flex-direction:column;gap:4px}
@@ -88,7 +108,7 @@ a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;ba
 @media(max-width:800px){.setrow{grid-template-columns:1fr}}
 </style></head><body>
 <header><h1>📮 대아홀딩스 메일 작성기</h1><span class="badge" id="whoBadge">설정 불러오는 중…</span><span class="sp"></span>
-<button id="btnEdit" class="sm" title="업체 메일 주소, 메일 문구·제목·서명을 고칩니다">⚙ 업체·문구 고치기</button>
+<button id="btnMailText" class="sm" title="메일 제목·본문·서명을 Outlook 새 메일 창처럼 고칩니다">✉ 메일 문구 고치기</button><button id="btnEdit" class="sm" title="업체 메일 주소를 고칩니다">🏢 업체 주소</button>
 <details class="menu"><summary class="btn sm">☰ 더보기</summary><div class="menuBox">
  <button id="btnFirst" class="sm">🔰 처음 확인 (내 PC에서 메일이 잘 열리는지)</button>
  <button id="btnHelp" class="sm">❓ 사용법</button>
@@ -159,11 +179,17 @@ a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;ba
  <table id="assignTbl"><thead><tr><th>항목</th><th>예시</th><th>업체</th><th>새 업체 이름 / 메일</th></tr></thead><tbody></tbody></table>
  <div class="btns"><button class="pri" id="btnAssign">저장</button><button id="btnEditNoMail">메일 주소 없는 업체 한꺼번에 적기</button></div>
 </section>
-<section class="card full" id="editCard" style="display:none"><h2>⚙ 업체·설정 고치기 <span class="status" id="edCount"></span></h2>
- <div class="hint">칸을 눌러 바로 고칩니다. 메일 주소가 여러 개면 쉼표(,)로 나눠 적으세요. 빨간 칸은 메일 주소가 비어 있는 업체, 노란 칸은 올려 둔 설정과 달라진 곳입니다. 업체를 안 쓰게 되면 지우지 말고 "사용" 체크를 끄세요.</div>
- <div class="row"><input type="text" id="edFilter" placeholder="업체 이름·메일로 찾기" style="width:220px"><label><input type="checkbox" id="edNoMail"> 메일 주소가 없는 업체만 보기</label><button class="sm" id="edAdd">+ 업체 추가</button></div>
- <div class="edwrap" style="margin-top:8px"><table id="edTbl"></table></div>
- <details style="margin-top:12px"><summary><b>메일 문구·제목·서명 고치기</b> <span class="hint">(보내는 사람 소개, 제목 형식, 주문서 본문, 서명 등)</span></summary><div id="edSet"></div></details>
+<section class="card full" id="editCard" style="display:none"><h2>⚙ 업체·문구 고치기 <span class="status" id="edCount"></span></h2>
+ <div class="edTabs"><button class="edTab" data-edtab="mail">✉ 메일 문구 (제목·본문·서명)</button><button class="edTab" data-edtab="vend">🏢 업체 메일 주소</button></div>
+ <div id="edMail">
+  <div id="mtBox"></div>
+  <details style="margin-top:12px"><summary class="hint">그 밖의 설정 (고급: 인사말·소개 문구·첨부 이름·공장코드 등 칸 그대로 보기)</summary><div id="edSet"></div></details>
+ </div>
+ <div id="edVend" style="display:none">
+  <div class="hint">칸을 눌러 바로 고칩니다. 메일 주소가 여러 개면 쉼표(,)로 나눠 적으세요. 빨간 칸은 메일 주소가 비어 있는 업체, 노란 칸은 올려 둔 설정과 달라진 곳입니다. 업체를 안 쓰게 되면 지우지 말고 "사용" 체크를 끄세요.</div>
+  <div class="row"><input type="text" id="edFilter" placeholder="업체 이름·메일로 찾기" style="width:220px"><label><input type="checkbox" id="edNoMail"> 메일 주소가 없는 업체만 보기</label><button class="sm" id="edAdd">+ 업체 추가</button></div>
+  <div class="edwrap" style="margin-top:8px"><table id="edTbl"></table></div>
+ </div>
  <div class="btns"><button class="pri" id="edSaveDl">저장하고 설정 파일 받기 (다른 PC에도 적용)</button><button id="edSave">이 PC에만 저장</button><button id="edCancel">닫기 (저장 안 함)</button></div>
 </section>
 <section class="card full slim"><details id="logBox"><summary><b>진행 내용</b> <span class="status" id="status">준비됨</span> <span class="hint">— 무엇을 읽고 어떻게 나눴는지 (문제가 있으면 자동으로 열림)</span></summary><div id="log"></div></details></section>
@@ -177,7 +203,7 @@ a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;ba
   <li>업체별 메일이 아래에 나옵니다. "본문 보기"로 확인하고 <b>📦 전부 받기 (ZIP)</b> 또는 메일마다 "메일 파일 받기"를 누릅니다.</li>
   <li>받은 ZIP의 압축을 풀고 <b>.eml 파일을 더블클릭</b> → Outlook 새 메일 창 → 내용 확인 → <b>보내기</b>. 보낸 메일은 목록의 "Outlook에서 보냈음"에 체크해 둡니다.</li>
   <li><b>같은 메일을 또 만들면</b> 빨간 테두리로 알려 주고 "포함"이 꺼진 채로 나옵니다(두 번 보내기 방지). 주문서는 PO 번호, 출하 요청은 업체와 기준 주로 구분합니다.</li>
-  <li><b>업체 메일 주소·문구를 고치려면</b> 위쪽 <b>⚙ 업체·설정 고치기</b>. 고친 뒤 "저장하고 설정 파일 받기"를 누르면 올리는 방법이 화면에 나옵니다. 올리기 전까지는 이 PC에서만 적용됩니다(위쪽 노란 알림).</li>
+  <li><b>메일 문구를 고치려면</b> 위쪽 <b>✉ 메일 문구 고치기</b>(Outlook 새 메일 창처럼 바로 고침), <b>업체 메일 주소는</b> <b>🏢 업체 주소</b>. 고친 뒤 "저장하고 설정 파일 받기"를 누르면 올리는 방법이 화면에 나옵니다. 올리기 전까지는 이 PC에서만 적용됩니다(위쪽 노란 알림).</li>
   <li>"업체를 모르는 품목"이 나오면 미지정 업체 지정하기에서 업체를 골라 저장하고 미리보기를 다시 누릅니다. "받는 사람 없음" 업체는 그 칸에 메일 주소를 적고 저장하면 됩니다.</li>
   <li><b>화요일 에어</b>(월요일 주간 리스트): KET 품목과 "에어 장납" 시트(시트 이름에 '장납')에 있는 품목은 NEED ETD와 상관없이 모두, 나머지 업체는 NEED ETD가 <b>URGENT</b>인 품목만 넣습니다. 장납 시트가 없는 주에는 이 PC가 지난번에 읽은 장납 목록을 씁니다.</li>
   <li><b>금요일 에어</b>(수요일 REMAIN 리스트): 받은 엑셀을 그대로 위 칸에 끌어다 놓습니다. AIR 시트의 <b>Purchase request − 출고수량</b>이 남은 품목(Remain)만 업체별로 만들고, 제목 끝에 "(금요일 에어)"가 붙습니다. 기준 주는 이번 주로 자동으로 잡힙니다.</li>

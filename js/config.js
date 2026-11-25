@@ -256,13 +256,18 @@ const ED_COLS = [   // [엑셀 열 이름, 화면에 보일 이름, 종류, 너�
   ["업체코드", "전산 업체코드", "text", 80], ["수신줄", "본문 첫 줄(수신: …)", "text", 170], ["호칭", "호칭", "text", 80], ["메모", "메모", "text", 240],
 ];
 let ED = null;   // {rows:[{...,_new}], settings:[[k,v,d]]}
-function openEditor(filterNoMail) {
+function edShowTab(t) {
+  document.querySelectorAll(".edTab").forEach((b) => b.classList.toggle("on", b.dataset.edtab === t));
+  $("edMail").style.display = t === "mail" ? "" : "none"; $("edVend").style.display = t === "vend" ? "" : "none";
+  if (t === "mail" && typeof renderMailText === "function") renderMailText();
+}
+function openEditor(filterNoMail, tab) {
   if (!CONFIG) return;
   ED = { rows: CONFIG.eff.rows.map((r) => ({ ...r })), settings: CONFIG.eff.settings.map((s) => [...s]) };
   const names = CONFIG.base.rows.map((r) => r["업체"]);
   ED.rows.forEach((r) => { r._new = !names.includes(r["업체"]); });
   $("edNoMail").checked = !!filterNoMail; $("edFilter").value = "";
-  $("editCard").style.display = ""; renderEditor();
+  $("editCard").style.display = ""; renderEditor(); edShowTab(tab || "vend");
   $("editCard").scrollIntoView({ behavior: "smooth" });
 }
 function edChanged(r, f) { const b = CONFIG.base.rows.find((x) => x["업체"] === r["업체"]); return r._new || !b || !sameField(f, r[f], b[f]); }
@@ -282,6 +287,7 @@ function renderEditor() {
   }).join("");
   $("edTbl").innerHTML = head + (body || `<tr><td colspan="${ED_COLS.length + 1}" class="hint">해당하는 업체가 없습니다.</td></tr>`);
   $("edSet").innerHTML = ED.settings.map(([k, v, d], i) => {
+    if (typeof MT_KEYS !== "undefined" && MT_KEYS.includes(k)) return "";   // 메일 문구 화면에서 고치는 칸
     const b = CONFIG.base.settings.find((s) => s[0] === k), ch = !b || b[1] !== v ? " chg" : "";
     return `<div class="setrow"><label><b>${esc(k)}</b><span class="hint">${esc(d)}</span></label><textarea class="${ch}" data-s="${i}" rows="${Math.min(8, Math.max(1, String(v).split("\n").length))}">${esc(v)}</textarea></div>`;
   }).join("");
@@ -314,6 +320,8 @@ function bindEditor() {
   });
   tbl.addEventListener("click", (e) => { const b = e.target.closest("[data-del]"); if (b) { ED.rows.splice(+b.dataset.del, 1); renderEditor(); } });
   $("edSet").addEventListener("input", (e) => { const t = e.target; if (t.dataset.s == null) return; const st = ED.settings[+t.dataset.s]; st[1] = t.value.replace(/\r/g, ""); const b = CONFIG.base.settings.find((x) => x[0] === st[0]); t.classList.toggle("chg", !b || b[1] !== st[1]); edCountUpdate(); });
+  document.querySelectorAll(".edTab").forEach((b) => (b.onclick = () => edShowTab(b.dataset.edtab)));
+  if (typeof bindMailText === "function") bindMailText();
   $("edFilter").addEventListener("input", renderEditor); $("edNoMail").addEventListener("change", renderEditor);
   $("edAdd").onclick = () => { ED.rows.push({ ...Object.fromEntries(CONFIG.base.hdr.map((h) => [h, ""])), 활성: "Y", 엑셀첨부: "N", 발주서발송: "Y", _new: true, _touched: true }); $("edFilter").value = ""; renderEditor(); const ins = $("edTbl").querySelectorAll('input[data-f="업체"]'); if (ins.length) ins[ins.length - 1].focus(); };
   const save = async (dl) => {
