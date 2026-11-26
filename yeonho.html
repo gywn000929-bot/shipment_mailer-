@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>연호 발주 · 점검</title>
+<!-- 연호 발주 전용 링크 (메일 작성기와 따로). 엑셀 매크로 '연호_발주_재고포함' + '연호_입고점검'을 브라우저에서. 파일은 PC 밖으로 나가지 않는다. -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<script src="js/yeonho_master.js?v=1" defer></script>
+<script src="js/yeonho_calc.js?v=1" defer></script>
+<script src="js/yeonho.js?v=1" defer></script>
+<style>
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css");
+:root{--navy:#1B3A6B;--navy2:#2E5C8A;--navy3:#4A7AAD;--bg:#f5f7fa;--card:#fff;--line:#D0DFF0;--txt:#141414;--mut:#5b5b62;--ok:#2E7D32;--red:#C62828;--or:#FFA500;
+ --font:'Aptos','Pretendard Variable',Pretendard,-apple-system,system-ui,'Segoe UI','Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--font);background:var(--bg);color:var(--txt);font-size:15px;line-height:1.6;letter-spacing:-0.01em}
+header{background:linear-gradient(135deg,#16315C,#2E5C8A);color:#fff;padding:22px 24px}
+header h1{margin:0;font-size:24px}header p{margin:6px 0 0;opacity:.85}header a{color:#fff}
+main{max-width:1280px;margin:0 auto;padding:18px 16px 60px}
+section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px 22px;margin-bottom:16px}
+h2{margin:0 0 4px;font-size:19px;color:var(--navy);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+h2 .n{display:inline-flex;width:30px;height:30px;border-radius:50%;background:var(--navy2);color:#fff;font-size:15px;align-items:center;justify-content:center}
+.muted{color:var(--mut);font-size:14px}
+.drops{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px}
+@media(max-width:980px){.drops{grid-template-columns:1fr 1fr}}@media(max-width:560px){.drops{grid-template-columns:1fr}}
+.drop{position:relative;border:2px dashed var(--navy3);border-radius:12px;padding:14px;background:#fafcff;cursor:pointer;min-height:132px}
+.drop:hover,.drop.over{background:#EEF3FA}.drop.ok{border-style:solid;border-color:var(--ok);background:#F1F8F1}.drop.err{border-style:solid;border-color:var(--red);background:#FFF5F5}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.drop b.t{display:block;color:var(--navy);font-size:16px}.drop .d{font-size:13px;color:var(--mut)}.drop .st{margin-top:8px;font-size:13px;word-break:break-all}
+.drop .need{display:inline-block;font-size:11.5px;font-weight:700;border-radius:4px;padding:0 6px;margin-left:4px;vertical-align:2px}.need.r{background:#E65100;color:#fff}.need.o{background:#eceff3;color:#5b5b62}
+.opts{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin-top:12px;font-size:14px}
+.opts input[type=number]{width:56px;font:inherit;padding:2px 6px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+button{font:inherit;font-size:14px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 14px;cursor:pointer}
+button:hover{border-color:var(--navy3)}button.pri{background:var(--navy2);color:#fff;border-color:var(--navy2)}button.pri:hover{background:var(--navy)}
+button.on{background:#D4E4F7;border-color:var(--navy3);color:var(--navy);font-weight:700}
+button.mini{padding:0 6px;font-size:12px;border-radius:5px;background:#FFF3E0;border-color:#FFB74D}
+.chip{display:inline-block;background:#eef3fa;border-radius:20px;padding:3px 12px;margin:2px 4px 2px 0;font-size:14px}.chip.pri{background:var(--navy2);color:#fff}.chip.or{background:#FFE0B2}.chip.red{background:#FFEBEE;color:var(--red)}
+.box{border-radius:8px;padding:10px 14px;margin:10px 0;font-size:14px}.box b{display:block}
+.warn{background:#FFF8E1;border-left:3px solid #F9A825}.good{background:#E8F5E9;border-left:3px solid var(--ok);font-size:16px}.stop{background:#FFEBEE;border-left:3px solid var(--red);font-size:16px}
+.tw{overflow:auto;max-height:72vh;border:1px solid var(--line);border-radius:8px}
+table.grid{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:14px}
+.grid th{position:sticky;top:0;background:#2B3746;color:#fff;padding:8px 10px;white-space:nowrap;z-index:1}.grid th.hq{background:#FFD54F;color:#000}
+.grid td{padding:5px 10px;border-bottom:1px solid #E4EAF2;text-align:right;white-space:nowrap}
+.grid td.c{text-align:center;font-weight:700}.grid td.nm{text-align:left;font-weight:700;white-space:normal;min-width:220px}.grid td.nm small{display:block;font-weight:400;color:var(--mut)}
+.grid tbody tr:nth-child(even) td{background:#F5F8FC}.grid tr.zero td{color:#8a94a3}
+.grid td.hq{background:#FFF8CC!important;padding:3px 6px}.grid td.term{background:var(--or)!important}
+.grid td.hq input{width:110px;text-align:right;font:inherit;font-size:17px;font-weight:700;border:1px solid transparent;background:transparent;border-radius:5px;padding:2px 6px}
+.grid td.hq input:hover,.grid td.hq input:focus{border-color:var(--navy3);background:#fff}.grid td.hq input.red{color:#E00000}.grid td.hq input.ed{text-decoration:underline dotted;background:#fff}
+.grid td.neg{color:var(--red)}.grid tr.bad td{color:var(--red);font-weight:700}
+.tag{display:inline-block;border-radius:4px;padding:0 6px;font-size:11.5px;font-weight:700;vertical-align:1px}.tag.un{background:#FFEBEE;color:var(--red)}.tag.ug{background:#E3F2FD;color:#1565C0}
+.legend{font-size:13px;color:var(--mut)}.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin:0 3px 0 10px}
+.opt{font-size:14px;display:inline-flex;gap:6px;align-items:center;margin:4px 0}
+select{font:inherit;font-size:14px;padding:3px 6px}
+details{margin-top:8px}summary{cursor:pointer;color:var(--navy);font-weight:700}
+details ol{margin:6px 0;padding-left:22px;font-size:14px}
+</style></head>
+<body>
+<header><h1>🔩 연호 발주 · 점검</h1><p>엑셀 매크로 없이 — 파일만 넣으면 <b>최종발주</b>와 <b>입고 점검</b>이 나옵니다. 파일은 이 PC 밖으로 나가지 않습니다. <a href="kim.html">← 계장님 할 일</a></p></header>
+<main>
+<section>
+ <h2><span class="n">1</span>파일 넣기 <span class="muted">— 칸을 누르거나 파일을 끌어다 놓으세요</span></h2>
+ <div class="drops">
+  <label class="drop" data-k="before"><input type="file" accept=".xls,.xlsx,.htm,.html"><b class="t">① 연호 미납조회 <span class="need o">발주 전</span></b><span class="d">연호 KMS 미납조회 엑셀(orderArrears.xls) 그대로. → <b>연호대기</b></span><div class="st"></div></label>
+  <label class="drop" data-k="list"><input type="file" accept=".xls,.xlsx"><b class="t">② 선박 및 에어리스트 <span class="need r">필수</span></b><span class="d">주간 리스트 엑셀 그대로(YEONHO 줄만 자동으로 골라냄). 작업양식 엑셀도 됩니다.</span><div class="st"></div></label>
+  <label class="drop" data-k="stock"><input type="file" accept=".xls,.xlsx"><b class="t">재고 <span class="need o">선택</span></b><span class="d">공장별 본사재고 [FAC·ITEM CD·Part Name·수량]. → <b>본사대기</b> (②에 '재고' 시트가 있으면 생략)</span><div class="st"></div></label>
+  <label class="drop" data-k="after"><input type="file" accept=".xls,.xlsx,.htm,.html"><b class="t">③ 연호 미납조회 <span class="need o">발주 후 · 점검</span></b><span class="d">연호 ERP에 발주를 넣은 뒤 다시 받은 미납조회. → 아래 ③ 점검</span><div class="st"></div></label>
+ </div>
+ <div class="opts">
+  <label>선박 수량 = ETD 앞에서 <input type="number" id="weeks" min="1" max="12" value="3"> 주 합계</label>
+  <label class="opt"><input type="checkbox" id="upool"> 적요가 '긴급'인 줄은 공장 구분 없이 먼저 차감 (매크로 방식)</label>
+  <span class="muted">마스터: <span id="mnote"></span></span>
+ </div>
+ <details><summary>계산 규칙 (매크로와 같음)</summary><ol>
+  <li>필요합 = 선박 + AIR, 발주필요량 = 필요합 − 본사대기 − 연호대기 (0보다 작으면 0). 그 뒤 남은 긴급 재고가 있으면 더 뺍니다.</li>
+  <li>대아 품명은 <b>마스터</b>로 연호 품명에 맞춘 뒤, 공장(F1·F2·F5) + 품명으로 묶습니다. (YEONHO·WHT·공백·괄호·RED→RE 같은 표기 차이는 무시)</li>
+  <li><span style="background:var(--or);padding:0 4px">주황</span> = 터미널(마스터에서 칠한 품목), <span style="color:#E00000;font-weight:700">빨간 글씨</span> = 본사대기 + 연호대기가 AIR보다 적음.</li>
+  <li>발란스 남음 = 발란스 − 발주필요량 − 연호대기 − 본사대기. 박스 = 터미널 박스 수량(버튼으로 박스 단위 올림).</li>
+  <li>점검: 발주 후 미납조회에서 고른 <b>수주일자</b>의 수주수량 ↔ 위 표의 발주필요량(0 제외)을 공장·품명별로 비교.</li>
+ </ol></details>
+</section>
+
+<section>
+ <h2><span class="n">2</span>최종발주</h2>
+ <div id="osum"></div>
+ <div class="bar">
+  <button data-f="all" class="on">전체</button><button data-f="need">발주할 것만</button><button data-f="term">터미널만</button><button data-f="edit">고친 칸·박스 차이</button>
+  <span style="flex:1"></span>
+  <button id="boxall" title="터미널 품목 발주필요량을 박스 수량 배수로 올립니다">📦 터미널 박스 단위로 올리기</button>
+  <button id="reset">고친 칸 되돌리기</button>
+  <button id="copyo">📋 발주 목록 복사</button>
+  <button id="dlo" class="pri">📥 최종발주 엑셀 받기</button>
+ </div>
+ <p class="legend">발주필요량 칸은 눌러서 고칠 수 있습니다(고친 칸은 점선 밑줄). 고친 값이 ③ 점검의 대아 수량이 됩니다.<i style="background:var(--or)"></i>터미널<i style="background:#E00000"></i>에어 부족</p>
+ <div id="order"></div>
+</section>
+
+<section>
+ <h2><span class="n">3</span>입고 점검 <span class="muted">— 연호 ERP에 넣은 수량 ↔ 최종발주</span></h2>
+ <div class="bar"><label class="opt">비교할 연호 발주: <select id="adate"></select></label><span style="flex:1"></span><button id="dlc" class="pri">📥 점검 결과 엑셀 받기</button></div>
+ <div id="check"></div>
+</section>
+</main>
+</body></html>
