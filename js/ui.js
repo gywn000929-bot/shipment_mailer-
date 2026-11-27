@@ -43,9 +43,9 @@ function renderHist() {
 function renderResult() {
   const box = $("mails"); box.innerHTML = "";
   // 처음 보이는 메일마다 한 번: 예전에 이미 받은 메일은 기본으로 빼 둔다 (발주 점검을 다시 만들어 나중에 더해진 메일도)
-  for (const m of RESULT.mails) if (!m.dupRecs) { m.dupRecs = histFor(m); if (m.dupRecs.length) m.include = false; }
+  for (const m of RESULT.mails) if (!m.dupRecs) { m.dupRecs = histFor(m); }   // 이미 만든 적이 있어도 "포함"은 그대로(보낼지는 사람이 판단)
   const ready = RESULT.mails.filter((m) => !m.noTo), noTo = RESULT.mails.filter((m) => m.noTo);
-  const dup = ready.filter((m) => m.dupRecs.length), copyMode = pref("check", CONFIG_NAME) === "copy";
+  const copyMode = pref("check", CONFIG_NAME) === "copy";
   $("resultCard").style.display = RESULT.mails.length || RESULT.unmatched.length ? "" : "none";
   $("btnZip").style.display = ready.length ? "" : "none";
   $("resultTitle").textContent = ready.length ? `만들어진 메일 ${ready.length}통` : "만들어진 메일 없음";
@@ -54,7 +54,6 @@ function renderResult() {
     : '받은 <b>.eml 파일을 더블클릭</b>하면 Outlook에 받는 사람·제목·본문·첨부가 채워진 <b>새 메일 창</b>이 열립니다. 내용 확인 후 <b>보내기</b>만 누르세요. (자동 발송 없음) · 보내지 않을 업체는 왼쪽 "포함" 체크를 끄세요.';
   const parts = [];
   if (ready.length) parts.push(`<span class="ok">✅ 메일 ${ready.length}통 준비됨</span> → 오른쪽 위 <b>📦 전부 받기</b>를 누르고, 받은 .eml 파일을 더블클릭해 Outlook에서 <b>보내기</b>`);
-  if (dup.length) parts.push(`<span class="warn">⚠ 이미 만든 적이 있는 메일 ${dup.length}통</span> (${esc(dup.map((m) => m.vendor).join(", "))}) → 두 번 보내지 않도록 <b>"포함"을 꺼 두었습니다.</b> 정말 다시 보내야 하면 Outlook 보낸 편지함을 확인한 뒤 "포함"을 켜세요.`);
   if (noTo.length) parts.push(`<span class="warn">⚠ 받는 사람이 없는 업체 ${noTo.length}곳</span> (${esc(noTo.map((m) => m.vendor).join(", "))}) → 아래 해당 칸에 메일 주소를 적고 <b>저장</b>하면 다음부터 기억합니다`);
   if (RESULT.unmatched.length) parts.push(`<span class="warn">⚠ 업체를 모르는 품목 ${RESULT.unmatched.reduce((a, b) => a + b.count, 0)}건</span> → 아래 <b>미지정 업체 지정하기</b>에서 업체를 고른 뒤 다시 미리보기`);
   if (RESULT.skipped && RESULT.skipped.length) parts.push(`<span class="hint">건너뜀(메일을 보내지 않는 업체): ${esc(RESULT.skipped.join(", "))}</span>`);
@@ -92,7 +91,6 @@ function onMailClick(e) {
   if (act === "sent") { setSent(m, b.checked); return; }
   if (act === "mailto") return;   // 링크 그대로 열림
   if (act === "eml") {
-    if (m.dupRecs.length && !m.got && !confirm(`${m.vendor}: ${dupText(m)}.\n두 번 보내는 것이 아닌지 Outlook 보낸 편지함을 확인하셨나요? 그래도 받을까요?`)) return;
     download(buildEml(m), emlName(m)); recordDownload([m]); renderResult();
   } else if (act === "alt") { const a = b.closest(".mail").querySelector(".alt"); a.style.display = a.style.display === "none" ? "" : "none"; }
   else if (act === "copy") { copyMailBody(m).then((ok) => toast(ok ? `${m.vendor} 본문을 복사했습니다. 새 메일 창 본문 칸에서 Ctrl+V 하세요.` : "복사하지 못했습니다. '본문 보기'를 눌러 직접 드래그해서 복사하세요.")); if (!m.got) { recordDownload([m]); renderResult(); } }
@@ -103,7 +101,7 @@ function onMailClick(e) {
     if (!emails.length) { toast("메일 주소를 적어 주세요 (예: name@company.co.kr)"); return; }
     const local = getLocal(CONFIG_NAME), t = local.ov.vendors[m.vendor] = local.ov.vendors[m.vendor] || { to: [], makers: [], poNames: [] };
     t.to = uniq([...(t.to || []), ...emails]); setLocal(CONFIG_NAME, local);
-    m.to = emails; m.noTo = false; m.include = !m.dupRecs.length; log(`[설정 반영 · 이 PC에 저장] ${m.vendor}: 받는사람 + ${emails.join(",")}`, "ok");
+    m.to = emails; m.noTo = false; m.include = true; log(`[설정 반영 · 이 PC에 저장] ${m.vendor}: 받는사람 + ${emails.join(",")}`, "ok");
     reloadConfig({ refetch: false }).then(renderResult); toast(`${m.vendor} 받는 사람을 저장했습니다`);
   } else if (act === "edit" || act === "edclose") {
     const box2 = b.closest(".mail").querySelector(".editBox"), f = box2.querySelector("iframe");
@@ -124,8 +122,6 @@ function onMailClick(e) {
 async function downloadZip() {
   const sel = RESULT.mails.filter((m) => m.include && !m.noTo);
   if (!sel.length) { toast("포함된 메일이 없습니다 (왼쪽 '포함' 체크 확인)"); return; }
-  const again = sel.filter((m) => m.dupRecs.length && !m.got);
-  if (again.length && !confirm(`이미 만든 적이 있는 메일 ${again.length}통이 포함되어 있습니다:\n${again.map((m) => " - " + m.vendor + ": " + dupText(m)).join("\n")}\n\n두 번 보내는 것이 아닌지 확인하셨나요? 그래도 받을까요?`)) return;
   const zip = new JSZip();
   for (const m of sel) zip.file(emlName(m), buildEml(m));
   // 입고파일(전산용 엑셀)은 ZIP에 넣은 메일의 업체 것만 "입고파일" 폴더에
