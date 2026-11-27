@@ -8,17 +8,25 @@ const MAIL_FONTS = {
 };
 const mailFont = (settings) => MAIL_FONTS[clean((settings || (typeof CONFIG !== "undefined" && CONFIG ? CONFIG.settings : {}))["본문글꼴"])] || MAIL_FONTS["맑은 고딕"];
 // ---------------------------------------------------------------- 본문 HTML
+// 표 모양: 보내던 메일 그대로(검정 가는 테두리, 흰 머리줄, FAC 칸 공장색 F2 노랑·F5 파랑, 수량 칸 노랑·굵게)
+const FAC_BG = { F1: "", F2: YELLOW, F5: "00B0F0" };
+const facBg = (v) => FAC_BG[String(v ?? "").replace(/\s+/g, "").toUpperCase()] || "";
 function htmlTable(headers, rows, highlight = [], redRows = []) {
-  const th = headers.map((h) => `<th style="border:1px solid #999;padding:3px 8px;background:#f2f2f2;white-space:nowrap">${esc(h)}</th>`).join("");
+  const B = "border:1px solid #000;padding:1px 6px;white-space:nowrap;mso-line-height-rule:exactly";
+  const facI = headers.findIndex((h) => /^fac$/i.test(String(h)));
+  const th = headers.map((h) => `<td style="${B};font-weight:normal;text-align:left">${esc(h)}</td>`).join("");
   const trs = rows.map((row, ri) => "<tr>" + row.map((v, i) => {
-    const h = headers[i];
-    const st = ["border:1px solid #999", "padding:3px 8px"];
+    const h = headers[i], st = [B];
+    const hi = highlight.includes(h), num = typeof v === "number" || /^-?[\d,]+$/.test(String(v ?? "").trim());
     if (redRows[ri]) st.push("background:#" + RED_BG);
-    else if (highlight.includes(h)) st.push("background:#" + YELLOW);
-    if (typeof v === "number" || /^[\d,]+$/.test(String(v))) st.push("text-align:right");
+    else if (i === facI && facBg(v)) st.push("background:#" + facBg(v));
+    else if (hi) st.push("background:#" + YELLOW);
+    if (i === facI) st.push("text-align:center");
+    else if (num) st.push("text-align:right");
+    st.push(hi && num ? "font-weight:bold" : "font-weight:normal");
     return `<td style="${st.join(";")}">${esc(String(v ?? ""))}</td>`;
   }).join("") + "</tr>").join("");
-  return `<table style="border-collapse:collapse;font-family:${mailFont().replace(/'/g, "")};font-size:10pt">${"<tr>" + th + "</tr>"}${trs}</table>`;
+  return `<table border="1" cellspacing="0" cellpadding="0" style="border-collapse:collapse;border:1px solid #000;font-family:${mailFont().replace(/'/g, "")};font-size:9pt;font-weight:normal">${"<tr>" + th + "</tr>"}${trs}</table>`;
 }
 const P = (s) => `<p style="margin:0">${s}</p>`;
 const BR = '<p style="margin:0">&nbsp;</p>';
@@ -97,21 +105,29 @@ function buildUrgentBody(v, items, settings) {
 }
 
 // ---------------------------------------------------------------- 첨부 엑셀 (xlsx-js-style)
+// 엑셀 표 모양: 맑은 고딕 10, 모든 칸 검정 가는 테두리, 머리줄 굵게·가운데, Fac 칸 공장색, 수량 칸 노랑(왼쪽 굵은 테두리)
 function styleSheet(ws, nrows, ncols, hiCol) {
-  const border = { top: { style: "thin", color: { rgb: "999999" } }, bottom: { style: "thin", color: { rgb: "999999" } }, left: { style: "thin", color: { rgb: "999999" } }, right: { style: "thin", color: { rgb: "999999" } } };
-  const widths = [];
+  const ln = (style) => ({ style, color: { rgb: "000000" } }), font = { name: "맑은 고딕", sz: 10 };
+  const fill = (rgb) => ({ patternType: "solid", fgColor: { rgb } });
+  const NF = "#,##0;[Red]-#,##0;", widths = [];
+  let facC = -1;
+  for (let c = 0; c < ncols; c++) { const h = ws[XLSX.utils.encode_cell({ r: 0, c })]; if (h && /^fac$/i.test(String(h.v))) facC = c; }
   for (let r = 0; r < nrows; r++) for (let c = 0; c < ncols; c++) {
     const addr = XLSX.utils.encode_cell({ r, c });
     if (!ws[addr]) ws[addr] = { t: "s", v: "" };
-    const cell = ws[addr];
-    cell.s = { border };
-    if (r === 0) cell.s = { border, font: { bold: true }, fill: { fgColor: { rgb: "F2F2F2" } }, alignment: { horizontal: "center" } };
-    if (hiCol != null && c === hiCol) cell.s.fill = { fgColor: { rgb: YELLOW } };
-    if (r > 0 && typeof cell.v === "number") cell.z = "#,##0";
-    const len = String(cell.v ?? "").length;
-    widths[c] = Math.max(widths[c] || 0, len);
+    const cell = ws[addr], hi = hiCol != null && c === hiCol;
+    const border = { top: ln(hi && r === 0 ? "medium" : "thin"), bottom: ln("thin"), left: ln(hi ? "medium" : "thin"), right: ln("thin") };
+    const st = { font: { ...font }, border, alignment: { vertical: "center" } };
+    if (r === 0) { st.font.bold = true; st.alignment.horizontal = "center"; st.fill = fill(hi ? YELLOW : "FFFFFF"); }
+    else {
+      if (c === facC) { st.alignment.horizontal = "center"; if (facBg(cell.v)) st.fill = fill(facBg(cell.v)); }
+      else if (hi) st.fill = fill(YELLOW);
+      if (typeof cell.v === "number" && !(cell.z && /[dmy]/i.test(cell.z))) { cell.z = NF; st.alignment.horizontal = "center"; }
+    }
+    cell.s = st;
+    widths[c] = Math.max(widths[c] || 0, String(cell.v ?? "").length);
   }
-  ws["!cols"] = widths.map((w) => ({ wch: Math.min(Math.max(8, w * 1.3 + 2), 60) }));
+  ws["!cols"] = widths.map((w) => ({ wch: Math.min(Math.max(8, w * 1.2 + 2), 60) }));
 }
 function vendorXlsx(ship, air, etdSel) {
   const wb = XLSX.utils.book_new();

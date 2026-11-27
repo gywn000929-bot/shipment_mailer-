@@ -130,15 +130,21 @@ function facCodes() {
   for (const p of String(cfg).split(/[,;\n]/)) { const [k, v] = p.split("=").map((x) => (x || "").trim()); if (/^F\d$/i.test(k || "") && toNum(v)) m[k.toUpperCase()] = toNum(v); }
   return m;
 }
-function inboundXlsx(etd, vcode, rows) {   // rows: [{fac, cd, maker, nm, req, recv}]
+function inboundXlsx(etd, vcode, rows) {   // rows: [{fac, cd, maker, nm, req, recv}]. 모양은 실제 입고 파일("1027 ….xlsx") 그대로
   const fc = facCodes(), font = { name: "맑은 고딕", sz: 10 }, NF = "#,##0;[Red]-#,##0;";
-  const fill = (bg) => (bg ? { fill: { patternType: "solid", fgColor: { rgb: bg } } } : {});
-  const S = (v) => ({ t: "s", v: v == null ? "" : String(v), s: { font } });
-  const N = (v, z, bg) => (v == null || v === "" ? { t: "s", v: "", s: { font, ...fill(bg) } } : { t: "n", v, z, s: { font, ...fill(bg) } });
+  const FBG = { F1: "FFFFFF", F2: YELLOW, F5: "00B0F0" };
+  const ln = (style) => ({ style, color: { rgb: "000000" } });
+  const bd = (left = "thin", top = "thin") => ({ top: ln(top), bottom: ln("thin"), left: ln(left), right: ln("thin") });
+  const st = (o = {}) => ({ font: { ...font, ...(o.bold ? { bold: true } : {}) }, border: bd(o.left, o.top), alignment: { horizontal: o.al || "left", vertical: "center" }, ...(o.bg ? { fill: { patternType: "solid", fgColor: { rgb: o.bg } } } : {}) });
+  const S = (v, o) => ({ t: "s", v: v == null ? "" : String(v), s: st(o) });
+  const N = (v, z, o) => (v == null || v === "" ? { t: "s", v: "", s: st(o) } : { t: "n", v, z, s: st(o) });
   const code = toNum(vcode) || null;
-  const aoa = [["Fac", "ITEM CD", "MAKER", "", "ITEM NM", etd, ""].map((h) => ({ t: "s", v: h, s: { font: { ...font, bold: true } } }))];
-  for (const r of rows) { const f = String(r.fac || "").replace(/\s+/g, "").toUpperCase(); aoa.push([fc[f] ? N(fc[f], "@") : S(r.fac), S(r.cd), S(r.maker), code ? N(code) : S(vcode), S(r.nm), N(r.req, NF, YELLOW), N(r.recv, NF)]); }
-  const ws = XLSX.utils.aoa_to_sheet(aoa); ws["!cols"] = [7, 14, 14, 7, 34, 14, 12].map((w) => ({ wch: w }));
+  const aoa = [["Fac", "ITEM CD", "MAKER", "", "ITEM NM", etd, ""].map((h, i) => S(h, { bold: true, al: "center", bg: i === 5 ? YELLOW : "FFFFFF", left: i === 5 ? "medium" : "thin", top: i === 5 ? "medium" : "thin" }))];
+  for (const r of rows) {
+    const f = String(r.fac || "").replace(/\s+/g, "").toUpperCase(), fo = { al: "center", bg: FBG[f] };
+    aoa.push([fc[f] ? N(fc[f], "General", fo) : S(r.fac, fo), S(r.cd), S(r.maker), code ? N(code, "General") : S(vcode), S(r.nm), N(r.req, NF, { al: "center", bg: YELLOW, left: "medium" }), N(r.recv, NF, { al: "center" })]);
+  }
+  const ws = XLSX.utils.aoa_to_sheet(aoa); ws["!cols"] = [7, 14, 16, 7, 40, 15, 12].map((w) => ({ wch: w }));
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
   return new Uint8Array(XLSX.write(wb, { type: "array", bookType: "xlsx" }));
 }
