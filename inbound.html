@@ -2,9 +2,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="js/core.js?v=14" defer></script>
+<script src="js/core.js?v=15" defer></script>
 <script src="js/config.js?v=8" defer></script>
-<script src="js/inbound.js?v=9" defer></script>
+<script src="js/inbound.js?v=10" defer></script>
 <style>
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css");
 :root{--bg:#f4f6fa;--card:#fff;--line:#e3e7ee;--txt:#1f2937;--mut:#6b7280;--pri:#2563eb;--pri2:#1d4ed8;--ok:#16a34a;--warn:#d97706;--err:#dc2626;--chip:#eef2ff}
@@ -78,7 +78,7 @@ a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;ba
 <section class="card full"><h2>사용법</h2>
  <ol>
   <li>업체가 입고수량을 적어 회신한 엑셀을 끌어다 놓습니다. <b>파일 이름에 업체 이름이 들어 있으면</b> 업체와 업체코드를 자동으로 고릅니다(메일 작성기가 만든 첨부 파일 이름 그대로면 됩니다). 틀리면 고르는 칸에서 바꾸세요.</li>
-  <li>이번 주(첫 ETD) 요청 수량이 있는 줄만 남기고, 공장은 전산 코드(F1=1010, F2=1060, F5=1150)로 바꾸고, 업체코드 칸을 넣습니다.</li>
+  <li>품목 줄을 모두 넣고(이번 주 요청이 0인 줄도), 공장은 전산 코드(F1=1010, F2=1060, F5=1150)로 바꾸고, 업체코드 칸을 넣습니다.</li>
   <li><b>"수량 보기·고치기"</b>로 입고수량을 확인합니다. 요청과 다른 줄은 노란색입니다. 업체가 수량을 안 적었으면 "빈칸을 요청 수량대로"를 누르고 다른 줄만 고치세요. 안 들어온 품목은 칸을 비워 둡니다.</li>
   <li>"받기"를 누르면 <b>"1118 태양기전.xlsx"</b> 같은 이름으로 받아집니다. 앞 4자리는 위의 입고 날짜입니다.</li>
   <li>업체코드가 없는 업체는 칸에 직접 적으면 이 PC가 기억합니다. 계속 쓰려면 메일 작성기의 "⚙ 업체·설정 고치기"에서 "전산 업체코드" 칸에 넣어 주세요.</li>

@@ -12,7 +12,7 @@ const mailFont = (settings) => MAIL_FONTS[clean((settings || (typeof CONFIG !== 
 const FAC_BG = { F1: "", F2: YELLOW, F5: "00B0F0" };
 const facBg = (v) => FAC_BG[String(v ?? "").replace(/\s+/g, "").toUpperCase()] || "";
 function htmlTable(headers, rows, highlight = [], redRows = []) {
-  const B = "border:1px solid #000;padding:1px 6px;white-space:nowrap;mso-line-height-rule:exactly";
+  const B = "border:1px solid #000;padding:1px 6px;white-space:nowrap;color:#000000;mso-line-height-rule:exactly";
   const facI = headers.findIndex((h) => /^fac$/i.test(String(h)));
   const th = headers.map((h) => `<td style="${B};font-weight:normal;text-align:left">${esc(h)}</td>`).join("");
   const trs = rows.map((row, ri) => "<tr>" + row.map((v, i) => {
@@ -26,13 +26,13 @@ function htmlTable(headers, rows, highlight = [], redRows = []) {
     st.push(hi && num ? "font-weight:bold" : "font-weight:normal");
     return `<td style="${st.join(";")}">${esc(String(v ?? ""))}</td>`;
   }).join("") + "</tr>").join("");
-  return `<table border="1" cellspacing="0" cellpadding="0" style="border-collapse:collapse;border:1px solid #000;font-family:${mailFont().replace(/'/g, "")};font-size:9pt;font-weight:normal">${"<tr>" + th + "</tr>"}${trs}</table>`;
+  return `<table border="1" cellspacing="0" cellpadding="0" style="border-collapse:collapse;border:1px solid #000;color:#000000;font-family:${mailFont().replace(/'/g, "")};font-size:9pt;font-weight:normal">${"<tr>" + th + "</tr>"}${trs}</table>`;
 }
 const P = (s) => `<p style="margin:0">${s}</p>`;
 const BR = '<p style="margin:0">&nbsp;</p>';
 function bodyWrap(settings, inner) {   // 설정: 본문크기(pt), 본문굵게(Y/N)
   const size = parseInt(settings["본문크기"]) || 10, bold = /^(Y|YES|O|1)$/i.test(clean(settings["본문굵게"]));
-  return `<div style="font-family:${mailFont(settings).replace(/'/g, "")};font-size:${size}pt${bold ? ";font-weight:bold" : ""}">${inner}</div>`;
+  return `<div style="font-family:${mailFont(settings).replace(/'/g, "")};font-size:${size}pt;color:#000000${bold ? ";font-weight:bold" : ""}">${inner}</div>`;
 }
 // 서명: 설정 시트의 "서명". Outlook이 서명을 자동으로 넣는 PC에서는 화면의 "본문 끝에 서명 넣기"를 끈다(이 PC에 기억).
 const sigOn = () => !pref("sigOff", CONFIG_NAME);
@@ -69,7 +69,9 @@ const FRI_TPL_DEFAULT = "{인사}\n하기 내용으로 금주 금요일 에어 �
 const BLOCK_LINE_DEFAULT = { 선박제목줄: "선박리스트 (노란색 수량, {입고일} 입고 요망)", 선박첨부안내: "첨부 선박 리스트는 자재 입고 전 입고수량 기재하여 회신 부탁드립니다.", 에어제목줄: "에어리스트 (노란색 수량, {입고일} 입고 요망)" };
 function blockLine(settings, key, date) {
   const t = settings[key] != null ? String(settings[key]) : BLOCK_LINE_DEFAULT[key];
-  return clean(t) ? P(esc(t).replace(/\{입고일\}/g, date ? `<b>${shortDate(date)}</b>` : "")) : "";
+  if (!clean(t)) return "";
+  const line = esc(t).replace(/\{입고일\}/g, date ? shortDate(date) : "");
+  return P(/제목줄$/.test(key) ? `<b>${line}</b>` : line);   // 표 위 제목 줄은 보내던 메일처럼 줄 전체 굵게
 }
 function buildShipBody(v, air, ship, etdSel, airDate, shipDate, settings, attached, friday = false) {
   const hasShip = ship.length > 0, hasAir = air.length > 0;
