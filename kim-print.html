@@ -1,0 +1,112 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>계장님 주간 스케줄표 (인쇄용)</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css");
+@page{size:A4 landscape;margin:9mm}
+*{box-sizing:border-box}
+body{margin:0;background:#888;color:#000;font-family:'Pretendard Variable',Pretendard,'Malgun Gothic','맑은 고딕',sans-serif;font-size:9.6pt;line-height:1.42;letter-spacing:-0.01em;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.bar{background:#222;color:#fff;padding:10px 16px;display:flex;gap:12px;align-items:center;font-size:14px}
+.bar button{font:inherit;font-weight:700;border:0;border-radius:6px;padding:7px 16px;background:#fff;color:#000;cursor:pointer}.bar a{color:#fff}
+.sheet{width:297mm;min-height:210mm;margin:10px auto;background:#fff;padding:9mm;display:flex;flex-direction:column}
+h1{margin:0;font-size:17pt;font-weight:800;letter-spacing:-0.02em}
+.top{display:flex;align-items:flex-end;gap:14px;border-bottom:2.2pt solid #000;padding-bottom:5px;margin-bottom:7px}
+.top .sub{font-size:9.5pt}.top .fill{margin-left:auto;font-size:11pt;white-space:nowrap}
+.blank{display:inline-block;border-bottom:1pt solid #000;min-width:30px;height:1em;vertical-align:baseline}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th,td{border:1pt solid #000;vertical-align:top;padding:4px 6px;text-align:left}
+.wk th{font-size:12pt;font-weight:800;text-align:center;padding:5px 4px;border-bottom:2pt solid #000}
+.wk th small{display:block;font-size:8.6pt;font-weight:500;margin-top:1px}
+.wk td{height:126mm}
+ul{list-style:none;margin:0;padding:0}
+li{position:relative;padding:0 0 0 17px;margin:0 0 6px}
+li::before{content:"";position:absolute;left:0;top:2.5px;width:10px;height:10px;border:1.1pt solid #000;background:#fff}
+b{font-weight:800}.v{font-size:8.6pt;display:block;margin-top:1px}
+.memo{margin-top:6px;border-top:1pt dashed #000;padding-top:3px;font-size:8.4pt}
+.row2{margin-top:6px}.row2 th{width:27mm;text-align:center;font-weight:800;font-size:9.6pt;vertical-align:middle}.row2 td{font-size:9.2pt}
+.row2 li{display:inline-block;margin:0 16px 2px 0}
+.foot{margin-top:auto;padding-top:5px;font-size:8.2pt;display:flex;justify-content:space-between;gap:10px}
+.vt th{font-weight:800;text-align:center;font-size:9.4pt;border-bottom:2pt solid #000;padding:5px 4px}
+.vt td{font-size:9pt;padding:4px 6px}.vt td.c{text-align:center}.vt tr.sep td{border-top:2pt solid #000}
+.vt col.n{width:27mm}.vt col.w{width:24mm}.vt col.p{width:15mm}.vt col.k{width:14mm}.vt col.m{width:62mm}.vt col.to{width:58mm}
+.new{display:inline-block;border:1pt solid #000;font-size:7.4pt;font-weight:800;padding:0 3px;margin-left:3px;vertical-align:1px}
+h2{margin:0 0 6px;font-size:13pt;font-weight:800;border-bottom:2.2pt solid #000;padding-bottom:5px}
+@media print{body{background:#fff}.bar{display:none}.sheet{margin:0;padding:0;width:auto;min-height:0;height:191mm;page-break-after:always}.sheet:last-child{page-break-after:auto}}
+.vt col.n{width:30mm}.vt col.w{width:17mm}.vt col.p{width:13mm}.vt col.k{width:12mm}.vt col.m{width:50mm}.vt col.to{width:66mm}
+.vt td{font-size:7.8pt;padding:1px 4px;line-height:1.2}.vt th{padding:3px 4px;font-size:8.6pt}.sheet.auto h2{margin-bottom:4px}.sheet.auto .row2 td,.sheet.auto .row2 th{font-size:8.2pt;padding:2px 6px}.vt td.miss{font-weight:800}
+.vt tr{page-break-inside:avoid}
+@media print{.sheet.auto{height:auto}}
+</style></head><body>
+<div class="bar"><button onclick="window.print()">🖨 인쇄하기</button><span>A4 가로 · 흑백 (1장: 주간 스케줄표, 2장~: 업체 정리표). 인쇄 창에서 <b>용지 A4, 방향 가로, 배율 100%</b>로 맞추세요.</span><a href="kim.html">← 화면용으로 돌아가기</a></div>
+
+<div class="sheet">
+ <div class="top"><h1>주간 스케줄표</h1><span class="sub">김민지 계장 · 출하 요청 · 에어 · 주문서 메일</span>
+  <span class="fill"><span class="blank"></span>월 <span class="blank"></span>주 &nbsp;( <span class="blank"></span> / <span class="blank"></span> ~ <span class="blank"></span> / <span class="blank"></span> )</span></div>
+ <table class="wk">
+  <tr><th>월<small>출하 요청 메일 보내는 날</small></th><th>화<small>에어 입고일</small></th><th>수<small>금요일 에어 메일 보내는 날</small></th><th>목<small>빠진 것 챙기기</small></th><th>금<small>에어 입고일 · 에어 컨펌</small></th></tr>
+  <tr>
+   <td><ul>
+    <li>남효주 <b>"선박 및 에어리스트의 건"</b> 메일의 첨부 엑셀 저장</li>
+    <li>메일 작성기에 엑셀 놓기 → <b>출하 요청 메일</b> + <b>KET 긴급 자재 메일</b><span class="v">바로 만들기 "📅 월요일 메일"</span></li>
+    <li>화요일 에어: <b>KET · 에어 장납은 전부</b>, 나머지는 URGENT만<span class="v">KET 긴급 메일 붉은 칸 · 숫자 확인</span></li>
+    <li>전부 받기(ZIP) → .eml 더블클릭 → 보내기</li>
+    <li>"Outlook에서 보냈음" 체크</li>
+    <li>오후 <b>"에어 업데이트 된 전체 에어 리스트"</b> 오면 회신 필요한 업체 확인</li>
+   </ul><div class="memo">메모</div></td>
+   <td><ul>
+    <li>월요일 메일 <b>회신 없는 업체</b> 확인</li>
+    <li><b>에어 인보이스</b> 나오면 검토 메일 (직접)</li>
+   </ul><div class="memo">메모</div></td>
+   <td><ul>
+    <li>남효주 <b>"금주 금요일 에어 REMAIN 리스트"</b> 메일 열기</li>
+    <li>본문 표를 맨 윗줄(FAC, Item cd …)부터 끝까지 <b>Ctrl+C</b> → 메일 작성기에서 <b>Ctrl+V</b><span class="v">바로 만들기 "✈ 수요일 REMAIN 메일" · 첨부 엑셀은 끌어다 놓아도 됨</span></li>
+    <li>제목 끝 <b>(금요일 에어)</b>, 입고 요망일 금요일 확인 후 보내기</li>
+   </ul><div class="memo">메모</div></td>
+   <td><ul>
+    <li>금요일 에어 메일 <b>회신 없는 업체</b> 확인</li>
+    <li>나온 <b>주문서 PDF</b> → 주문서 메일<span class="v">바로 만들기 "📄 주문서 메일" · 한국단자 · 연호 · 경신 등은 자동으로 빠짐</span></li>
+   </ul><div class="memo">메모</div></td>
+   <td><ul>
+    <li><b>에어 컨펌</b><span class="v">에어 컨펌 도우미</span></li>
+   </ul><div class="memo">메모</div></td>
+  </tr>
+ </table>
+ <table class="row2">
+  <tr><th>수시</th><td><ul><li>주문서 PDF 나오면 주문서 메일 ("업체-PO")</li><li><b>KET · 경신</b> 발주 잔량: ERP 발주 미납 .xls + 선박리스트 → 발주 점검</li><li><b>연호</b> 발주 · 점검 (연호 미납조회 .xls)</li></ul></td></tr>
+  <tr><th>바뀔 때</th><td><ul><li>문구: "✉ 메일 문구 고치기"</li><li>담당자 · 메일: "🏢 업체 메일 주소" → 저장하고 설정 파일 받기</li><li>"받는 사람 없음": 그 줄 빈칸에 적고 저장</li></ul></td></tr>
+ </table>
+ <div class="foot"><span>메일을 만든 뒤에는 늘 같습니다: 전부 받기(ZIP) → .eml 더블클릭 → 받는 사람 · 첨부 확인 → 보내기 → "보냈음" 체크</span><span>화면용: gywn000929-bot.github.io/shipment_mailer-/kim.html</span></div>
+</div>
+
+<div class="sheet auto">
+ <h2>담당 업체 정리표 <span style="font-size:9.5pt;font-weight:500" id="vInfo">— 설정 파일(config_kim.xlsx) 불러오는 중…</span></h2>
+ <table class="vt" id="vTbl">
+  <colgroup><col class="n"><col class="w"><col class="p"><col class="k"><col class="to"><col class="m"><col></colgroup>
+ </table>
+ <table class="row2" style="margin-top:4px" id="vSum"></table>
+ <div class="foot"><span>담당자 전화번호는 넣지 않았습니다. 필요하면 빈 곳에 적어 두세요. 업체는 설정 파일 기준이라 인쇄할 때마다 최신입니다.</span><span>화면용: gywn000929-bot.github.io/shipment_mailer-/kim.html#sum</span></div>
+</div>
+<script>
+(async function () {
+  const info = document.getElementById("vInfo"), tbl = document.getElementById("vTbl"), sum = document.getElementById("vSum");
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const no = (v) => /^(N|NO|X|0)$/i.test(String(v ?? "").trim());
+  try {
+    const wb = XLSX.read(await (await fetch("config_kim.xlsx?t=" + Date.now(), { cache: "no-store" })).arrayBuffer(), { type: "array" });
+    const set = {}; XLSX.utils.sheet_to_json(wb.Sheets["설정"], { header: 1 }).forEach((r) => { if (r[0]) set[String(r[0]).trim()] = r[1]; });
+    const list = (k) => String(set[k] || "").split(/[,;\n]/).map((x) => x.trim()).filter(Boolean);
+    const exc = list("내업체제외"), urg = list("긴급메일업체");
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets["업체"], { defval: "" }).filter((r) => String(r["업체"]).trim() && !String(r["업체"]).startsWith("※") && !no(r["활성"]) && !exc.includes(String(r["업체"]).trim()));
+    const kind = (r) => no(r["출하요청발송"]) ? "메일 없음" : /^Y/i.test(r["엑셀첨부"]) ? "엑셀 첨부" : "본문 표";
+    const cnt = (s) => String(s || "").split(",").map((x) => x.trim()).filter(Boolean).length;
+    const miss = rows.filter((r) => !String(r["받는사람"]).trim());
+    info.textContent = `— ${rows.length}곳 · 메일 주소 없는 업체 ${miss.length}곳 · ${new Date().toLocaleDateString("ko-KR")} 기준`;
+    tbl.insertAdjacentHTML("beforeend", "<tr><th>업체</th><th>출하 요청</th><th>주문서</th><th>코드</th><th>받는 사람</th><th>MAKER</th><th>메모</th></tr>" + rows.map((r) => {
+      const to = String(r["받는사람"]).trim(), cc = cnt(r["추가참조"]), nm = String(r["업체"]).trim();
+      return `<tr><td><b>${esc(nm)}</b>${urg.includes(nm) ? '<span class="new">긴급</span>' : ""}</td><td class="c">${kind(r)}</td><td class="c">${no(r["발주서발송"]) ? "×" : "○"}</td><td class="c">${esc(r["업체코드"])}</td><td class="${to ? "" : "miss"}">${to ? esc(to) + (cc ? ` (참조 ${cc}명)` : "") : "메일 주소 없음 ____________"}</td><td>${esc(r["MAKER"])}</td><td>${esc(r["메모"])}</td></tr>`;
+    }).join(""));
+    sum.innerHTML = `<tr><th>알아 둘 것</th><td>${urg.length ? `<b>긴급</b> 표시(${urg.map(esc).join(", ")}): 월요일에 긴급 자재 메일이 하나 더 나옴 &nbsp;·&nbsp; ` : ""}주문서 <b>×</b>: 주문서 PDF에 있어도 자동으로 빠짐 &nbsp;·&nbsp; 공통 참조: ${esc(set["공통참조"] || "")}</td></tr>`;
+  } catch (e) { info.textContent = "— 설정 파일을 읽지 못했습니다 (인터넷 연결 확인)"; }
+})();
+</script>
+</body></html>
