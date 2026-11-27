@@ -104,10 +104,16 @@ async function runShip(fromPaste = false) {
       const attachments = attached ? [{ name: safeName(`${subjectBase}_${v.name}.xlsx`), data: vendorXlsx(s, a, etdSel) }] : [];
       // 입고 파일(전산에 올리는 엑셀): 이번 주(첫 ETD) 요청 수량이 있는 줄만, Fac → 1010/1060/1150, 업체코드 넣기
       let inbound = null;
-      const inRows = s.filter((r) => toNum(r[etdSel[0]]) > 0).map((r) => ({ fac: r.Fac, cd: r["ITEM CD"], maker: r.MAKER, nm: r["ITEM NM"], req: toNum(r[etdSel[0]]), recv: null }));
+      // 에어만 있는 메일(선박 수량 없음)은 에어 수량으로 같은 모양의 입고 파일을 만든다(머리줄 "AIR 02-DEC-26", 날짜 = 에어 입고 요망일)
+      let inRows = s.filter((r) => toNum(r[etdSel[0]]) > 0).map((r) => ({ fac: r.Fac, cd: r["ITEM CD"], maker: r.MAKER, nm: r["ITEM NM"], req: toNum(r[etdSel[0]]), recv: null }));
+      let inHead = etdSel[0], inDate = shipDate;
+      if (!s.length && a.length) {
+        inRows = a.filter((r) => toNum(r["Purchase request"]) > 0).map((r) => ({ fac: r.FAC, cd: r["Item cd"], maker: r.Maker, nm: r["Part Name"], req: toNum(r["Purchase request"]), recv: null }));
+        inHead = "AIR " + fmtCellDate(airDate).toUpperCase(); inDate = airDate;
+      }
       if (inRows.length) {
         const vcode = v.code || store.get("mailmaker_vendor_codes", {})[n] || "";
-        inbound = { name: safeName(`${pad2(shipDate.getMonth() + 1)}${pad2(shipDate.getDate())} ${n}.xlsx`), data: inboundXlsx(etdSel[0], vcode, inRows), noCode: !vcode };
+        inbound = { name: safeName(`${pad2(inDate.getMonth() + 1)}${pad2(inDate.getDate())} ${n}.xlsx`), data: inboundXlsx(inHead, vcode, inRows), noCode: !vcode };
         RESULT.extraFiles.push({ name: "입고파일/" + inbound.name, data: inbound.data, inbound: true });
         log(`   입고 파일: ${inbound.name} (${inRows.length}줄)${vcode ? "" : "  [확인] 업체코드가 없어 빈칸입니다 → ⚙ 업체·설정 고치기에서 '전산 업체코드'를 넣어 주세요"}`, vcode ? "" : "warn");
       }
