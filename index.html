@@ -81,7 +81,7 @@ details.sub{margin-top:10px;font-size:13px;color:var(--mut)}details.sub summary{
 .modeBtn b{display:block;font-size:15px}.modeBtn small{display:block;color:var(--mut);margin-top:3px;font-size:12px}
 .modeBtn.on{border-color:var(--pri);background:#eef2ff}.modeBtn.on b{color:var(--pri2)}
 [data-modes].mhide{display:none}
-.soloOnly{display:none}.solo-ord .soloOnly{display:inline-block}.solo-ord #modeCard,.solo-ord #btnMailText,.solo-ord #firstCard{display:none!important}
+.soloOnly{display:none}.solo-ord .soloOnly,.solo-int .soloOnly{display:inline-block}.solo-ord #modeCard,.solo-ord #btnMailText,.solo-ord #firstCard,.solo-int #modeCard,.solo-int #firstCard{display:none!important}
 .pasteSteps{margin:0 0 10px;padding-left:20px;font-size:14px;line-height:1.7}
 .pasteArea{width:100%;box-sizing:border-box;border:2px dashed #c7d2fe;border-radius:12px;padding:12px;background:#fafbff;font:12px Consolas,"D2Coding",monospace;resize:vertical;white-space:pre;overflow:auto}
 .pasteArea:focus{outline:none;border-color:var(--pri);background:#fff}.pasteArea.has{border-style:solid;border-color:var(--ok);background:#f0fdf4}
@@ -130,6 +130,8 @@ a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;ba
  <a class="btn sm" id="lnkTodo" href="kim.html">📅 이번 주 할 일</a>
  <a class="btn sm" href="list.html">📋 주간 리스트 만들기</a>
  <a class="btn sm" href="inbound.html">📥 입고 파일 만들기</a>
+ <a class="btn sm" href="balju.html">🧮 발주 점검 (따로 열기)</a>
+ <a class="btn sm" href="gyejang.html">📨 계장님께 메일 (따로 열기)</a>
  <div class="menuCfg"><label class="hint">설정 파일</label>
   <select id="config"><option value="config.xlsx">config.xlsx (남효주)</option><option value="config_kim.xlsx">config_kim.xlsx (김민지 계장)</option><option value="__file__">내 PC의 설정 파일 올리기…</option></select>
   <input type="file" id="configFile" accept=".xlsx" style="display:none"><span class="hint" id="cfgInfo">설정 불러오는 중…</span></div>
@@ -152,8 +154,6 @@ a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;ba
   <button class="modeBtn" data-mode="mon"><b>📅 월요일 메일</b><small>주간 리스트 엑셀 → 출하 요청 (선박 + 화요일 에어)</small></button>
   <button class="modeBtn" data-mode="wed"><b>✈ 수요일 REMAIN 메일</b><small>REMAIN 표 붙여넣기 → 금요일 에어</small></button>
   <button class="modeBtn" data-mode="po"><b>📄 주문서 메일</b><small>주문서 PDF → 업체별 발주서</small></button>
-  <button class="modeBtn" data-mode="ord"><b>🧮 발주 점검</b><small>선박리스트 + ERP 발주 미납 → 부족·추가 발주·잔량 확인 메일</small></button>
-  <button class="modeBtn" data-mode="int" id="modeInt" style="display:none"><b>📨 계장님께</b><small>주간 리스트 엑셀 → 계장님께 보낼 리스트·에어·REMAIN 메일</small></button>
  </div>
 </section>
 <section class="card full" id="shipCard" data-modes="mon"><h2><span class="step">2</span> 주간 리스트 엑셀을 넣으세요</h2>
@@ -240,7 +240,7 @@ a.btn{display:inline-block;border-radius:10px;padding:6px 10px;font-size:13px;ba
   <li><b>메일 문구를 고치려면</b> 위쪽 <b>✉ 메일 문구 고치기</b>(Outlook 새 메일 창처럼 바로 고침), <b>업체 메일 주소는</b> <b>🏢 업체 주소</b>. 고친 뒤 "저장하고 설정 파일 받기"를 누르면 올리는 방법이 화면에 나옵니다. 올리기 전까지는 이 PC에서만 적용됩니다(위쪽 노란 알림).</li>
   <li>"업체를 모르는 품목"이 나오면 미지정 업체 지정하기에서 업체를 골라 저장하고 미리보기를 다시 누릅니다. "받는 사람 없음" 업체는 그 칸에 메일 주소를 적고 저장하면 됩니다.</li>
   <li><b>제일 빠른 방법</b>: 엑셀이나 주문서 PDF를 화면 <b>아무 곳에나</b> 끌어다 놓으면 메일 종류를 알아서 고르고 바로 만듭니다(선박 표가 있으면 월요일, 출고수량·Remain 열만 있으면 수요일 REMAIN, PDF는 주문서). REMAIN 메일 본문의 표는 화면 아무 곳에서나 Ctrl+V 해도 됩니다. 기준 주는 리스트의 NEED ETD 날짜로 자동으로 잡힙니다.</li>
-  <li><b>📨 계장님께</b>(남효주 설정에서만 보임): 주간 리스트 엑셀을 넣으면 ① 월요일 리스트 메일(엑셀 첨부) ② 월요일 오후 에어 업데이트 전체 리스트(본문 표) ③ 수요일 REMAIN 리스트(본문 표 + 엑셀 첨부)를 만듭니다. 출고수량 열이 있으면 자동으로 ③.</li>
+  <li><b>📨 계장님께</b>는 따로 여는 링크입니다(<a href="gyejang.html">gyejang.html</a>, ☰ 더보기에도 있음). <b>🧮 발주 점검</b>도 <a href="balju.html">balju.html</a>로 따로 엽니다. 계장님께 화면에 주간 리스트 엑셀을 넣으면 ① 월요일 리스트 메일(엑셀 첨부) ② 월요일 오후 에어 업데이트 전체 리스트(본문 표) ③ 수요일 REMAIN 리스트(본문 표 + 엑셀 첨부)를 만듭니다. 출고수량 열이 있으면 자동으로 ③.</li>
   <li><b>화요일 에어</b>(월요일 주간 리스트): KET 품목과 "에어 장납" 시트(시트 이름에 '장납')에 있는 품목은 NEED ETD와 상관없이 모두, 나머지 업체는 NEED ETD가 <b>URGENT</b>인 품목만 넣습니다. 장납 시트가 없는 주에는 이 PC가 지난번에 읽은 장납 목록을 씁니다.</li>
   <li><b>금요일 에어</b>(수요일 REMAIN 리스트): 받은 엑셀을 그대로 위 칸에 끌어다 놓습니다. AIR 시트의 <b>Purchase request − 출고수량</b>이 남은 품목(Remain)만 업체별로 만들고, 제목 끝에 "(금요일 에어)"가 붙습니다. 기준 주는 이번 주로 자동으로 잡힙니다.</li>
   <li>선박리스트 파일 안에 Air 시트가 같이 있으면 선박 칸에만 넣어도 에어까지 자동으로 만듭니다. 에어 표가 여러 시트(Air, Air up)면 Remain 열이 있는 시트를 쓰고, 파일 아래 "에어 시트"에서 바꿀 수 있습니다.</li>
