@@ -43,6 +43,25 @@ function readInputs(fileName, wb) {
       const byName = slotOf(sn, "") || slotOf(fileName.replace(/\.[^.]+$/, ""), "");
       out.push({ ...base, kind: "bal", slot: /^F[125]$/.test(fac) ? `${fac} ${/JST/i.test(sn + fileName) ? "JST " : ""}Bal` : byName }); continue;
     }
+    const hf = headerRowOf(rows, ["FAC", "ITEMCD"], 5);
+    if (hf >= 0) {   // 전산 Stock(출고수량 합계) 모양: FAC | ITEM CD | Part Name | Shipped Q'ty. 공장은 FAC 칸으로, Stock/Balance는 머리글·이름으로
+      const hd = rows[hf].map(nsp), cF = hd.indexOf("FAC"), cC = hd.indexOf("ITEMCD");
+      const cV = hd.findIndex((c, i) => i > cC && /SHIPPED|QTY|Q'TY|수량|STOCK|BALANCE/.test(c));
+      if (cV >= 0 && !hd.includes("MAKER") && hd.filter(Boolean).length <= 6) {   // 지난주 리스트(MAKER·ETD 열이 많은 표)는 여기서 받지 않는다
+        const nm = nsp(sn + " " + fileName), isBal = /BAL|미납/.test(nm + hd[cV]) && !/SHIPPED|STO|재고|출고/.test(nm + hd[cV]);
+        const jst = /JST/.test(nm), kind = isBal ? "Bal" : "Sto";
+        const facs = uniq(rows.slice(hf + 1).map((r) => nsp((r || [])[cF])).filter((f) => /^F[125]$/.test(f)));
+        for (const f of facs) {
+          const slot = `${f} ${jst ? "JST " : ""}${kind}`;
+          const own = facs.length === 1;   // 공장 하나만 든 시트(F1·F2·F5)가 합계 시트보다 먼저
+          const prev = out.findIndex((x) => x.slot === slot);
+          if (prev >= 0 && !own) continue;
+          if (prev >= 0) out.splice(prev, 1);
+          out.push({ ...base, kind: "bal", slot, codeCol: cC, valCol: cV, rows: rows.filter((r, i) => i > hf && nsp((r || [])[cF]) === f) });
+        }
+        if (facs.length) continue;
+      }
+    }
     const slot = slotOf(sn, wb.SheetNames.length === 1 ? fileName : "");
     const looksBal = rows.slice(0, 30).some((r) => (r || []).slice(0, 10).some(isCode)) && rows.length > 1 && (rows[0] || []).length <= 12;
     if (slot && looksBal) { out.push({ ...base, kind: "bal", slot }); continue; }
@@ -89,6 +108,7 @@ function parseSea(inp) {
 // ---------------------------------------------------------------- Balance / Stock / 거래처 표
 function lookupTable(inp) {   // 매크로처럼: 처음 나오는 M0…/S0… 칸의 열이 코드, 그 오른쪽 두 번째 열이 값. 같은 코드는 첫 줄
   const rows = inp.rows; let cc = -1;
+  if (inp.valCol != null) { const m = new Map(); for (const r of rows) { const k = clean((r || [])[inp.codeCol]); if (k && !m.has(k)) m.set(k, (r || [])[inp.valCol]); } return m; }
   for (let r = 0; r < Math.min(30, rows.length) && cc < 0; r++) for (let c = 0; c < 10; c++) if (isCode((rows[r] || [])[c])) { cc = c; break; }
   const map = new Map(); if (cc < 0) return map;
   for (const r of rows) { const k = clean((r || [])[cc]); if (isCode(k) && !map.has(k)) map.set(k, (r || [])[cc + 2]); }
