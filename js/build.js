@@ -287,7 +287,7 @@ function buildLists() {
 
 // ---------------------------------------------------------------- 엑셀로 (매크로와 같은 모양)
 function listWorkbook(o) {
-  const thin = { style: "thin", color: { rgb: "B4B4B4" } }, border = { top: thin, bottom: thin, left: thin, right: thin };
+  const thin = { style: "thin", color: { rgb: "000000" } }, border = { top: thin, bottom: thin, left: thin, right: thin };
   const font = (x = {}) => ({ name: "맑은 고딕", sz: 10, ...x }), NF = "#,##0;[Red]-#,##0;";
   const FAC = { F1: "FFFFFF", F2: "FFFF00", F5: "00B0F0" };
   const cell = (v, st = {}) => {
