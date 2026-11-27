@@ -36,7 +36,7 @@ function readInputs(fileName, wb) {
     const base = { file: fileName, sheet: sn, rows, sheetNames: wb.SheetNames };
     if (headerRowOf(rows, ["매입업체", "MAKER"], 3) >= 0) { out.push({ ...base, kind: "vendor" }); continue; }
     if (/^SUMMARY/i.test(sn.trim()) && headerRowOf(rows, ["ITEMCD"]) >= 0) { let facs = []; try { facs = parseSea(base).facs; } catch (e) { console.warn(e); } out.push({ ...base, kind: "sea", facs }); continue; }
-    if (headerRowOf(rows, ["ITEMCD", "PARTNAME", "PURCHASEREQUEST", "SPEC"]) >= 0) { out.push({ ...base, kind: "air" }); continue; }
+    if (headerRowOf(rows, ["ITEMCD", "PARTNAME", "PURCHASEREQUEST"]) >= 0) { out.push({ ...base, kind: "air" }); continue; }
     const hb = headerRowOf(rows, ["거래처품목코드", "미납수량합계"], 5);
     if (hb >= 0) {   // 전산에서 받은 미납수량 합계 원본: 수주처 칸(F1/F2/F5)으로 공장을 알고, JST 여부는 파일 이름으로
       const cF = rows[hb].map(nsp).indexOf("수주처"), fac = cF >= 0 ? nsp((rows.slice(hb + 1).find((r) => r && clean(r[cF])) || [])[cF]) : "";
@@ -71,15 +71,43 @@ function readInputs(fileName, wb) {
 async function addBuildFiles(files) {
   for (const f of files) {
     try {
-      const wb = XLSX.read(await f.arrayBuffer(), { type: "array", cellDates: true });
-      const got = readInputs(f.name, wb);
-      if (!got.length) { toast(`${f.name}: 쓸 수 있는 표를 찾지 못했습니다`); continue; }
-      for (const g of got) {   // 같은 종류·같은 자리는 새 파일로 바꾼다
-        BUILD.inputs = BUILD.inputs.filter((x) => !(x.kind === g.kind && (g.kind === "vendor" || (g.kind === "bal" && g.slot && x.slot === g.slot) || (x.file === g.file && x.sheet === g.sheet))));
-        BUILD.inputs.push(g);
-      }
+      addWorkbook(f.name, XLSX.read(await f.arrayBuffer(), { type: "array", cellDates: true }));
     } catch (e) { console.error(e); toast(`${f.name}: 읽지 못했습니다 (${e.message || e})`); }
   }
+  afterAdd();
+}
+function addWorkbook(name, wb) {
+  const got = readInputs(name, wb);
+  if (!got.length) { toast(`${name}: 쓸 수 있는 표를 찾지 못했습니다`); return 0; }
+  for (const g of got) {   // 같은 종류·같은 자리는 새 파일로 바꾼다
+    BUILD.inputs = BUILD.inputs.filter((x) => !(x.kind === g.kind && (g.kind === "vendor" || (g.kind === "bal" && g.slot && x.slot === g.slot) || (x.file === g.file && x.sheet === g.sheet))));
+    BUILD.inputs.push(g);
+  }
+  return got.length;
+}
+// 메일 본문의 표를 복사해 붙여넣기: 아웃룩에서 복사하면 HTML 표가 같이 오므로 그것을 먼저 쓰고, 없으면 탭으로 나뉜 글자를 쓴다
+function pastedRows(html, text) {
+  const cellTxt = (el) => el.textContent.replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim();
+  if (html && /<t[dh][\s>]/i.test(html)) {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const tables = [...doc.querySelectorAll("table")].map((t) => [...t.rows].map((r) => [...r.cells].map(cellTxt)));
+    const best = tables.filter((t) => t.some((r) => r.map(nsp).includes("ITEMCD"))).sort((a, b) => a.length - b.length)[0]   // 표 안에 표가 있으면 가장 안쪽(머리글이 든 가장 작은 표)
+      || tables.sort((a, b) => b.length - a.length)[0];
+    if (best && best.length) return best;
+  }
+  return String(text || "").split(/\r?\n/).filter((l) => l.trim()).map((l) => l.split("\t").map((c) => c.replace(/\u00a0/g, " ").trim()));
+}
+let pasteNo = 0;
+function addPasted(html, text) {
+  const rows = pastedRows(html, text);
+  if (rows.length < 2) { toast("붙여넣은 내용에서 표를 찾지 못했습니다. 메일의 표를 머리글(No, FAC, Item cd …)부터 끝까지 골라 복사해 주세요."); return; }
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "메일 표");
+  const facs = uniq(rows.map((r) => nsp(r[1])).filter((f) => /^F[125]$/.test(f)));
+  const name = `붙여넣기 ${++pasteNo}${facs.length ? " (" + facs.join(",") + ")" : ""}`;
+  if (addWorkbook(name, wb)) toast(`${name}: ${rows.length - 1}줄을 넣었습니다`);
+  afterAdd();
+}
+function afterAdd() {
   const v = BUILD.inputs.find((x) => x.kind === "vendor");
   if (v) store.set(LS_VTBL, { rows: v.rows.map((r) => (r || []).slice(0, 8).map((c) => (c == null ? "" : clean(c)))), from: v.file, at: fmtDate(new Date()) });
   BUILD.out = null; renderBuild();
@@ -123,8 +151,8 @@ const rowSort = (a, b) => cmpStr(a.fac, b.fac) || cmpStr(xlSortKey(a.maker), xlS
 function buildLists() {
   const notes = [], I = BUILD.inputs;
   const seas = I.filter((x) => x.kind === "sea").map(parseSea);
-  const airIn = I.find((x) => x.kind === "air");
-  if (!seas.length && !airIn) throw new Error("선박 요청 파일(F1·F2·F5)이나 에어 리포트를 넣어 주세요.");
+  const airIns = I.filter((x) => x.kind === "air");
+  if (!seas.length && !airIns.length) throw new Error("선박 요청 파일(F1·F2·F5)이나 에어 리포트를 넣어 주세요.");
   const vt = I.find((x) => x.kind === "vendor") || currentVendorTable();   // 넣은 표 → 이 PC에 기억한 새 표 → 내장 표
   const vendorOf = vt ? vendorRule(vt.rows) : () => "";
   const tbl = {}; for (const b of I.filter((x) => x.kind === "bal" && x.slot)) tbl[b.slot] = lookupTable(b);
@@ -156,17 +184,19 @@ function buildLists() {
   }
   // ---- 에어
   let air = [];
-  if (airIn) {
+  const seen = new Set();   // 같은 에어 요청을 파일로도 넣고 붙여넣기로도 넣었을 때 한 번만
+  for (const airIn of airIns) {
     const rows = airIn.rows, h = headerRowOf(rows, ["ITEMCD", "PARTNAME", "PURCHASEREQUEST"]), hd = rows[h].map(nsp), c = (n) => hd.indexOf(n);
     for (let i = h + 1; i < rows.length; i++) {
       const r = rows[i] || [], fac = nsp(r[c("FAC")]), cd = clean(r[c("ITEMCD")]); if (!cd || !/^F\d$/.test(fac)) continue;
       const maker = clean(r[c("MAKER")]), nm = clean(r[c("PARTNAME")]), req = toNum(clean(r[c("PURCHASEREQUEST")]).split(">>").pop());   // "600>>2,100"처럼 수량이 바뀐 칸은 바뀐 뒤 수량
       if (req === 0) continue;   // "500>>0": 요청 취소
+      const key = `${fac}|${cd}|${req}|${clean(r[c("NEEDETD")])}`; if (seen.has(key)) continue; seen.add(key);
       const bal = find(fac, cd, maker, "Bal"), sto = find(fac, cd, maker, "Sto"), b1 = (bal || 0) + (sto || 0);
       air.push({ fac, cd, maker, nm, req, bal, sto, b1, br: b1 - req, short: r[c("SHORTDEL.")], need: r[c("NEEDETD")], remark: c("REMARK") >= 0 ? clean(r[c("REMARK")]) : "", vendor: vendorOf(cd, nm, maker) });
     }
-    air.sort(rowSort);
   }
+  air.sort(rowSort);
   const noVendor = uniq([...ship, ...air].filter((r) => !r.vendor).map((r) => r.maker || "(MAKER 없음)"));
   if (vt && noVendor.length) notes.push(`거래처를 못 붙인 MAKER: ${noVendor.join(", ")} → 거래처 표에 MAKER를 추가하세요.`);
   BUILD.out = { etd, ship, air, notes, vt, tbl };
@@ -237,6 +267,11 @@ function renderBuild() {
 function bindBuild() {
   bindDrop("dropBuild", "bdFiles", "bdName");
   $("bdFiles").addEventListener("change", () => addBuildFiles([...$("bdFiles").files]));
+  const pb = $("bdPaste");
+  if (pb) {
+    pb.addEventListener("paste", (e) => { const d = e.clipboardData; if (!d) return; e.preventDefault(); addPasted(d.getData("text/html"), d.getData("text/plain")); pb.value = ""; });
+    $("btnPaste").onclick = () => { addPasted("", pb.value); pb.value = ""; };
+  }
   $("bdList").addEventListener("change", (e) => { const t = e.target; if (t.dataset.b == null) return; BUILD.inputs[+t.dataset.b].slot = t.value; BUILD.out = null; renderBuild(); });
   $("btnBuildClear").onclick = () => { BUILD.inputs = []; BUILD.out = null; $("bdFiles").value = ""; $("bdName").textContent = "아직 없음"; $("dropBuild").classList.remove("has"); renderBuild(); };
   $("btnBuild").onclick = () => { try { buildLists(); } catch (e) { console.error(e); toast(String(e.message || e)); BUILD.out = null; } renderBuild(); };
