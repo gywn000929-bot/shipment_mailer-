@@ -68,7 +68,7 @@ button.plain{border:1px solid var(--line);background:#fff;border-radius:6px;padd
  <a href="#go">바로 만들기</a>
  <a href="#week">요일별 할 일</a>
  <a href="#any">요일과 상관없는 일</a>
- <a href="#vend">내 담당 업체</a>
+ <a href="#sum">담당 업체 한눈에</a>
  <a href="#tips">막힐 때</a>
  <div class="tools"><b>화면 바로 가기</b>
   <a href="index.html?who=kim">📮 메일 작성기</a>
@@ -129,9 +129,10 @@ button.plain{border:1px solid var(--line);background:#fff;border-radius:6px;padd
  </table>
 </section>
 
-<section id="vend"><h2>내 담당 업체 <span class="muted" id="vInfo" style="font-weight:400;font-size:14px">불러오는 중…</span></h2>
- <p class="lead">올려 둔 설정 파일(config_kim.xlsx) 기준입니다. 빨간 글씨는 메일 주소가 없는 업체입니다.</p>
- <table class="vtbl" id="vTbl"></table>
+<section id="sum"><span id="vend"></span><h2>담당 업체 한눈에 <span class="muted" id="vInfo" style="font-weight:400;font-size:14px">불러오는 중…</span></h2>
+ <p class="lead">올려 둔 설정 파일(config_kim.xlsx) 기준이라 업체를 고치면 여기도 저절로 바뀝니다. 빨간 글씨는 메일 주소가 없는 업체입니다.</p>
+ <div class="box tip" id="vGroups"><b>어떻게 나뉘나</b>불러오는 중…</div>
+ <div style="overflow-x:auto"><table class="vtbl" id="vTbl"></table></div>
 </section>
 
 <section id="tips"><h2>막힐 때</h2>
@@ -154,8 +155,8 @@ button.plain{border:1px solid var(--line);background:#fff;border-radius:6px;padd
   document.getElementById("btnReset").onclick = () => { st.done = {}; save(); document.querySelectorAll(".day input").forEach((c) => { c.checked = false; c.closest("li").classList.remove("done"); }); };
   const t = document.querySelector('.day[data-day="' + d.getDay() + '"]'); if (t) { t.classList.add("today"); t.querySelector("h3").insertAdjacentHTML("beforeend", " <small>· 오늘</small>"); }
 })();
-(async function () {   // 내 담당 업체: config_kim.xlsx 에서 '내업체제외'에 없는 활성 업체
-  const info = document.getElementById("vInfo"), tbl = document.getElementById("vTbl");
+(async function () {   // 담당 업체 한눈에: config_kim.xlsx 에서 '내업체제외'에 없는 활성 업체
+  const info = document.getElementById("vInfo"), tbl = document.getElementById("vTbl"), grp = document.getElementById("vGroups");
   const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const no = (v) => /^(N|NO|X|0)$/i.test(String(v ?? "").trim());
   try {
@@ -163,15 +164,29 @@ button.plain{border:1px solid var(--line);background:#fff;border-radius:6px;padd
     const set = {}; XLSX.utils.sheet_to_json(wb.Sheets["설정"], { header: 1 }).forEach((r) => { if (r[0]) set[String(r[0]).trim()] = r[1]; });
     const exc = String(set["내업체제외"] || "").split(/[,;\n]/).map((x) => x.trim()).filter(Boolean);
     const rows = XLSX.utils.sheet_to_json(wb.Sheets["업체"], { defval: "" }).filter((r) => String(r["업체"]).trim() && !String(r["업체"]).startsWith("※") && !no(r["활성"]) && !exc.includes(String(r["업체"]).trim()));
+    const kind = (r) => no(r["출하요청발송"]) ? "n" : /^Y/i.test(r["엑셀첨부"]) ? "x" : "b";
+    const id = (r) => "k-" + encodeURIComponent(String(r["업체"]).trim()).replace(/%/g, "");
     const miss = rows.filter((r) => !String(r["받는사람"]).trim()).length;
     info.textContent = `${rows.length}곳 · 메일 주소 없는 업체 ${miss}곳`;
-    tbl.innerHTML = "<tr><th>업체</th><th>출하 요청</th><th>주문서 메일</th><th>받는 사람</th><th>메모</th></tr>" + rows.map((r) => {
-      const ship = no(r["출하요청발송"]) ? '<span class="tag t-n">안 보냄</span>' : /^Y/i.test(r["엑셀첨부"]) ? '<span class="tag t-x">엑셀 첨부</span>' : '<span class="tag t-b">본문 표</span>';
-      const po = no(r["발주서발송"]) ? '<span class="tag t-n">안 보냄</span>' : "보냄";
+    const names = (k) => rows.filter((r) => kind(r) === k).map((r) => esc(r["업체"]));
+    const noPo = rows.filter((r) => no(r["발주서발송"])).map((r) => esc(r["업체"]));
+    const X = names("x"), B = names("b"), N = names("n");
+    const urg = String(set["긴급메일업체"] || "").split(/[,;\n]/).map((x) => x.trim()).filter(Boolean).map(esc);
+    const noTo = rows.filter((r) => !String(r["받는사람"]).trim()).map((r) => esc(r["업체"]));
+    grp.innerHTML = "<b>어떻게 나뉘나</b><ul>" +
+      (X.length ? `<li><span class="tag t-x">엑셀 첨부</span> ${X.join(", ")} — 선박 리스트를 엑셀로 붙여 보냅니다 (${X.length}곳).</li>` : "") +
+      (B.length ? `<li><span class="tag t-b">본문 표</span> ${B.join(", ")} — 메일 본문의 표로 보냅니다 (${B.length}곳).</li>` : "") +
+      (N.length ? `<li><span class="tag t-n">메일 없음</span> ${N.join(", ")} — 출하 요청 메일을 만들지 않습니다 (${N.length}곳).</li>` : "") +
+      (urg.length ? `<li><span class="tag t-new">긴급 자재</span> ${urg.join(", ")} — 월요일에 출하 요청과 따로 긴급 자재 메일이 하나 더 나옵니다.</li>` : "") +
+      (noPo.length ? `<li><span class="tag t-n">주문서 안 보냄</span> ${noPo.join(", ")} — 주문서 PDF에 있어도 자동으로 빠집니다 (${noPo.length}곳).</li>` : "") +
+      (noTo.length ? `<li><span class="tag t-n" style="color:#c62828">메일 주소 없음</span> ${noTo.join(", ")} — 🏢 업체 메일 주소에서 넣어 주세요.</li>` : "") + "</ul>";
+    const TAG = { x: '<span class="tag t-x">엑셀 첨부</span>', b: '<span class="tag t-b">본문 표</span>', n: '<span class="tag t-n">메일 없음</span>' };
+    tbl.innerHTML = "<tr><th>업체</th><th>출하 요청</th><th>주문서 메일</th><th>업체코드</th><th>MAKER</th><th>받는 사람</th><th>메모</th></tr>" + rows.map((r) => {
       const to = String(r["받는사람"]).trim();
-      return `<tr><td><b>${esc(r["업체"])}</b></td><td>${ship}</td><td>${po}</td><td class="${to ? "" : "miss"}">${to ? esc(to) : "메일 주소 없음"}</td><td class="muted">${esc(r["메모"])}</td></tr>`;
+      return `<tr id="${id(r)}"><td><b>${esc(r["업체"])}</b></td><td>${TAG[kind(r)]}</td><td>${no(r["발주서발송"]) ? "안 보냄" : "보냄"}</td><td>${esc(r["업체코드"])}</td><td class="muted">${esc(r["MAKER"])}</td><td class="${to ? "" : "miss"}">${to ? esc(to) : "메일 주소 없음"}</td><td class="muted">${esc(r["메모"])}</td></tr>`;
     }).join("");
-  } catch (e) { info.textContent = "설정 파일을 읽지 못했습니다 (인터넷 연결을 확인하세요)"; }
+  } catch (e) { info.textContent = "설정 파일을 읽지 못했습니다 (인터넷 연결을 확인하세요)"; grp.innerHTML = "<b>어떻게 나뉘나</b>설정 파일을 읽지 못했습니다."; }
+  if (location.hash) { const t = document.querySelector(location.hash); if (t) t.scrollIntoView(); }
 })();
 </script>
 </body></html>
