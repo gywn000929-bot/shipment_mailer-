@@ -139,7 +139,7 @@ function inboundXlsx(etd, vcode, rows) {   // rows: [{fac, cd, maker, nm, req, r
   const S = (v, o) => ({ t: "s", v: v == null ? "" : String(v), s: st(o) });
   const N = (v, z, o) => (v == null || v === "" ? { t: "s", v: "", s: st(o) } : { t: "n", v, z, s: st(o) });
   const code = toNum(vcode) || null;
-  const aoa = [["Fac", "ITEM CD", "MAKER", "", "ITEM NM", etd, ""].map((h, i) => S(h, { bold: true, al: "center", bg: i === 5 ? YELLOW : "FFFFFF", left: i === 5 ? "medium" : "thin", top: i === 5 ? "medium" : "thin" }))];
+  const aoa = [["Fac", "ITEM CD", "MAKER", "", "ITEM NM", etd, "입고수량"].map((h, i) => S(h, { bold: true, al: "center", bg: i === 5 ? YELLOW : "FFFFFF", left: i === 5 ? "medium" : "thin", top: i === 5 ? "medium" : "thin" }))];
   for (const r of rows) {
     const f = String(r.fac || "").replace(/\s+/g, "").toUpperCase(), fo = { al: "center", bg: FBG[f] };
     aoa.push([fc[f] ? N(fc[f], "General", fo) : S(r.fac, fo), S(r.cd), S(r.maker), code ? N(code, "General") : S(vcode), S(r.nm), N(r.req, NF, { al: "center", bg: YELLOW, left: "medium" }), N(r.recv, NF, { al: "center" })]);

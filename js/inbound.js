@@ -1,6 +1,6 @@
 /* 입고 파일 만들기: 업체가 입고수량을 적어 보낸 엑셀(또는 주간 리스트) → 전산에 올리는 엑셀 ("1118 태양기전.xlsx" 모양)
    규칙 (실제 파일로 확인)
-   - 이번 주(첫 ETD 열) 요청 수량이 있는 줄만, 원래 순서대로
+   - 표의 모든 품목 줄(이번 주 요청 0인 줄 포함), 원래 순서대로
    - Fac → 수주처 코드 (설정 "공장코드": F1=1010, F2=1060, F5=1150)
    - 열: 수주처 코드 | ITEM CD | MAKER | 업체코드 | ITEM NM | 요청 수량(첫 ETD) | 입고수량 */
 "use strict";
@@ -38,7 +38,7 @@ function readInbound(fileName, wb) {
   const etd = clean(rows[h][cEtd]), groups = new Map();
   for (let i = h + 1; i < rows.length; i++) {
     const r = rows[i] || [], cd = clean(r[cCd]), req = toNum(r[cEtd]);
-    if (!cd || req <= 0) continue;
+    if (!cd) continue;   // 요청 0인 줄도 넣는다(업체가 0도 적어 보냄)
     const vendor = cV >= 0 ? matchAlias(clean(r[cV])) || "(거래처 없음)" : "";
     const rv = cRecv >= 0 ? r[cRecv] : null;
     if (!groups.has(vendor)) groups.set(vendor, []);
