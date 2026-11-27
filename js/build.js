@@ -33,7 +33,7 @@ function readInputs(fileName, wb) {
   const out = [];
   for (const sn of wb.SheetNames) {
     const rows = sheetRows(wb, sn); if (!rows.length) continue;
-    const base = { file: fileName, sheet: sn, rows, sheetNames: wb.SheetNames };
+    const base = { file: fileName, sheet: sn, rows, sheetNames: wb.SheetNames, ws: wb.Sheets[sn], styled: !!wb.__styled };
     if (headerRowOf(rows, ["매입업체", "MAKER"], 3) >= 0) { out.push({ ...base, kind: "vendor" }); continue; }
     if (/^SUMMARY/i.test(sn.trim()) && headerRowOf(rows, ["ITEMCD"]) >= 0) { let facs = []; try { facs = parseSea(base).facs; } catch (e) { console.warn(e); } out.push({ ...base, kind: "sea", facs }); continue; }
     if (headerRowOf(rows, ["ITEMCD", "PARTNAME", "PURCHASEREQUEST"]) >= 0) { out.push({ ...base, kind: "air" }); continue; }
@@ -71,7 +71,10 @@ function readInputs(fileName, wb) {
 async function addBuildFiles(files) {
   for (const f of files) {
     try {
-      addWorkbook(f.name, XLSX.read(await f.arrayBuffer(), { type: "array", cellDates: true }));
+      const wb = XLSX.read(await f.arrayBuffer(), { type: "array", cellDates: true, cellStyles: true, bookFiles: true });
+      try { enrichStyles(wb); } catch (e) { console.warn("칸 서식을 읽지 못함", e); }
+      delete wb.files; delete wb.keys;
+      addWorkbook(f.name, wb);
     } catch (e) { console.error(e); toast(`${f.name}: 읽지 못했습니다 (${e.message || e})`); }
   }
   afterAdd();
@@ -90,10 +93,10 @@ function pastedRows(html, text) {
   const cellTxt = (el) => el.textContent.replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim();
   if (html && /<t[dh][\s>]/i.test(html)) {
     const doc = new DOMParser().parseFromString(html, "text/html");
-    const tables = [...doc.querySelectorAll("table")].map((t) => [...t.rows].map((r) => [...r.cells].map(cellTxt)));
-    const best = tables.filter((t) => t.some((r) => r.map(nsp).includes("ITEMCD"))).sort((a, b) => a.length - b.length)[0]   // 표 안에 표가 있으면 가장 안쪽(머리글이 든 가장 작은 표)
+    const tables = [...doc.querySelectorAll("table")].map((t) => [...t.rows].map((r) => [...r.cells]));
+    const best = tables.filter((t) => t.some((r) => r.map((el) => nsp(cellTxt(el))).includes("ITEMCD"))).sort((a, b) => a.length - b.length)[0]   // 표 안에 표가 있으면 가장 안쪽(머리글이 든 가장 작은 표)
       || tables.sort((a, b) => b.length - a.length)[0];
-    if (best && best.length) return best;
+    if (best && best.length) { const out = best.map((r) => r.map(cellTxt)); out.styles = best.map((r) => r.map(htmlCellStyle)); return out; }
   }
   const lines = String(text || "").replace(/\u00a0/g, " ").split(/\r?\n/);
   if (lines.some((l) => l.includes("\t"))) return lines.filter((l) => l.trim()).map((l) => l.split("\t").map((c) => c.trim()));
@@ -104,6 +107,52 @@ function pastedRows(html, text) {
   const hdr = t.slice(h0, h1), n = hdr.length, out = [hdr];
   for (let i = h1; i + 1 < t.length && /^\d+$/.test(t[i]) && /^F\d$/i.test(t[i + 1]); i += n) out.push(t.slice(i, i + n));
   return out;
+}
+// 메일 표 칸의 색: 바탕색(td·안쪽 글자의 background), 글자색(color), 굵게. 검정 글자·흰 바탕은 기본이라 뺀다
+function cssHex(v) {
+  if (!v || /windowtext|auto|transparent|inherit|initial/i.test(v)) return "";
+  const d = document.createElement("div"); d.style.color = ""; d.style.color = v.trim(); if (!d.style.color) return "";
+  document.body.appendChild(d); const m = getComputedStyle(d).color.match(/\d+/g); d.remove();
+  return m ? m.slice(0, 3).map((x) => (+x).toString(16).padStart(2, "0")).join("").toUpperCase() : "";
+}
+function htmlCellStyle(td) {
+  const els = [td, ...td.querySelectorAll("*")], get = (re) => { for (const el of els) { const st = el.getAttribute("style") || "", m = st.match(re); if (m) return m[1]; } return ""; };
+  const bg = cssHex(td.getAttribute("bgcolor") || get(/background(?:-color)?\s*:\s*([^;]+)/i));
+  const fc = cssHex(get(/(?:^|;)\s*color\s*:\s*([^;]+)/i) || ((td.querySelector("font[color]") || { getAttribute: () => "" }).getAttribute("color")));
+  const bold = !!td.querySelector("b,strong") || /font-weight\s*:\s*(bold|[6-9]00)/i.test(els.map((e) => e.getAttribute("style") || "").join(";"));
+  const s = {};
+  if (bg && bg !== "FFFFFF") s.fill = { patternType: "solid", fgColor: { rgb: bg } };
+  if ((fc && fc !== "000000") || bold) s.font = { ...(fc && fc !== "000000" ? { color: { rgb: fc } } : {}), ...(bold ? { bold: true } : {}) };
+  return s.fill || s.font ? s : null;
+}
+// 엑셀(xlsx) 칸의 색: cellStyles 옵션은 바탕색만 주므로, 칸마다 적힌 서식 번호로 styles.xml의 글꼴(글자색·굵게)까지 찾아 붙인다. xls는 색을 읽지 못한다
+function enrichStyles(wb) {
+  const files = wb.files, St = wb.Styles; if (!files || !St || !St.CellXf || !files["xl/workbook.xml"] && !files["/xl/workbook.xml"]) return;
+  const txt = (p) => { const f = files[p] || files["/" + p]; return !f ? "" : typeof f.content === "string" ? f.content : new TextDecoder().decode(f.content); };
+  const rels = {}; for (const m of txt("xl/_rels/workbook.xml.rels").matchAll(/<Relationship\b[^>]*>/g)) { const id = (m[0].match(/\bId="([^"]+)"/) || [])[1], t = (m[0].match(/\bTarget="([^"]+)"/) || [])[1]; if (id && t) rels[id] = t.replace(/^\/?(xl\/)?/, "xl/"); }
+  const unx = (s) => s.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'");
+  for (const m of txt("xl/workbook.xml").matchAll(/<sheet\b[^>]*>/g)) {
+    const name = unx((m[0].match(/\bname="([^"]*)"/) || [])[1] || ""), rid = (m[0].match(/\br:id="([^"]+)"/) || [])[1], ws = wb.Sheets[name], xml = rid && rels[rid] ? txt(rels[rid]) : "";
+    if (!ws || !xml) continue;
+    for (const c of xml.matchAll(/<c\b[^>]*>/g)) {
+      const a = (c[0].match(/\br="([A-Z]+\d+)"/) || [])[1], si = (c[0].match(/\bs="(\d+)"/) || [])[1]; if (!a || !si || !ws[a]) continue;
+      const xf = St.CellXf[+si] || {}, font = St.Fonts && St.Fonts[+xf.fontId] || {}, fill = St.Fills && St.Fills[+xf.fillId] || {}, s = {};
+      if (fill.patternType === "solid" && fill.fgColor) s.fill = { patternType: "solid", fgColor: fill.fgColor };
+      const fc = font.color && (font.color.rgb ? (/^(FF)?000000$/i.test(font.color.rgb) ? null : font.color) : font.color.theme != null && font.color.theme !== 1 ? font.color : null);
+      if (fc || font.bold || font.italic) s.font = { ...(fc ? { color: fc } : {}), ...(font.bold ? { bold: true } : {}), ...(font.italic ? { italic: true } : {}) };
+      ws[a].s = s.fill || s.font ? s : undefined;
+    }
+  }
+  wb.__styled = true;
+}
+// Short Del.·NEED ETD 날짜 글자("02 December 2026", "27-Nov-26", "2026-12-02")를 날짜로. URGENT 같은 글자는 그대로
+function asDate(v) {
+  if (v instanceof Date) return isNaN(v) ? null : v;
+  const t = toDate(v); if (t) return t;
+  const s = clean(v), m = s.match(/^(\d{1,2})[\s\-.]+([A-Za-z]{3,})[\s\-.,]+(\d{2,4})$/) || s.match(/^([A-Za-z]{3,})[\s\-.]+(\d{1,2}),?[\s\-.]+(\d{2,4})$/);
+  if (m) { const [dd, mon, yy] = /^\d/.test(m[1]) ? [m[1], m[2], m[3]] : [m[2], m[1], m[3]]; const mi = MON.findIndex((x) => x.toLowerCase() === mon.slice(0, 3).toLowerCase()); if (mi >= 0) return new Date(yy.length === 2 ? 2000 + +yy : +yy, mi, +dd); }
+  const iso = s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/); if (iso) return new Date(+iso[1], iso[2] - 1, +iso[3]);
+  return null;
 }
 // 요청 수량 읽기: 칸 앞뒤 공백·nbsp, 전각 숫자, "72.000"(점 천 단위), "72 000", "72,000 PCS" 같은 모양도 읽는다. 숫자가 없으면 NaN
 function qtyOf(v) {
@@ -118,7 +167,9 @@ let pasteNo = 0;
 function addPasted(html, text) {
   const rows = pastedRows(html, text);
   if (rows.length < 2) { toast("붙여넣은 내용에서 표를 찾지 못했습니다. 메일의 표를 머리글(No, FAC, Item cd …)부터 끝까지 골라 복사해 주세요."); return; }
-  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "메일 표");
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  if (rows.styles) rows.styles.forEach((r, i) => r.forEach((st, j) => { const a = XLSX.utils.encode_cell({ r: i, c: j }); if (st && ws[a]) ws[a].s = st; }));
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "메일 표"); wb.__styled = !!rows.styles;
   const facs = uniq(rows.map((r) => nsp(r[1])).filter((f) => /^F[125]$/.test(f)));
   const name = `붙여넣기 ${++pasteNo}${facs.length ? " (" + facs.join(",") + ")" : ""}`;
   if (addWorkbook(name, wb)) toast(`${name}: ${rows.length - 1}줄을 넣었습니다`);
@@ -204,6 +255,8 @@ function buildLists() {
   const seen = new Set();   // 같은 에어 요청을 파일로도 넣고 붙여넣기로도 넣었을 때 한 번만
   for (const airIn of airIns) {
     const rows = airIn.rows, h = headerRowOf(rows, ["ITEMCD", "PARTNAME", "PURCHASEREQUEST"]), hd = rows[h].map(nsp), c = (n) => hd.indexOf(n);
+    const rg = airIn.ws && airIn.ws["!ref"] ? XLSX.utils.decode_range(airIn.ws["!ref"]) : { s: { r: 0, c: 0 } };
+    const stAt = (i, col) => { if (col < 0 || !airIn.ws) return null; const x = airIn.ws[XLSX.utils.encode_cell({ r: rg.s.r + i, c: rg.s.c + col })]; return x && x.s && (x.s.fill || x.s.font) ? x.s : null; };
     for (let i = h + 1; i < rows.length; i++) {
       const r = rows[i] || [], fac = nsp(r[c("FAC")]), cd = clean(r[c("ITEMCD")]); if (!cd || !/^F\d$/.test(fac)) continue;
       const maker = clean(r[c("MAKER")]), nm = clean(r[c("PARTNAME")]), rawReq = r[c("PURCHASEREQUEST")];
@@ -212,8 +265,18 @@ function buildLists() {
       if (isNaN(req)) { notes.push(`에어 ${fac} ${cd} ${nm}: 요청 수량 "${clean(rawReq)}"을 숫자로 읽지 못해 0으로 넣었습니다. 엑셀에서 직접 고쳐 주세요.`); req = 0; }
       const key = `${fac}|${cd}|${req}|${clean(r[c("NEEDETD")])}`; if (seen.has(key)) continue; seen.add(key);
       const bal = find(fac, cd, maker, "Bal"), sto = find(fac, cd, maker, "Sto"), b1 = (bal || 0) + (sto || 0);
-      air.push({ fac, cd, maker, nm, req, bal, sto, b1, br: b1 - req, short: r[c("SHORTDEL.")], need: r[c("NEEDETD")], remark: c("REMARK") >= 0 ? clean(r[c("REMARK")]) : "", vendor: vendorOf(cd, nm, maker) });
+      const dOr = (v) => asDate(v) || v;   // 메일 표의 "02 December 2026"도 F1·F2 파일처럼 날짜 칸으로
+      air.push({ fac, cd, maker, nm, req, bal, sto, b1, br: b1 - req, short: dOr(r[c("SHORTDEL.")]), need: dOr(r[c("NEEDETD")]),
+        shortS: stAt(i, c("SHORTDEL.")), needS: stAt(i, c("NEEDETD")), styled: airIn.styled, remark: c("REMARK") >= 0 ? clean(r[c("REMARK")]) : "", vendor: vendorOf(cd, nm, maker) });
     }
+  }
+  // F5 칸 색은 F1·F2 리스트에 맞춘다: F1·F2(색을 읽을 수 있는 파일)에서 같은 값 → 같은 종류(URGENT/날짜/글자) 칸의 색을 쓰고, 없으면 F5 원래 색
+  const vKey = (v) => (v instanceof Date ? "D:" + fmtCellDate(dayOf(v)) : "T:" + clean(v).toUpperCase());
+  const vCls = (v) => (v instanceof Date ? "D" : /URGENT/i.test(clean(v)) ? "U" : clean(v) ? "T" : "E");
+  for (const [f, sk] of [["short", "shortS"], ["need", "needS"]]) {
+    const ref = new Map();
+    for (const r of air) if (r.fac !== "F5" && r.styled) for (const k of [vKey(r[f]), vCls(r[f])]) if (!ref.has(k)) ref.set(k, r[sk]);
+    if (ref.size) for (const r of air) if (r.fac === "F5") { const k = ref.has(vKey(r[f])) ? vKey(r[f]) : vCls(r[f]); if (ref.has(k)) r[sk] = ref.get(k); }
   }
   air.sort(rowSort);
   const noVendor = uniq([...ship, ...air].filter((r) => !r.vendor).map((r) => r.maker || "(MAKER 없음)"));
@@ -248,8 +311,14 @@ function listWorkbook(o) {
   if (o.air.length) {
     const hdr = ["FAC", "Item cd", "Maker", "Part Name", "Purchase request", "BALANCE", "STOCK", "BALANCE 1", "B-R", "Short Del.", "NEED ETD", "REMARK", "거래처명(매칭)"];
     const aoa = [hdr.map((h) => cell(h, { bold: true, align: "center", bg: "FFFFFF" }))];
-    const dv = (v) => { if (!(v instanceof Date) || isNaN(v)) return cell(clean(v), { align: "center" }); const d = dayOf(v), c = cell((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(1899, 11, 30)) / 86400000, { align: "center" }); c.z = "dd-mmm-yy"; return c; };
-    for (const r of o.air) aoa.push([cell(r.fac, { align: "center", bg: FAC[r.fac] }), cell(r.cd), cell(r.maker), cell(r.nm), num(r.req, { bold: true }), num(r.bal), num(r.sto), num(r.b1), num(r.br, { bold: true }), dv(r.short), dv(r.need), cell(r.remark), cell(r.vendor)]);
+    const dv0 = (v) => { if (!(v instanceof Date) || isNaN(v)) return cell(clean(v), { align: "center" }); const d = dayOf(v), c = cell((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(1899, 11, 30)) / 86400000, { align: "center" }); c.z = "dd-mmm-yy"; return c; };
+    const dv = (v, st) => {   // 받은 파일의 칸 색(바탕·글자색·굵게)을 그대로 옮긴다
+      const c = dv0(v); if (!st) return c;
+      if (st.fill) c.s.fill = st.fill;
+      if (st.font) c.s.font = { ...c.s.font, ...(st.font.color ? { color: st.font.color } : {}), ...(st.font.bold ? { bold: true } : {}), ...(st.font.italic ? { italic: true } : {}) };
+      return c;
+    };
+    for (const r of o.air) aoa.push([cell(r.fac, { align: "center", bg: FAC[r.fac] }), cell(r.cd), cell(r.maker), cell(r.nm), num(r.req, { bold: true }), num(r.bal), num(r.sto), num(r.b1), num(r.br, { bold: true }), dv(r.short, r.shortS), dv(r.need, r.needS), cell(r.remark), cell(r.vendor)]);
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     ws["!cols"] = [5, 14, 14, 34, 14, 11, 11, 11, 11, 12, 12, 16, 24].map((w) => ({ wch: w }));
     XLSX.utils.book_append_sheet(wb, ws, "Air");
