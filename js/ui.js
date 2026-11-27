@@ -72,7 +72,7 @@ function renderResult() {
        ${m.attachments.map((a, j) => `<button class="sm" data-i="${i}" data-j="${j}" data-act="att">3. 첨부 받기: ${esc(a.name)}</button>`).join("")}
        <div class="hint">1번으로 열린 새 메일 창의 본문 칸을 누르고 Ctrl+V → 받은 첨부 파일을 메일 창에 끌어다 놓기 → 확인 후 보내기</div></div>`;
     d.innerHTML = `<div class="mh"><label class="inc"><input type="checkbox" data-i="${i}" data-act="inc" ${m.include ? "checked" : ""} ${m.noTo ? "disabled" : ""}> 포함</label><b>${esc(m.vendor)}</b>${m.kind === "urgent" ? '<span class="tag red">긴급 자재</span>' : ""}<span class="subj">${esc(m.subject)}</span>
-      ${m.noTo ? "" : `<button class="sm pri" data-i="${i}" data-act="eml">📩 메일 파일 받기</button><button class="sm" data-i="${i}" data-act="alt" title=".eml 파일이 Outlook 새 메일 창으로 열리지 않을 때">다른 방법</button>`}<button class="sm" data-i="${i}" data-act="view">본문 보기</button><button class="sm" data-i="${i}" data-act="edit" title="이 메일 한 통의 제목·본문을 직접 고칩니다">✏ 고치기</button>${m.customHtml != null || m.subjEdited ? `<span class="tag">✏ 고친 메일</span><button class="sm" data-i="${i}" data-act="edreset">원래대로</button>` : ""}</div>
+      ${m.noTo ? "" : `<button class="sm pri" data-i="${i}" data-act="eml">📩 메일 파일 받기</button><button class="sm" data-i="${i}" data-act="alt" title=".eml 파일이 Outlook 새 메일 창으로 열리지 않을 때">다른 방법</button>`}${m.inbound ? `<button class="sm" data-i="${i}" data-act="inb" title="전산에 올리는 입고 엑셀 (F1→1010, F2→1060, F5→1150, 업체코드 포함)">📦 입고파일</button>` : ""}<button class="sm" data-i="${i}" data-act="view">본문 보기</button><button class="sm" data-i="${i}" data-act="edit" title="이 메일 한 통의 제목·본문을 직접 고칩니다">✏ 고치기</button>${m.customHtml != null || m.subjEdited ? `<span class="tag">✏ 고친 메일</span><button class="sm" data-i="${i}" data-act="edreset">원래대로</button>` : ""}</div>
       <div class="meta">${m.noTo ? `<span class="warn">받는 사람 없음</span> → <input type="text" class="toin" data-i="${i}" placeholder="메일 주소 (여러 개면 쉼표)" style="width:300px"> <button class="sm pri" data-i="${i}" data-act="saveto">저장</button>` : "받는 사람: " + esc(m.to.join(", "))}${m.cc.length ? "<br>참조: " + esc(m.cc.join(", ")) : ""}${m.attachments.length ? "<br>첨부: " + esc(m.attachments.map((a) => a.name).join(", ")) : ""}${m.note && !m.noTo ? `<br><span class="warn">${esc(m.note)}</span>` : ""}${m.dupRecs.length ? `<br><span class="warn">⚠ ${esc(dupText(m))}</span>` : ""}
       ${m.got || m.dupRecs.length ? `<br><label class="sent"><input type="checkbox" data-i="${i}" data-act="sent" ${histFor(m).some((r) => r.sent) ? "checked" : ""}> Outlook에서 보냈음</label>${m.got ? ' <span class="ok">✔ 방금 받음</span>' : ""}` : ""}</div>
       ${m.noTo ? "" : alt}<iframe class="prev" style="display:none"></iframe>
@@ -96,6 +96,7 @@ function onMailClick(e) {
     download(buildEml(m), emlName(m)); recordDownload([m]); renderResult();
   } else if (act === "alt") { const a = b.closest(".mail").querySelector(".alt"); a.style.display = a.style.display === "none" ? "" : "none"; }
   else if (act === "copy") { copyMailBody(m).then((ok) => toast(ok ? `${m.vendor} 본문을 복사했습니다. 새 메일 창 본문 칸에서 Ctrl+V 하세요.` : "복사하지 못했습니다. '본문 보기'를 눌러 직접 드래그해서 복사하세요.")); if (!m.got) { recordDownload([m]); renderResult(); } }
+  else if (act === "inb") { download(new Blob([m.inbound.data], { type: "application/octet-stream" }), m.inbound.name); if (m.inbound.noCode) toast(`${m.vendor}: 업체코드가 없어 빈칸으로 받았습니다. 전산에 올리기 전에 채워 주세요.`); }
   else if (act === "att") { const a = m.attachments[+b.dataset.j]; download(new Blob([a.data], { type: "application/octet-stream" }), a.name); }
   else if (act === "saveto") {
     const emails = parseEmails(box.querySelector(`.toin[data-i="${b.dataset.i}"]`).value);
@@ -127,11 +128,12 @@ async function downloadZip() {
   if (again.length && !confirm(`이미 만든 적이 있는 메일 ${again.length}통이 포함되어 있습니다:\n${again.map((m) => " - " + m.vendor + ": " + dupText(m)).join("\n")}\n\n두 번 보내는 것이 아닌지 확인하셨나요? 그래도 받을까요?`)) return;
   const zip = new JSZip();
   for (const m of sel) zip.file(emlName(m), buildEml(m));
-  if (RESULT.extraFiles) for (const f of RESULT.extraFiles) zip.file(f.name, f.data);
+  // 입고파일(전산용 엑셀)은 ZIP에 넣은 메일의 업체 것만 "입고파일" 폴더에
+  if (RESULT.extraFiles) for (const f of RESULT.extraFiles) if (!f.inbound || sel.some((m) => m.inbound && "입고파일/" + m.inbound.name === f.name)) zip.file(f.name, f.data);
   const blob = await zip.generateAsync({ type: "blob" });
   download(blob, (RESULT.kind === "po" ? "주문서메일_" : RESULT.kind === "order" ? "발주확인메일_" : RESULT.fri ? "금요일에어메일_" : "출하요청메일_") + fmtDate(new Date()) + ".zip");
   recordDownload(sel); renderResult();
-  toast(`메일 ${sel.length}통을 ZIP으로 받았습니다. 압축을 풀고 .eml 파일을 더블클릭하면 Outlook 새 메일 창이 열립니다.`);
+  toast(`메일 ${sel.length}통을 ZIP으로 받았습니다. 압축을 풀고 .eml 파일을 더블클릭하면 Outlook 새 메일 창이 열립니다. 전산용 입고 엑셀은 "입고파일" 폴더에 있습니다.`);
   $("afterZip").style.display = "";
 }
 
