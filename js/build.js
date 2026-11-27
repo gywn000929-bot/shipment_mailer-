@@ -95,7 +95,24 @@ function pastedRows(html, text) {
       || tables.sort((a, b) => b.length - a.length)[0];
     if (best && best.length) return best;
   }
-  return String(text || "").split(/\r?\n/).filter((l) => l.trim()).map((l) => l.split("\t").map((c) => c.replace(/\u00a0/g, " ").trim()));
+  const lines = String(text || "").replace(/\u00a0/g, " ").split(/\r?\n/);
+  if (lines.some((l) => l.includes("\t"))) return lines.filter((l) => l.trim()).map((l) => l.split("\t").map((c) => c.trim()));
+  // 탭 없이 한 칸이 한 줄씩 온 경우(메일 글자만 복사): "No" 머리글부터 첫 번호 줄 전까지가 머리글, 그 칸 수만큼 묶는다
+  const t = lines.map((l) => l.trim()), h0 = t.findIndex((l, i) => nsp(l) === "NO" && nsp(t[i + 1] || "") === "FAC");
+  if (h0 < 0) return [];
+  let h1 = h0 + 1; while (h1 < t.length && !/^\d+$/.test(t[h1])) h1++;
+  const hdr = t.slice(h0, h1), n = hdr.length, out = [hdr];
+  for (let i = h1; i + 1 < t.length && /^\d+$/.test(t[i]) && /^F\d$/i.test(t[i + 1]); i += n) out.push(t.slice(i, i + n));
+  return out;
+}
+// 요청 수량 읽기: 칸 앞뒤 공백·nbsp, 전각 숫자, "72.000"(점 천 단위), "72 000", "72,000 PCS" 같은 모양도 읽는다. 숫자가 없으면 NaN
+function qtyOf(v) {
+  if (typeof v === "number") return v;
+  let s = String(v == null ? "" : v).replace(/[\uFF10-\uFF19]/g, (d) => String.fromCharCode(d.charCodeAt(0) - 0xFEE0)).replace(/[\s\u00a0\u200b\u3000]/g, "");
+  s = s.split(">>").pop();   // "600>>2,100"처럼 수량이 바뀐 칸은 바뀐 뒤 수량
+  if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, "");
+  const m = s.replace(/,/g, "").match(/-?\d+(\.\d+)?/);
+  return m ? Number(m[0]) : NaN;
 }
 let pasteNo = 0;
 function addPasted(html, text) {
@@ -189,8 +206,10 @@ function buildLists() {
     const rows = airIn.rows, h = headerRowOf(rows, ["ITEMCD", "PARTNAME", "PURCHASEREQUEST"]), hd = rows[h].map(nsp), c = (n) => hd.indexOf(n);
     for (let i = h + 1; i < rows.length; i++) {
       const r = rows[i] || [], fac = nsp(r[c("FAC")]), cd = clean(r[c("ITEMCD")]); if (!cd || !/^F\d$/.test(fac)) continue;
-      const maker = clean(r[c("MAKER")]), nm = clean(r[c("PARTNAME")]), req = toNum(clean(r[c("PURCHASEREQUEST")]).split(">>").pop());   // "600>>2,100"처럼 수량이 바뀐 칸은 바뀐 뒤 수량
-      if (req === 0) continue;   // "500>>0": 요청 취소
+      const maker = clean(r[c("MAKER")]), nm = clean(r[c("PARTNAME")]), rawReq = r[c("PURCHASEREQUEST")];
+      let req = qtyOf(rawReq);
+      if (req === 0 || clean(rawReq) === "") continue;   // "500>>0": 요청 취소, 빈 칸은 전처럼 뺀다
+      if (isNaN(req)) { notes.push(`에어 ${fac} ${cd} ${nm}: 요청 수량 "${clean(rawReq)}"을 숫자로 읽지 못해 0으로 넣었습니다. 엑셀에서 직접 고쳐 주세요.`); req = 0; }
       const key = `${fac}|${cd}|${req}|${clean(r[c("NEEDETD")])}`; if (seen.has(key)) continue; seen.add(key);
       const bal = find(fac, cd, maker, "Bal"), sto = find(fac, cd, maker, "Sto"), b1 = (bal || 0) + (sto || 0);
       air.push({ fac, cd, maker, nm, req, bal, sto, b1, br: b1 - req, short: r[c("SHORTDEL.")], need: r[c("NEEDETD")], remark: c("REMARK") >= 0 ? clean(r[c("REMARK")]) : "", vendor: vendorOf(cd, nm, maker) });
