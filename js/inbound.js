@@ -10,11 +10,6 @@ const INB = { items: [] };   // {id, file, vendor, code, etd, rows:[{fac, cd, ma
 let inbSeq = 1;
 const up = (s) => clean(s).replace(/\s+/g, "").toUpperCase();
 
-function facCodes() {
-  const m = { F1: 1010, F2: 1060, F5: 1150 };
-  for (const p of splitList((CONFIG && CONFIG.settings["공장코드"]) || "")) { const [k, v] = p.split("=").map((x) => x.trim()); if (/^F\d$/i.test(k || "") && toNum(v)) m[k.toUpperCase()] = toNum(v); }
-  return m;
-}
 function codeOf(vendor) {
   const saved = store.get(LS_CODES, {});
   return (CONFIG.vendors[vendor] && CONFIG.vendors[vendor].code) || saved[vendor] || "";
@@ -68,17 +63,7 @@ async function addInboundFiles(files) {
 }
 
 // ---------------------------------------------------------------- 전산 올리는 엑셀
-function inboundBytes(it) {
-  const fc = facCodes(), font = { name: "맑은 고딕", sz: 10 }, NF = "#,##0;[Red]-#,##0;";
-  const S = (v) => ({ t: "s", v: v == null ? "" : String(v), s: { font } });
-  const N = (v, z, bg) => (v == null || v === "" ? { t: "s", v: "", s: { font, ...(bg ? { fill: { patternType: "solid", fgColor: { rgb: bg } } } : {}) } } : { t: "n", v, z, s: { font, ...(bg ? { fill: { patternType: "solid", fgColor: { rgb: bg } } } : {}) } });
-  const code = toNum(it.code) || null;
-  const aoa = [["Fac", "ITEM CD", "MAKER", "", "ITEM NM", it.etd, ""].map((h) => ({ t: "s", v: h, s: { font: { ...font, bold: true } } }))];
-  for (const r of it.rows) aoa.push([fc[r.fac] ? N(fc[r.fac], "@") : S(r.fac), S(r.cd), S(r.maker), code ? N(code) : S(it.code), S(r.nm), N(r.req, NF, YELLOW), N(r.recv, NF)]);
-  const ws = XLSX.utils.aoa_to_sheet(aoa); ws["!cols"] = [7, 14, 14, 7, 34, 14, 12].map((w) => ({ wch: w }));
-  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
-  return new Uint8Array(XLSX.write(wb, { type: "array", bookType: "xlsx" }));
-}
+function inboundBytes(it) { return inboundXlsx(it.etd, it.code, it.rows); }
 function inboundName(it) { const d = $("inDate").value ? parseISO($("inDate").value) : new Date(); return safeName(`${pad2(d.getMonth() + 1)}${pad2(d.getDate())} ${it.vendor || "업체미정"}.xlsx`); }
 const itemProblems = (it) => [!it.vendor && "업체를 골라 주세요", !it.code && "업체코드가 없습니다", it.rows.some((r) => !facCodes()[r.fac]) && "공장 코드를 모르는 줄이 있습니다", it.rows.every((r) => r.recv == null) && "입고수량이 모두 비어 있습니다"].filter(Boolean);
 

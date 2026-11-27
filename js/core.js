@@ -121,3 +121,24 @@ function bindDrop(zone, input, nameEl) {
   i.addEventListener("change", show);
 }
 const HANDOFF_KEY = "mailmaker_handoff";   // 리스트 만들기 화면 → 메일 작성기로 넘기는 파일
+
+// ---------------------------------------------------------------- 입고 파일 (전산에 올리는 엑셀, "1118 태양기전.xlsx" 모양)
+// 열: 수주처 코드(Fac → 설정 "공장코드") | ITEM CD | MAKER | 업체코드 | ITEM NM | 요청 수량(첫 ETD) | 입고수량
+function facCodes() {
+  const m = { F1: 1010, F2: 1060, F5: 1150 };
+  const cfg = typeof CONFIG !== "undefined" && CONFIG ? CONFIG.settings["공장코드"] || "" : "";
+  for (const p of String(cfg).split(/[,;\n]/)) { const [k, v] = p.split("=").map((x) => (x || "").trim()); if (/^F\d$/i.test(k || "") && toNum(v)) m[k.toUpperCase()] = toNum(v); }
+  return m;
+}
+function inboundXlsx(etd, vcode, rows) {   // rows: [{fac, cd, maker, nm, req, recv}]
+  const fc = facCodes(), font = { name: "맑은 고딕", sz: 10 }, NF = "#,##0;[Red]-#,##0;";
+  const fill = (bg) => (bg ? { fill: { patternType: "solid", fgColor: { rgb: bg } } } : {});
+  const S = (v) => ({ t: "s", v: v == null ? "" : String(v), s: { font } });
+  const N = (v, z, bg) => (v == null || v === "" ? { t: "s", v: "", s: { font, ...fill(bg) } } : { t: "n", v, z, s: { font, ...fill(bg) } });
+  const code = toNum(vcode) || null;
+  const aoa = [["Fac", "ITEM CD", "MAKER", "", "ITEM NM", etd, ""].map((h) => ({ t: "s", v: h, s: { font: { ...font, bold: true } } }))];
+  for (const r of rows) { const f = String(r.fac || "").replace(/\s+/g, "").toUpperCase(); aoa.push([fc[f] ? N(fc[f], "@") : S(r.fac), S(r.cd), S(r.maker), code ? N(code) : S(vcode), S(r.nm), N(r.req, NF, YELLOW), N(r.recv, NF)]); }
+  const ws = XLSX.utils.aoa_to_sheet(aoa); ws["!cols"] = [7, 14, 14, 7, 34, 14, 12].map((w) => ({ wch: w }));
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+  return new Uint8Array(XLSX.write(wb, { type: "array", bookType: "xlsx" }));
+}

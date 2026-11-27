@@ -102,7 +102,16 @@ async function runShip(fromPaste = false) {
       log(`   받는 사람: ${v.to.join(", ")}`); if (v.cc.length) log(`   추가 참조: ${v.cc.join(", ")}`); if (v.memo) log(`   메모: ${v.memo}`, "warn");
       const attached = v.attach && s.length > 0;
       const attachments = attached ? [{ name: safeName(`${subjectBase}_${v.name}.xlsx`), data: vendorXlsx(s, a, etdSel) }] : [];
-      RESULT.mails.push({ kind: "ship", vendor: n, subject, to: v.to, cc: uniq([...commonCc, ...v.cc]), body: buildShipBody(v, a, s, etdSel, airDate, shipDate, S, attached, fri), attachments, note: v.memo ? "메모: " + v.memo : "", ship: s, air: a, noTo, include: !noTo, keys: [`${fri ? "airfri" : "ship"}|${RESULT.weekKey}|${n}`] });
+      // 입고 파일(전산에 올리는 엑셀): 이번 주(첫 ETD) 요청 수량이 있는 줄만, Fac → 1010/1060/1150, 업체코드 넣기
+      let inbound = null;
+      const inRows = s.filter((r) => toNum(r[etdSel[0]]) > 0).map((r) => ({ fac: r.Fac, cd: r["ITEM CD"], maker: r.MAKER, nm: r["ITEM NM"], req: toNum(r[etdSel[0]]), recv: null }));
+      if (inRows.length) {
+        const vcode = v.code || store.get("mailmaker_vendor_codes", {})[n] || "";
+        inbound = { name: safeName(`${pad2(shipDate.getMonth() + 1)}${pad2(shipDate.getDate())} ${n}.xlsx`), data: inboundXlsx(etdSel[0], vcode, inRows), noCode: !vcode };
+        RESULT.extraFiles.push({ name: "입고파일/" + inbound.name, data: inbound.data, inbound: true });
+        log(`   입고 파일: ${inbound.name} (${inRows.length}줄)${vcode ? "" : "  [확인] 업체코드가 없어 빈칸입니다 → ⚙ 업체·설정 고치기에서 '전산 업체코드'를 넣어 주세요"}`, vcode ? "" : "warn");
+      }
+      RESULT.mails.push({ kind: "ship", vendor: n, subject, to: v.to, cc: uniq([...commonCc, ...v.cc]), body: buildShipBody(v, a, s, etdSel, airDate, shipDate, S, attached, fri), attachments, inbound, note: v.memo ? "메모: " + v.memo : "", ship: s, air: a, noTo, include: !noTo, keys: [`${fri ? "airfri" : "ship"}|${RESULT.weekKey}|${n}`] });
       RESULT.etdSel = etdSel; RESULT.tag = `${month}월${week}주`;
     }
     // ---- 긴급 자재 메일 (설정 "긴급메일업체"에 적힌 업체. 에어리스트에 올라온 그 업체 품목을 표로)
